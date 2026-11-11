@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using Ludex.Library.Enums;
 using Ludex.Library.Services;
+using Ludex.Library.Themes;
 using Ludex.Library.Validation;
 using Ludex.WebApi.Extensions.Globalization;
 using Ludex.WebApi.Features.Users.Models.DTOs;
@@ -157,6 +158,7 @@ internal sealed partial class UserService(
         LastSignInAt = user.LastLoginAt is { } at ? new DateTimeOffset(DateTime.SpecifyKind(at, DateTimeKind.Utc)) : null,
         SecurityStamp = user.SecurityStamp,
         AvatarVersion = user.AvatarVersion,
+        Accent = Accents.Normalize(user.Accent),
     };
 
     private static string NewStamp() => Convert.ToHexString(RandomNumberGenerator.GetBytes(16));

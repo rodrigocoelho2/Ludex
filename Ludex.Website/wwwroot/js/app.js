@@ -34,17 +34,34 @@
     }, true);
     sharpen(document);
 
-    /* ---------- Toast ---------- */
+    /* ---------- Toast (with an action, like Undo, when there is one) ---------- */
     let toastTimer;
-    function toast(text, isError) {
+    function toast(text, isError, action) {
         const el = $('.toast');
         if (!el) return;
-        el.textContent = text;
+        el.textContent = '';
+        const words = document.createElement('span');
+        words.textContent = text;
+        el.appendChild(words);
+        if (action) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'toast-act';
+            button.textContent = action.label;
+            button.addEventListener('click', () => {
+                clearTimeout(toastTimer);
+                el.classList.remove('show');
+                setTimeout(() => { el.hidden = true; }, 300);
+                action.run();
+            }, { once: true });
+            el.appendChild(button);
+        }
         el.classList.toggle('err', !!isError);
+        el.classList.toggle('has-act', !!action);
         el.hidden = false;
         requestAnimationFrame(() => el.classList.add('show'));
         clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => { el.classList.remove('show'); setTimeout(() => { el.hidden = true; }, 300); }, 2600);
+        toastTimer = setTimeout(() => { el.classList.remove('show'); setTimeout(() => { el.hidden = true; }, 300); }, action ? 7000 : 2600);
     }
 
     /* ---------- Calls to the Website's JSON actions ---------- */
@@ -70,6 +87,40 @@
     }
 
     const statusWords = { Playing: 'Playing', Finished: 'Finished', Wishlist: 'Wishlist', Dropped: 'Dropped', Backlog: 'Backlog' };
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
+    /* ---------- Undo: put games back as they were ---------- */
+    const session = {
+        get: key => { try { return sessionStorage.getItem(key); } catch { return null; } },
+        set: (key, value) => { try { sessionStorage.setItem(key, value); return true; } catch { return false; } },
+        drop: key => { try { sessionStorage.removeItem(key); } catch { /* private window */ } },
+    };
+    // What Undo sends: { entries, remove } back to /library/restore (status changes and removals), or
+    // { collection, gameIds, in } to put games back in a collection or take them out again.
+    async function runUndo(undo) {
+        const result = undo.collection
+            ? await post('/library/bulk', { gameIds: undo.gameIds, action: undo.in ? 'AddTo' : 'TakeOut', collectionId: undo.collection })
+            : await post('/library/restore', { entries: undo.entries || [], remove: undo.remove || [] });
+        if (result === null) return;
+        session.set('ludex.toast', JSON.stringify({ text: 'Undone' }));
+        location.reload();
+    }
+    const undoToast = (text, undo) => toast(text, false, { label: 'Undo', run: () => runUndo(undo) });
+    // Shows the toast on the next page (after a reload or going back to the library), Undo and all.
+    function toastNext(text, undo, href) {
+        if (!session.set('ludex.toast', JSON.stringify({ text, undo }))) { toast(text); }
+        if (href) location.href = href; else location.reload();
+    }
+    (() => {
+        const raw = session.get('ludex.toast');
+        if (!raw) return;
+        session.drop('ludex.toast');
+        try {
+            const left = JSON.parse(raw);
+            if (left.undo) undoToast(left.text, left.undo); else toast(left.text);
+        } catch { /* nothing to show */ }
+    })();
+    const hoursText = h => `${Number(h).toLocaleString('en-IE', { maximumFractionDigits: 1 })} h`;
 
     /* ---------- Count-up on the home tiles ---------- */
     function countUp() {
@@ -164,6 +215,7 @@
         const label = $('[data-shown-label]');
         const none = $('[data-none]');
         const num = (c, key) => Number(c.dataset[key] || 0);
+        let afterApply = () => { };
         const keys = {
             played: (a, b) => num(b, 'updated') - num(a, 'updated'),
             name: (a, b) => a.dataset.name.localeCompare(b.dataset.name),
@@ -208,6 +260,7 @@
             history.replaceState(null, '', url);
             const acts = $('[data-col-acts]');
             if (acts) acts.hidden = !col;
+            afterApply();
         };
         // Cards carry their cover's view-transition name, so a filter or a new order animates every card into place.
         const animate = () => (document.startViewTransition && !reduceMotion) ? document.startViewTransition(apply) : apply();
@@ -227,6 +280,200 @@
             if (await post('/collections/delete', { id })) { location.href = '/library'; }
         });
         sort?.addEventListener('change', () => { store.set('ludex.sort', sort.value); animate(); });
+
+        /* Covers or a list with columns (the headers sort), and how big the covers are */
+        const sizeInput = $('[data-card-size]');
+        const sizeBox = $('[data-size-box]');
+        const head = $('[data-lib-head]');
+        const viewButtons = $$('[data-view]');
+        const setSize = value => library.style.setProperty('--card-min', `${value}px`);
+        const savedSize = Number(store.get('ludex.size') || 0);
+        if (sizeInput && savedSize >= Number(sizeInput.min) && savedSize <= Number(sizeInput.max)) sizeInput.value = String(savedSize);
+        if (sizeInput) setSize(sizeInput.value);
+        sizeInput?.addEventListener('input', () => { setSize(sizeInput.value); store.set('ludex.size', sizeInput.value); });
+        const setView = view => {
+            const list = view === 'list';
+            library.classList.toggle('is-list', list);
+            if (head) head.hidden = !list;
+            if (sizeBox) sizeBox.hidden = list;
+            viewButtons.forEach(b => b.setAttribute('aria-pressed', b.dataset.view === view ? 'true' : 'false'));
+        };
+        setView(store.get('ludex.view') === 'list' ? 'list' : 'grid');
+        viewButtons.forEach(b => b.addEventListener('click', () => {
+            store.set('ludex.view', b.dataset.view);
+            const go = () => setView(b.dataset.view);
+            if (document.startViewTransition && !reduceMotion) document.startViewTransition(go); else go();
+        }));
+        const paintHead = () => { if (head) $$('[data-sort-col]', head).forEach(b => b.classList.toggle('on', b.dataset.sortCol === sort?.value)); };
+        head?.addEventListener('click', e => {
+            const b = e.target.closest('[data-sort-col]');
+            if (!b || !sort) return;
+            sort.value = b.dataset.sortCol;
+            store.set('ludex.sort', sort.value);
+            paintHead();
+            animate();
+        });
+        sort?.addEventListener('change', paintHead);
+        paintHead();
+
+        /* Selection: Ctrl/⌘ + click picks games, Shift + click a run of them (or Select, on a phone); then the bar */
+        const bar = $('[data-sel-bar]');
+        const selCount = $('[data-sel-count]', bar || document);
+        const modeButton = $('[data-select-mode]');
+        const selected = new Set();
+        let selectMode = false;
+        let anchor = null;
+        const shown = () => cards.filter(c => !c.classList.contains('is-hidden'));
+        const chosen = () => shown().filter(c => selected.has(c.dataset.game));
+        const paintSel = () => {
+            const n = chosen().length;
+            cards.forEach(c => c.classList.toggle('is-selected', selected.has(c.dataset.game) && !c.classList.contains('is-hidden')));
+            const open = n > 0 || selectMode;
+            if (bar) {
+                bar.hidden = !open;
+                $$('select, [data-sel-remove], [data-sel-takeout]', bar).forEach(el => { el.disabled = n === 0; });
+                const takeOut = $('[data-sel-takeout]', bar);
+                if (takeOut) takeOut.hidden = !collection?.value;
+            }
+            if (selCount) selCount.textContent = n ? `${n} selected` : 'Pick games';
+            library.classList.toggle('is-selecting', open);
+            document.body.classList.toggle('has-sel-bar', open);
+            modeButton?.setAttribute('aria-pressed', selectMode ? 'true' : 'false');
+        };
+        afterApply = paintSel;
+        const clearSel = () => { selected.clear(); selectMode = false; anchor = null; paintSel(); };
+        library.addEventListener('click', e => {
+            const card = e.target.closest('.lib-card');
+            if (!card) return;
+            const multi = e.ctrlKey || e.metaKey || e.shiftKey;
+            if (!multi && !selectMode && selected.size === 0) return;   // a plain click opens the game
+            e.preventDefault();
+            const id = card.dataset.game;
+            if (e.shiftKey && anchor) {
+                const list = shown();
+                const from = list.findIndex(c => c.dataset.game === anchor);
+                const to = list.indexOf(card);
+                if (from >= 0 && to >= 0) list.slice(Math.min(from, to), Math.max(from, to) + 1).forEach(c => selected.add(c.dataset.game));
+            } else {
+                if (selected.has(id)) selected.delete(id); else selected.add(id);
+                anchor = id;
+            }
+            paintSel();
+        });
+        modeButton?.addEventListener('click', () => { if (selectMode || selected.size) clearSel(); else { selectMode = true; paintSel(); } });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && (selected.size || selectMode) && !document.querySelector('dialog[open]')) clearSel();
+        });
+        if (bar) {
+            const ids = () => chosen().map(c => Number(c.dataset.game));
+            const what = list => list.length === 1 ? (cards.find(c => c.dataset.game === String(list[0]))?.dataset.title || '1 game') : `${list.length} games`;
+            const bulk = async body => {
+                if (!body.gameIds.length) return null;
+                bar.classList.add('is-busy');
+                const result = await post('/library/bulk', body);
+                bar.classList.remove('is-busy');
+                if (result && result.done === 0) { toast('Nothing to change'); return null; }
+                return result;
+            };
+            $('[data-sel-status]', bar)?.addEventListener('change', async e => {
+                const status = e.target.value;
+                e.target.value = '';
+                if (!status) return;
+                const gameIds = ids();
+                const result = await bulk({ gameIds, action: 'Status', status });
+                if (result) toastNext(`${what(gameIds)} → ${statusWords[status] || status}`, { entries: result.before, remove: result.added });
+            });
+            $('[data-sel-collection]', bar)?.addEventListener('change', async e => {
+                const value = e.target.value;
+                e.target.value = '';
+                if (!value) return;
+                let collectionId = Number(value);
+                let name = $(`option[value="${value}"]`, e.target)?.textContent || 'the collection';
+                if (value === 'new') {
+                    name = (window.prompt('Name of the new collection') || '').trim();
+                    if (!name) return;
+                    const list = await post('/collections/create', { name });
+                    const made = list && list.find(c => c.name.toLowerCase() === name.toLowerCase());
+                    if (!made) return;
+                    collectionId = made.id;
+                }
+                const gameIds = ids();
+                const result = await bulk({ gameIds, action: 'AddTo', collectionId });
+                if (result) toastNext(`${what(result.changed)} added to ${name}`, { collection: collectionId, gameIds: result.changed, in: false });
+            });
+            $('[data-sel-takeout]', bar)?.addEventListener('click', async () => {
+                const collectionId = Number(collection?.value || 0);
+                if (!collectionId) return;
+                const gameIds = ids();
+                const result = await bulk({ gameIds, action: 'TakeOut', collectionId });
+                if (result) toastNext(`${what(result.changed)} taken out of the collection`, { collection: collectionId, gameIds: result.changed, in: true });
+            });
+            $('[data-sel-remove]', bar)?.addEventListener('click', async () => {
+                const gameIds = ids();
+                if (gameIds.length >= 10 && !window.confirm(`Take ${gameIds.length} games out of your library? You can undo it right after.`)) return;
+                const result = await bulk({ gameIds, action: 'Remove' });
+                if (result) toastNext(`${what(gameIds)} taken out of your library`, { entries: result.before });
+            });
+            $('[data-sel-all]', bar)?.addEventListener('click', () => { shown().forEach(c => selected.add(c.dataset.game)); paintSel(); });
+            $('[data-sel-clear]', bar)?.addEventListener('click', clearSel);
+        }
+
+        /* Hovering a cover a moment shows a card with the game's numbers (mouse only; the list already shows them) */
+        const pop = $('[data-lib-pop]');
+        if (pop && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+            let timer;
+            let current = null;
+            const hide = () => { clearTimeout(timer); current = null; pop.classList.remove('show'); pop.hidden = true; };
+            const show = card => {
+                const d = card.dataset;
+                const hours = Number(d.hours || 0);
+                const recent = Number(d.recent || 0);
+                const ach = Number(d.achievements);
+                const rating = Number(d.rating || 0);
+                const critic = Number(d.critic || 0);
+                const ttb = Number(d.ttb || 0);
+                const when = Number(d.updated || 0) ? new Date(Number(d.updated) * 1000) : null;
+                const sub = [d.dev, d.release !== '0' ? d.release : '', d.copy].filter(Boolean).join(' · ');
+                pop.innerHTML = `<div class="pop-art" style="--tint:${esc(d.tint)}">${d.cover ? `<img src="${esc(d.cover)}" alt="">` : ''}</div>`
+                    + `<div class="pop-body"><b class="pop-name">${esc(d.title)}</b>${sub ? `<small class="pop-sub">${esc(sub)}</small>` : ''}`
+                    + `<dl class="pop-facts"><div><dt>Played</dt><dd>${hours ? hoursText(hours) : '—'}</dd></div>`
+                    + `<div><dt>Last 2 weeks</dt><dd>${recent ? hoursText(recent) : '—'}</dd></div>`
+                    + `<div><dt>Your rating</dt><dd class="gold">${rating || '—'}</dd></div>`
+                    + `<div><dt>Critics</dt><dd>${critic || '—'}</dd></div></dl>`
+                    + (ach >= 0 ? `<div class="pop-ach"><span>Achievements</span><b>${esc(d.achText)}</b><span class="lib-ach"><i style="width:${ach}%"></i></span></div>` : '')
+                    + `<small class="pop-foot">${esc(statusWords[d.status] || d.status)}${when ? ` · last activity ${when.toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}${ttb ? ` · ${hoursText(ttb)} to beat` : ''}</small>`
+                    + (d.friendNames ? `<small class="pop-friends">Friends: ${esc(d.friendNames)}</small>` : '')
+                    + '</div>';
+                pop.hidden = false;
+                const box = ($('.lib-cover', card) || card).getBoundingClientRect();
+                const w = pop.offsetWidth;
+                const h = pop.offsetHeight;
+                let left = box.right + 14;
+                if (left + w > window.innerWidth - 8) left = box.left - w - 14;
+                if (left < 8) left = Math.min(window.innerWidth - w - 8, box.left);
+                const top = Math.max(72, Math.min(box.top, window.innerHeight - h - 12));
+                pop.style.left = `${Math.round(left)}px`;
+                pop.style.top = `${Math.round(top)}px`;
+                requestAnimationFrame(() => pop.classList.add('show'));
+            };
+            library.addEventListener('pointerover', e => {
+                const card = e.target.closest('.lib-card');
+                if (!card || card === current || library.classList.contains('is-list') || library.classList.contains('is-selecting')) return;
+                clearTimeout(timer);
+                pop.classList.remove('show');
+                pop.hidden = true;
+                current = card;
+                timer = setTimeout(() => { if (current === card) show(card); }, 450);
+            });
+            library.addEventListener('pointerout', e => {
+                const card = e.target.closest('.lib-card');
+                if (card && !card.contains(e.relatedTarget)) hide();
+            });
+            library.addEventListener('pointerdown', hide);
+            window.addEventListener('scroll', hide, { passive: true });
+            document.addEventListener('dragstart', hide);
+        }
+
         apply();
     }
 
@@ -349,7 +596,8 @@
         };
         paint();
 
-        const save = async message => {
+        // before: what the game was, for Undo ({ status, rating, inLibrary }); null for a plain save.
+        const save = async (message, before, quiet) => {
             // Rating a game that isn't in the library yet means it was played: it goes in as Finished.
             if (!status) { status = rating ? 'Finished' : 'Playing'; paint(); }
             const hours = form.elements.hours.value.trim();
@@ -361,6 +609,7 @@
                 store: copySelect && copySelect.value && copySelect.value !== 'Physical' && copySelect.value !== 'Digital' ? copySelect.value : null,
                 format: copySelect && (copySelect.value === 'Physical' || copySelect.value === 'Digital') ? copySelect.value : null,
                 notes: form.elements.notes.value.trim() || null,
+                quiet: !!quiet,
             });
             if (!entry) return;
             const added = form.dataset.inLibrary !== 'true';
@@ -382,12 +631,34 @@
             }
             const fav = $('[data-favorite]', form);
             if (fav) fav.hidden = false;
-            toast(added ? 'Added to your library' : message);
+            const text = added ? 'Added to your library' : message;
+            if (!before) { toast(text); return; }
+            toast(text, false, {
+                label: 'Undo',
+                run: async () => {
+                    if (!before.inLibrary) {
+                        if (await post('/library/restore', { remove: [Number(game)] }) !== null) toastNext('Undone');
+                        return;
+                    }
+                    status = before.status;
+                    rating = before.rating;
+                    paint();
+                    save('Undone', null, true);
+                },
+            });
         };
+        const snapshot = () => ({ status, rating, inLibrary: form.dataset.inLibrary === 'true' });
 
-        statusButtons.forEach(b => b.addEventListener('click', () => { status = b.dataset.setStatus; paint(); save(statusWords[status] || 'Saved'); }));
-        rateButtons.forEach(b => b.addEventListener('click', () => { rating = Number(b.dataset.setRating); paint(); save(`Rated ${rating}/10`); }));
-        clearRating?.addEventListener('click', () => { rating = null; paint(); save('Rating cleared'); });
+        statusButtons.forEach(b => b.addEventListener('click', () => {
+            if (b.dataset.setStatus === status && form.dataset.inLibrary === 'true') return;
+            const before = snapshot();
+            status = b.dataset.setStatus; paint(); save(statusWords[status] || 'Saved', before);
+        }));
+        rateButtons.forEach(b => b.addEventListener('click', () => {
+            const before = snapshot();
+            rating = Number(b.dataset.setRating); paint(); save(`Rated ${rating}/10`, before);
+        }));
+        clearRating?.addEventListener('click', () => { const before = snapshot(); rating = null; paint(); save('Rating cleared', before); });
         form.addEventListener('submit', e => { e.preventDefault(); save('Saved'); });
     }
 
@@ -582,7 +853,8 @@
             if (!out) return;
             const collectionId = Number(out.dataset.colOut);
             if (!(await post('/collections/game', { collectionId, gameId, in: false }))) return;
-            location.reload();
+            const name = out.closest('.col-chip')?.firstChild?.textContent?.trim() || 'the collection';
+            toastNext(`Taken out of ${name}`, { collection: collectionId, gameIds: [gameId], in: true });
         });
         $('[data-col-add]', colBox)?.addEventListener('change', async e => {
             const value = e.target.value;
@@ -689,6 +961,60 @@
         });
     }
 
+    /* ---------- Game page: Remove goes back to the library, with Undo there ---------- */
+    $$('form[data-remove-game]').forEach(removeForm => removeForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        const gameId = Number(removeForm.dataset.removeGame);
+        const button = $('button', removeForm);
+        if (button) button.disabled = true;
+        const result = await post('/library/bulk', { gameIds: [gameId], action: 'Remove' });
+        if (button) button.disabled = false;
+        if (!result) return;
+        toastNext(`${removeForm.dataset.name || 'The game'} taken out of your library`, { entries: result.before }, '/library');
+    }));
+
+    /* ---------- Home: shelves scroll sideways, with arrows when they overflow ---------- */
+    $$('[data-shelf]').forEach(shelf => {
+        const row = $('[data-shelf-row]', shelf);
+        const nav = $('[data-shelf-nav]', shelf);
+        if (!row || !nav) return;
+        const [back, on] = $$('[data-shelf-step]', nav);
+        const paint = () => {
+            nav.hidden = row.scrollWidth <= row.clientWidth + 4;
+            back.disabled = row.scrollLeft < 4;
+            on.disabled = row.scrollLeft + row.clientWidth >= row.scrollWidth - 4;
+        };
+        nav.addEventListener('click', e => {
+            const b = e.target.closest('[data-shelf-step]');
+            if (b) row.scrollBy({ left: Number(b.dataset.shelfStep) * row.clientWidth * 0.85, behavior: reduceMotion ? 'auto' : 'smooth' });
+        });
+        row.addEventListener('scroll', paint, { passive: true });
+        window.addEventListener('resize', paint);
+        paint();
+    });
+
+    /* ---------- Settings: the colour theme changes at once ---------- */
+    const accents = $('[data-accents]');
+    if (accents) {
+        const pick = key => $$('[data-accent-pick]', accents).forEach(b => b.setAttribute('aria-checked', b.dataset.accentPick === key ? 'true' : 'false'));
+        accents.addEventListener('click', async e => {
+            const button = e.target.closest('[data-accent-pick]');
+            if (!button) return;
+            const root = document.documentElement;
+            const before = root.dataset.accent;
+            const key = button.dataset.accentPick;
+            if (key === before) return;
+            root.dataset.accent = key;
+            pick(key);
+            const result = await post('/settings/accent', { accent: key });
+            if (!result) { root.dataset.accent = before; pick(before); return; }
+            toast(`${$('span:last-child', button)?.textContent || 'New'} it is`, false, {
+                label: 'Undo',
+                run: async () => { root.dataset.accent = before; pick(before); await post('/settings/accent', { accent: before }); },
+            });
+        });
+    }
+
     /* ---------- Characters left in a text box ---------- */
     $$('[data-count-chars]').forEach(box => {
         const max = Number(box.dataset.countChars);
@@ -714,6 +1040,7 @@
 
     /* ---------- Forms that ask first ---------- */
     document.addEventListener('submit', e => {
+        if (e.defaultPrevented) return;
         const message = e.target.dataset && e.target.dataset.confirm;
         if (message && !confirm(message)) e.preventDefault();
     });

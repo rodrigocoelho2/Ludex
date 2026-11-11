@@ -1,0 +1,18 @@
+@model ShelfHead
+@* A shelf's title, a count, "See all" and the arrows that scroll it (app.js shows them when it overflows). *@
+<div class="shelf-head">
+    <h2>@Model.Title</h2>
+    @if (Model.Note is not null)
+    {
+        <span class="shelf-note">@Model.Note</span>
+    }
+    <span class="shelf-push"></span>
+    @if (Model.SeeAll is not null)
+    {
+        <a class="shelf-all" href="@Model.SeeAll">See all</a>
+    }
+    <span class="shelf-nav" data-shelf-nav hidden>
+        <button type="button" class="icon-btn mini" data-shelf-step="-1" aria-label="Scroll back">@Icons.Get("left")</button>
+        <button type="button" class="icon-btn mini" data-shelf-step="1" aria-label="Scroll on">@Icons.Get("right")</button>
+    </span>
+</div>

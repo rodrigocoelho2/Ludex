@@ -403,7 +403,7 @@
                         }
                     </dl>
                 </section>
-                <form method="post" action="/games/@game.Id/remove" class="remove" data-confirm="Take @game.Name out of your library? Its rating, hours and notes go too.">
+                <form method="post" action="/games/@game.Id/remove" class="remove" data-remove-game="@game.Id" data-name="@game.Name" data-confirm="Take @game.Name out of your library? Its rating, hours and notes go too.">
                     @Html.AntiForgeryToken()
                     <button type="submit" class="link-btn danger">@Icons.Get("trash")Remove from library</button>
                 </form>

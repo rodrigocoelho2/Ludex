@@ -184,6 +184,16 @@ public sealed class ProfileFavoriteRequest
     public int? GameId { get; set; }
 }
 
+/// <summary>Sets the colour theme.</summary>
+public sealed class ProfileAccentRequest
+{
+    /// <summary>Gets or sets the account.</summary>
+    public string? UserId { get; set; }
+
+    /// <summary>Gets or sets the theme's key (null: the default).</summary>
+    public string? Accent { get; set; }
+}
+
 /// <summary>Sets the profile photo, or removes it.</summary>
 public sealed class ProfileAvatarRequest
 {

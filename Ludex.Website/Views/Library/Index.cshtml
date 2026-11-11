@@ -118,8 +118,33 @@
                 <button type="button" class="btn soft small" data-next-open>@Icons.Get("sparkle")What should I play?</button>
                 <span class="in compact lib-find">@Icons.Get("search")<input type="search" placeholder="Filter" aria-label="Filter the library" autocomplete="off" data-text-filter /></span>
             </div>
-            <p class="lib-count muted" data-shown-label>@Fmt.Plural(entries.Count, "game", "games")</p>
+            <div class="lib-sub">
+                <p class="lib-count muted" data-shown-label>@Fmt.Plural(entries.Count, "game", "games")</p>
+                <span class="lib-bar-push"></span>
+                <button type="button" class="link-btn lib-select-btn" data-select-mode aria-pressed="false">@Icons.Get("check")Select</button>
+                <label class="lib-size" data-size-box title="Card size">
+                    <span class="sr-only">Card size</span>
+                    <span class="lib-size-ico small" aria-hidden="true"></span>
+                    <input type="range" min="112" max="296" step="8" value="176" data-card-size />
+                    <span class="lib-size-ico" aria-hidden="true"></span>
+                </label>
+                <span class="seg lib-view" role="group" aria-label="View">
+                    <button type="button" class="seg-btn" data-view="grid" aria-pressed="true" aria-label="Covers" title="Covers">@Icons.Get("grid")</button>
+                    <button type="button" class="seg-btn" data-view="list" aria-pressed="false" aria-label="List" title="List">@Icons.Get("list")</button>
+                </span>
+            </div>
 
+            <div class="lib-head" data-lib-head hidden>
+                <span></span>
+                <button type="button" data-sort-col="name">Name</button>
+                <span>Status</span>
+                <button type="button" data-sort-col="hours">Hours</button>
+                <button type="button" data-sort-col="achievements">Achievements</button>
+                <button type="button" data-sort-col="rating">Rating</button>
+                <button type="button" data-sort-col="critic">Critics</button>
+                <button type="button" data-sort-col="shortest">To beat</button>
+                <button type="button" data-sort-col="played">Last played</button>
+            </div>
             <div class="lib-grid" data-library>
                 @foreach (var entry in entries)
                 {
@@ -127,13 +152,16 @@
                     var copy = Ludex.Library.Platforms.GameCopies.Label(entry.Store, entry.Format);
                     var achievementPercent = Fmt.AchievementPercent(entry.AchievementsUnlocked, entry.AchievementsTotal);
                     var inCollections = string.Join(",", byGame[game.Id]);
-                    <a class="lib-card" href="/games/@game.Id" title="@game.Name" aria-label="@game.Name" draggable="true" data-drag-game="@game.Id"
+                    var achievementText = entry.AchievementsTotal is > 0 ? $"{entry.AchievementsUnlocked ?? 0}/{entry.AchievementsTotal}" : string.Empty;
+                    <a class="lib-card" href="/games/@game.Id" aria-label="@game.Name" draggable="true" data-drag-game="@game.Id"
                        data-collections=",@inCollections," data-achievements="@(achievementPercent ?? -1)" data-critic="@(game.CriticScore ?? 0)"
                        data-ttb="@Fmt.Input(game.TimeToBeatMain ?? 0)" data-recent="@Fmt.Input(entry.RecentHours ?? 0)" data-cover="@(game.CoverImageId is { } dc ? Igdb.Url(dc, Igdb.CoverBig) : string.Empty)" data-tint="@game.Tint"
                        data-name="@game.Name.ToLowerInvariant()" data-status="@entry.Status" data-family="@entry.PlatformFamily"
                        data-platform="@(entry.Platform ?? string.Empty)" data-format="@(entry.Format?.ToString() ?? string.Empty)" data-store="@(entry.Store ?? string.Empty)"
                        data-friends="@game.FriendNames.Count" data-rating="@(entry.Rating ?? 0)" data-hours="@Fmt.Input(entry.Hours ?? 0)"
-                       data-release="@(game.Year ?? 0)" data-added="@entry.AddedAt.ToUnixTimeSeconds()" data-updated="@entry.UpdatedAt.ToUnixTimeSeconds()">
+                       data-release="@(game.Year ?? 0)" data-added="@entry.AddedAt.ToUnixTimeSeconds()" data-updated="@entry.UpdatedAt.ToUnixTimeSeconds()"
+                       data-game="@game.Id" data-title="@game.Name" data-ach-text="@achievementText" data-friend-names="@(string.Join(", ", game.FriendNames))"
+                       data-dev="@(game.Developer ?? string.Empty)" data-copy="@(copy ?? string.Empty)">
                         <span class="lib-cover">
                             <partial name="_Cover" model="new CoverView(game, Model.Transition(game.Id))" />
                             @if (entry.Status != GameStatus.Finished)
@@ -164,10 +192,60 @@
                                 <span class="lib-copy">@(string.Join(" · ", new[] { entry.Platform, copy }.Where(static s => s is not null).Distinct()))</span>
                             }
                         </span>
+                        <span class="lib-row" aria-hidden="true">
+                            <span class="c-name"><b>@game.Name</b><small>@(string.Join(" · ", new[] { entry.Platform, copy }.Where(static s => s is not null).Distinct()))</small></span>
+                            <span class="c-status"><i class="dot-@Fmt.StatusCss(entry.Status)"></i>@Fmt.Status(entry.Status)</span>
+                            <span class="c-num">@(entry.Hours is { } lh && lh > 0 ? Fmt.Hours(lh) : "—")</span>
+                            <span class="c-ach">
+                                @if (achievementPercent is { } lp)
+                                {
+                                    <span>@achievementText</span><span class="lib-ach"><i style="width:@lp%"></i></span>
+                                }
+                                else
+                                {
+                                    <span class="faint">—</span>
+                                }
+                            </span>
+                            <span class="c-num gold">@Fmt.Rating(entry.Rating)</span>
+                            <span class="c-num">@(game.CriticScore?.ToString() ?? "—")</span>
+                            <span class="c-num">@(game.TimeToBeatMain is { } lt ? Fmt.Hours(lt) : "—")</span>
+                            <span class="c-when">@Fmt.Ago(entry.UpdatedAt)</span>
+                        </span>
                     </a>
                 }
             </div>
             <p class="muted small-empty" data-none hidden>No game matches these filters.</p>
+
+            <div class="sel-bar" data-sel-bar hidden role="region" aria-label="Selected games">
+                <b class="sel-count" data-sel-count>0 selected</b>
+                <label class="sel-field">
+                    <span class="sr-only">Set status</span>
+                    <select data-sel-status>
+                        <option value="">Set status…</option>
+                        @foreach (var (status, label, _) in statuses.Where(static s => s.Status is not null))
+                        {
+                            <option value="@status">@label</option>
+                        }
+                    </select>
+                </label>
+                <label class="sel-field">
+                    <span class="sr-only">Add to a collection</span>
+                    <select data-sel-collection>
+                        <option value="">Add to collection…</option>
+                        @foreach (var c in collections)
+                        {
+                            <option value="@c.Id">@c.Name</option>
+                        }
+                        <option value="new">New collection…</option>
+                    </select>
+                </label>
+                <button type="button" class="btn ghost small" data-sel-takeout hidden>Take out of this collection</button>
+                <button type="button" class="btn ghost small danger" data-sel-remove>@Icons.Get("x")Remove</button>
+                <span class="lib-bar-push"></span>
+                <button type="button" class="link-btn" data-sel-all>Select all shown</button>
+                <button type="button" class="icon-btn" data-sel-clear aria-label="Clear the selection" title="Clear (Esc)">@Icons.Get("x")</button>
+            </div>
+            <div class="lib-pop" data-lib-pop hidden aria-hidden="true"></div>
         }
     </section>
 </div>

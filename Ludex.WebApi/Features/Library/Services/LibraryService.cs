@@ -95,7 +95,7 @@ internal sealed class LibraryService(
         var inCollections = CollectionService.ByGame(collections);
         return ServiceApiResponse<LibraryDTO>.Success(new LibraryDTO
         {
-            Entries = [.. rows.Select(row => LibraryRules.Entry(row, names.GetValueOrDefault(row.GameID), inCollections.GetValueOrDefault(row.GameID)))],
+            Entries = [.. rows.Select(row => LibraryRules.Entry(row, names.GetValueOrDefault(row.GameID), inCollections.GetValueOrDefault(row.GameID), withNotes: true))],
             Counts = LibraryRules.Counts(rows),
             Collections = collections,
         });
@@ -154,7 +154,7 @@ internal sealed class LibraryService(
         }
 
         var hours = item.Hours is { } value ? Math.Round(value, 1, MidpointRounding.AwayFromZero) : (decimal?)null;
-        return await StoreAsync(user, item.GameId, item.Status, item.Rating, hours, platform, notes, store, format, keepDetails: false);
+        return await StoreAsync(user, item.GameId, item.Status, item.Rating, hours, platform, notes, store, format, keepDetails: false, quiet: item.Quiet);
     }
 
     /// <inheritdoc />
@@ -171,7 +171,7 @@ internal sealed class LibraryService(
                 .AddError("Status", (await globalizationHelper.ValidationErrorAsync("Status", nameof(TranslationKeys.RequiredField))).Message);
         }
 
-        return await StoreAsync(user, item.GameId, item.Status, null, null, null, null, null, null, keepDetails: true);
+        return await StoreAsync(user, item.GameId, item.Status, null, null, null, null, null, null, keepDetails: true, quiet: item.Quiet);
     }
 
     /// <inheritdoc />
@@ -247,7 +247,7 @@ internal sealed class LibraryService(
     }
 
     private async Task<ServiceApiResponse<LibraryEntryDTO>> StoreAsync(
-        Guid user, int gameId, GameStatus status, int? rating, decimal? hours, string? platform, string? notes, string? store, GameFormat? format, bool keepDetails)
+        Guid user, int gameId, GameStatus status, int? rating, decimal? hours, string? platform, string? notes, string? store, GameFormat? format, bool keepDetails, bool quiet = false)
     {
         GameRow? game;
         try
@@ -278,7 +278,8 @@ internal sealed class LibraryService(
         }
 
         await libraryRepository.SaveAsync(user, gameId, (byte)status, (byte?)rating, hours, platform, notes, store, (byte?)format);
-        foreach (var (kind, lineRating) in LibraryRules.Activities(GameMapper.Status(before?.Status), before?.Rating, status, rating))
+        var lines = LibraryRules.Activities(GameMapper.Status(before?.Status), before?.Rating, status, rating);
+        foreach (var (kind, lineRating) in quiet ? lines.Take(0) : lines)
         {
             await libraryRepository.AddActivityAsync(user, gameId, (byte)kind, (byte?)lineRating);
         }

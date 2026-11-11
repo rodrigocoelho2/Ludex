@@ -78,9 +78,62 @@ public class AppPageModel
 /// <summary>The home page.</summary>
 public sealed class HomePageModel : AppPageModel
 {
+    /// <summary>How many games a shelf holds.</summary>
+    public const int ShelfSize = 18;
+
     /// <summary>Gets or sets the data.</summary>
     public HomeDTO Home { get; set; } = new();
+
+    /// <summary>Gets or sets the whole library (the sidebar and the shelves).</summary>
+    public LibraryDTO Library { get; set; } = new();
+
+    private int? HeroId => Home.Hero?.Game.Id;
+
+    /// <summary>Gets the games touched last (played, synced from Steam or changed), the wishlist aside.</summary>
+    public List<LibraryEntryDTO> RecentGames => [.. Library.Entries
+        .Where(e => e.Status != GameStatus.Wishlist && e.Game.Id != HeroId)
+        .OrderByDescending(static e => e.UpdatedAt)
+        .Take(ShelfSize)];
+
+    /// <summary>Gets the games being played, latest first.</summary>
+    public List<LibraryEntryDTO> ContinuePlaying => [.. Library.Entries
+        .Where(e => e.Status == GameStatus.Playing && e.Game.Id != HeroId)
+        .OrderByDescending(static e => e.RecentHours ?? 0)
+        .ThenByDescending(static e => e.UpdatedAt)
+        .Take(ShelfSize)];
+
+    /// <summary>Gets the backlog, best reviewed first, then shortest.</summary>
+    public List<LibraryEntryDTO> PlayNext => [.. Library.Entries
+        .Where(static e => e.Status == GameStatus.Backlog)
+        .OrderByDescending(static e => e.Game.CriticScore ?? -1)
+        .ThenBy(static e => e.Game.TimeToBeatMain ?? decimal.MaxValue)
+        .ThenBy(static e => e.Game.Name, StringComparer.OrdinalIgnoreCase)
+        .Take(ShelfSize)];
+
+    /// <summary>Gets the wishlisted games on sale or under their price alert, biggest cut first.</summary>
+    public List<LibraryEntryDTO> Deals => [.. Library.Entries
+        .Where(static e => e.Status == GameStatus.Wishlist && IsDeal(e.Price))
+        .OrderByDescending(static e => e.Price!.Cut ?? 0)
+        .ThenBy(static e => e.Price!.Amount)
+        .Take(ShelfSize)];
+
+    /// <summary>Gets the number of backlog games.</summary>
+    public int BacklogCount => Library.Counts.Backlog;
+
+    /// <summary>Whether a price is worth a look: on sale, or at or under the alert.</summary>
+    /// <param name="price">The price.</param>
+    /// <returns>True for a deal.</returns>
+    public static bool IsDeal(PriceDTO? price) =>
+        price?.Amount is { } amount && (price.Cut is > 0 || (price.Target is { } target && amount <= target));
 }
+
+/// <summary>A game on one of the home page's shelves.</summary>
+/// <param name="Entry">The game in the library.</param>
+/// <param name="Transition">Its cover's view-transition name.</param>
+/// <param name="Sub">The line under the name.</param>
+/// <param name="Chip">A label on the cover (null: none).</param>
+/// <param name="ChipCss">The label's extra class.</param>
+public sealed record ShelfCard(LibraryEntryDTO Entry, string Transition, string Sub, string? Chip = null, string? ChipCss = null);
 
 /// <summary>The library.</summary>
 public sealed class LibraryPageModel : AppPageModel
@@ -116,7 +169,8 @@ public sealed class LibraryPageModel : AppPageModel
 /// <param name="Entries">The library.</param>
 /// <param name="Current">The game open (null: the library page).</param>
 /// <param name="Collections">The account's collections.</param>
-public sealed record LibrarySidebarView(IReadOnlyList<LibraryEntryDTO> Entries, int? Current, IReadOnlyList<CollectionDTO> Collections);
+/// <param name="AtHome">On the home page (nothing highlighted).</param>
+public sealed record LibrarySidebarView(IReadOnlyList<LibraryEntryDTO> Entries, int? Current, IReadOnlyList<CollectionDTO> Collections, bool AtHome = false);
 
 /// <summary>Discover: the search and the friends' favourites.</summary>
 public sealed class DiscoverPageModel : AppPageModel
@@ -261,3 +315,9 @@ public sealed class NotificationsPageModel : AppPageModel
     /// <summary>Gets or sets the notifications.</summary>
     public NotificationsDTO Notifications { get; set; } = new();
 }
+
+/// <summary>The head of a home shelf.</summary>
+/// <param name="Title">The title.</param>
+/// <param name="Note">A short note beside it (null: none).</param>
+/// <param name="SeeAll">Where "See all" goes (null: no link).</param>
+public sealed record ShelfHead(string Title, string? Note = null, string? SeeAll = null);

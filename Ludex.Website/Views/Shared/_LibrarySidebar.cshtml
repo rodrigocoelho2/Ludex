@@ -6,7 +6,7 @@
     var byId = Model.Entries.ToDictionary(static e => e.Game.Id);
 }
 <aside class="lib-side" data-lib-side aria-label="Your library">
-    <a class="lib-side-home" href="/library" aria-current="@(Model.Current is null ? "page" : null)">
+    <a class="lib-side-home" href="/library" aria-current="@(Model.Current is null && !Model.AtHome ? "page" : null)">
         @Icons.Get("library")<span>Library</span><b>@Model.Entries.Count</b>
     </a>
     <label class="lib-side-search">

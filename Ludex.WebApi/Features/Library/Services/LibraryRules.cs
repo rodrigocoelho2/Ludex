@@ -95,8 +95,9 @@ internal static class LibraryRules
     /// <param name="row">The entry.</param>
     /// <param name="friendNames">The friends who have it.</param>
     /// <param name="collectionIds">The collections it is in.</param>
+    /// <param name="withNotes">Include the notes (the owner's own list only).</param>
     /// <returns>The entry.</returns>
-    public static LibraryEntryDTO Entry(LibraryRow row, List<string>? friendNames = null, List<int>? collectionIds = null)
+    public static LibraryEntryDTO Entry(LibraryRow row, List<string>? friendNames = null, List<int>? collectionIds = null, bool withNotes = false)
     {
         var status = GameMapper.Status(row.Status) ?? GameStatus.Playing;
         return new LibraryEntryDTO
@@ -109,6 +110,7 @@ internal static class LibraryRules
             PlatformFamily = PlatformNames.Family(row.Platform ?? GameRowFirstPlatform(row)),
             Store = row.Store,
             Format = row.Format is 1 or 2 ? (GameFormat)row.Format.Value : null,
+            Notes = withNotes ? row.Notes : null,
             AddedAt = GameMapper.Utc(row.AddedAt),
             UpdatedAt = GameMapper.Utc(row.UpdatedAt),
             FinishedAt = row.FinishedAt is { } finished ? GameMapper.Utc(finished) : null,

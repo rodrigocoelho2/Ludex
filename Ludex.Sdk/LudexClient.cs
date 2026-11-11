@@ -141,6 +141,11 @@ public sealed class LudexClient(HttpClient httpClient)
     /// <returns>The favourite now.</returns>
     public Task<ProfileFavoriteRequest> ProfileFavoriteAsync(ProfileFavoriteRequest item) => PostAsync<ProfileFavoriteRequest>("profile/favorite", item);
 
+    /// <summary>Sets the colour theme.</summary>
+    /// <param name="item">The account and the theme.</param>
+    /// <returns>The theme now.</returns>
+    public Task<ProfileAccentRequest> ProfileAccentAsync(ProfileAccentRequest item) => PostAsync<ProfileAccentRequest>("profile/accent", item);
+
     /// <summary>Sets the photo, or removes it (no data).</summary>
     /// <param name="item">The account and the image.</param>
     /// <returns>The new version.</returns>

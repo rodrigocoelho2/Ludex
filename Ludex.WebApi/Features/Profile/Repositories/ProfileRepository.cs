@@ -27,6 +27,12 @@ internal interface IProfileRepository
     /// <returns>A task.</returns>
     Task SetFavoriteAsync(Guid userId, int? gameId);
 
+    /// <summary>Sets or clears the colour theme.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="accent">The theme's key (null: the default).</param>
+    /// <returns>A task.</returns>
+    Task SetAccentAsync(Guid userId, string? accent);
+
     /// <summary>Saves the photo, or removes it.</summary>
     /// <param name="userId">The account.</param>
     /// <param name="data">The image (null: remove).</param>
@@ -87,6 +93,10 @@ internal sealed class ProfileRepository(ISqlConnectionFactory connectionFactory)
     /// <inheritdoc />
     public Task SetFavoriteAsync(Guid userId, int? gameId) =>
         ExecuteAsync("[dbo].[ProfileSetFavorite]", new { UserUniqueID = userId, FavoriteGameID = gameId });
+
+    /// <inheritdoc />
+    public Task SetAccentAsync(Guid userId, string? accent) =>
+        ExecuteAsync("[dbo].[ProfileSetAccent]", new { UserUniqueID = userId, Accent = accent });
 
     /// <inheritdoc />
     public Task<int?> SaveAvatarAsync(Guid userId, byte[]? data, string? contentType) =>

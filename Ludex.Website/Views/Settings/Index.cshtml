@@ -3,6 +3,7 @@
     Layout = "_App";
     ViewData["Title"] = "Settings";
     var igdb = Model.Health?.Source == CatalogSource.Igdb;
+    var accent = Ludex.Website.Security.LudexAuthentication.Accent(User);
 }
 
 <div class="settings">
@@ -20,6 +21,20 @@
                 @Html.AntiForgeryToken()
                 <button class="btn ghost small" type="submit">@Icons.Get("logout")Sign out</button>
             </form>
+        </div>
+    </section>
+
+    <section class="panel rise d1">
+        <h2>Appearance</h2>
+        <p class="muted">The colour of buttons, bars and highlights. It follows your account to every device.</p>
+        <div class="swatches" role="radiogroup" aria-label="Colour theme" data-accents>
+            @foreach (var theme in Ludex.Library.Themes.Accents.All)
+            {
+                var on = theme.Key == accent;
+                <button type="button" class="swatch" role="radio" aria-checked="@(on ? "true" : "false")" data-accent-pick="@theme.Key" style="--sw: @theme.Color">
+                    <span class="swatch-dot" aria-hidden="true"></span><span>@theme.Name</span>
+                </button>
+            }
         </div>
     </section>
 

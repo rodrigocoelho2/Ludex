@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Security.Claims;
+using Ludex.Library.Themes;
 using Ludex.Sdk;
 using Ludex.Sdk.Models;
 using Microsoft.AspNetCore.Authentication;
@@ -28,6 +29,9 @@ internal static class LudexAuthentication
 
     /// <summary>The claim holding the version of the account's profile photo (absent: no photo).</summary>
     public const string AvatarClaim = "ludex:avatar";
+
+    /// <summary>The claim with the colour theme.</summary>
+    public const string AccentClaim = "ludex:accent";
 
     private const string CheckedAtKey = "ludex:checked";
     private static readonly TimeSpan CheckEvery = TimeSpan.FromMinutes(2);
@@ -108,6 +112,7 @@ internal static class LudexAuthentication
             claims.Add(new Claim(AvatarClaim, version.ToString(CultureInfo.InvariantCulture)));
         }
 
+        claims.Add(new Claim(AccentClaim, Accents.Normalize(user.Accent)));
         return new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
     }
 
@@ -124,6 +129,11 @@ internal static class LudexAuthentication
         properties.Items[CheckedAtKey] = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
         await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, Principal(user), properties);
     }
+
+    /// <summary>The colour theme of the signed-in account.</summary>
+    /// <param name="user">The principal.</param>
+    /// <returns>A theme's key (the default when signed out).</returns>
+    public static string Accent(ClaimsPrincipal user) => Accents.Normalize(user.FindFirstValue(AccentClaim));
 
     /// <summary>The version of the signed-in account's photo.</summary>
     /// <param name="user">The principal.</param>

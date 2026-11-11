@@ -31,6 +31,9 @@ public sealed class LibraryEntryDTO
     /// <summary>Gets or sets the kind of copy: physical or digital.</summary>
     public GameFormat? Format { get; set; }
 
+    /// <summary>Gets or sets the owner's notes (only in the owner's own library list, never on profiles).</summary>
+    public string? Notes { get; set; }
+
     /// <summary>Gets or sets when it was added.</summary>
     public DateTimeOffset AddedAt { get; set; }
 
@@ -176,6 +179,9 @@ public sealed class LibrarySaveRequest
 
     /// <summary>Gets or sets the notes.</summary>
     public string? Notes { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether to leave the change out of the friends' feed (undo).</summary>
+    public bool Quiet { get; set; }
 }
 
 /// <summary>Sets only the status of a game, adding it when it isn't in the library (the search page's buttons).</summary>
@@ -189,6 +195,9 @@ public sealed class LibraryStatusRequest
 
     /// <summary>Gets or sets the status.</summary>
     public GameStatus Status { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether to leave the change out of the friends' feed (bulk changes, undo).</summary>
+    public bool Quiet { get; set; }
 }
 
 /// <summary>The best current PC price of a game (IsThereAnyDeal) and the alert set on it.</summary>

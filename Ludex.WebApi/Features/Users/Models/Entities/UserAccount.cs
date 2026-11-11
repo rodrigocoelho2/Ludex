@@ -34,4 +34,7 @@ public sealed class UserAccount
 
     /// <summary>Gets or sets the last time the account used the app (UTC; dbo.Profile).</summary>
     public DateTime? LastSeenAt { get; set; }
+
+    /// <summary>Gets or sets the colour theme (null: the default; dbo.Profile).</summary>
+    public string? Accent { get; set; }
 }

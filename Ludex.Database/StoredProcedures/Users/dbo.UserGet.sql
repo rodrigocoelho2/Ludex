@@ -18,7 +18,8 @@ BEGIN
            u.[CreatedAt],
            u.[LastLoginAt],
            p.[AvatarVersion],
-           p.[LastSeenAt]
+           p.[LastSeenAt],
+           p.[Accent]
     FROM [dbo].[User] u
     LEFT JOIN [dbo].[Profile] p ON p.[UserID] = u.[UserID]
     WHERE u.[UserUniqueID] = @UserUniqueID;

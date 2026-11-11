@@ -1,5 +1,6 @@
 using Ludex.Library.Enums;
 using Ludex.Library.Services;
+using Ludex.Library.Themes;
 using Ludex.Library.Validation;
 using Ludex.WebApi.Extensions.Globalization;
 using Ludex.WebApi.Features.Friends.Repositories;
@@ -34,6 +35,11 @@ internal interface IProfileService
     /// <param name="item">The account and the game.</param>
     /// <returns>The favourite now (null: none chosen).</returns>
     Task<ServiceApiResponse<ProfileFavoriteRequest>> SetFavoriteAsync(ProfileFavoriteRequest item);
+
+    /// <summary>Sets the colour theme (null or the default: back to the default).</summary>
+    /// <param name="item">The account and the theme.</param>
+    /// <returns>The theme now.</returns>
+    Task<ServiceApiResponse<ProfileAccentRequest>> SetAccentAsync(ProfileAccentRequest item);
 
     /// <summary>Sets the photo, or removes it.</summary>
     /// <param name="item">The account and the image.</param>
@@ -147,6 +153,26 @@ internal sealed class ProfileService(
 
         await profileRepository.SetFavoriteAsync(user, item.GameId);
         return ServiceApiResponse<ProfileFavoriteRequest>.Success(new ProfileFavoriteRequest { UserId = item.UserId, GameId = item.GameId });
+    }
+
+    /// <inheritdoc />
+    public async Task<ServiceApiResponse<ProfileAccentRequest>> SetAccentAsync(ProfileAccentRequest item)
+    {
+        if (!Guid.TryParse(item.UserId, out var user))
+        {
+            return ServiceApiResponse<ProfileAccentRequest>.NotFound(
+                await globalizationHelper.TranslateAsync(nameof(TranslationKeys.NoRecordsFound), item.UserId ?? string.Empty));
+        }
+
+        var accent = string.IsNullOrWhiteSpace(item.Accent) ? Accents.Default : item.Accent.Trim();
+        if (!Accents.IsKnown(accent))
+        {
+            var error = await globalizationHelper.ValidationErrorAsync("Accent", nameof(TranslationKeys.AccentUnknown));
+            return ServiceApiResponse<ProfileAccentRequest>.ValidationProblems(error.Message).AddError("Accent", error.Message);
+        }
+
+        await profileRepository.SetAccentAsync(user, accent == Accents.Default ? null : accent);
+        return ServiceApiResponse<ProfileAccentRequest>.Success(new ProfileAccentRequest { UserId = item.UserId, Accent = accent });
     }
 
     /// <inheritdoc />

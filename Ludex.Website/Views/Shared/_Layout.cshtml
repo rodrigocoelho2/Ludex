@@ -2,9 +2,10 @@
 @{
     var antiforgeryToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
     var title = ViewData["Title"] as string;
+    var accent = Ludex.Website.Security.LudexAuthentication.Accent(Context.User);
 }
 <!doctype html>
-<html lang="en">
+<html lang="en" data-accent="@accent">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />

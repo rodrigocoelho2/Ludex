@@ -25,6 +25,9 @@ public sealed class UserDTO
 
     /// <summary>Gets or sets the version of the profile photo (null: no photo; the URL changes with it).</summary>
     public int? AvatarVersion { get; set; }
+
+    /// <summary>Gets or sets the colour theme's key (always one of the themes).</summary>
+    public string Accent { get; set; } = string.Empty;
 }
 
 /// <summary>Whether any account exists (the first visit creates the first one).</summary>

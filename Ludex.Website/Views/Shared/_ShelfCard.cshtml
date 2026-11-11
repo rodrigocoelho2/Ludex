@@ -1,0 +1,26 @@
+@model ShelfCard
+@* One game on a home shelf: the cover (with a label), the achievements bar, the name and a line about it. *@
+@{
+    var entry = Model.Entry;
+    var game = entry.Game;
+    var achievements = Fmt.AchievementPercent(entry.AchievementsUnlocked, entry.AchievementsTotal);
+}
+<a class="shelf-card" href="/games/@game.Id" aria-label="@game.Name" draggable="true" data-drag-game="@game.Id">
+    <span class="shelf-cover">
+        <partial name="_Cover" model="new CoverView(game, Model.Transition)" />
+        @if (Model.Chip is not null)
+        {
+            <span class="shelf-chip @Model.ChipCss">@Model.Chip</span>
+        }
+    </span>
+    @if (achievements is { } percent)
+    {
+        <span class="lib-ach" title="@entry.AchievementsUnlocked of @entry.AchievementsTotal achievements"><i style="width:@percent%"></i></span>
+    }
+    else
+    {
+        <span class="lib-ach is-empty" aria-hidden="true"></span>
+    }
+    <span class="shelf-name">@game.Name</span>
+    <span class="shelf-sub">@Model.Sub</span>
+</a>

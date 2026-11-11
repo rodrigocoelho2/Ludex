@@ -70,4 +70,7 @@ public enum TranslationKeys
 
     /// <summary>A price target that isn't a price.</summary>
     PriceTargetInvalid,
+
+    /// <summary>A colour theme that isn't one of the themes.</summary>
+    AccentUnknown,
 }

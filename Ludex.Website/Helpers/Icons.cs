@@ -18,6 +18,8 @@ public static class Icons
         ["plus"] = "<path d=\"M12 5v14M5 12h14\"/>",
         ["check"] = "<path d=\"M5 12.5l4.5 4.5L19 7.5\"/>",
         ["x"] = "<path d=\"M6 6l12 12M18 6L6 18\"/>",
+        ["grid"] = "<rect x=\"4\" y=\"4\" width=\"6.5\" height=\"6.5\" rx=\"1\"/><rect x=\"13.5\" y=\"4\" width=\"6.5\" height=\"6.5\" rx=\"1\"/><rect x=\"4\" y=\"13.5\" width=\"6.5\" height=\"6.5\" rx=\"1\"/><rect x=\"13.5\" y=\"13.5\" width=\"6.5\" height=\"6.5\" rx=\"1\"/>",
+        ["list"] = "<path d=\"M9 6.5h11M9 12h11M9 17.5h11\"/><circle cx=\"5\" cy=\"6.5\" r=\"1\"/><circle cx=\"5\" cy=\"12\" r=\"1\"/><circle cx=\"5\" cy=\"17.5\" r=\"1\"/>",
         ["left"] = "<path d=\"M15 5l-7 7 7 7\"/>",
         ["right"] = "<path d=\"M9 5l7 7-7 7\"/>",
         ["arrow"] = "<path d=\"M5 12h14M13 6l6 6-6 6\"/>",

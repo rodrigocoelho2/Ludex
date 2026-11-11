@@ -59,6 +59,7 @@ internal sealed class GlobalizationHelper : IGlobalizationHelper
         [nameof(TranslationKeys.FormatNotForPlatform)] = "isn't possible on {0}.",
         [nameof(TranslationKeys.CollectionNameTaken)] = "You already have a collection called '{0}'.",
         [nameof(TranslationKeys.PriceTargetInvalid)] = "must be a price between 0 and 1,000.",
+        [nameof(TranslationKeys.AccentUnknown)] = "isn't one of the colour themes.",
 
         ["UserName"] = "User name",
         ["Password"] = "Password",

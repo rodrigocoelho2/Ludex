@@ -24,7 +24,13 @@ public sealed class HomeController(LudexClient apiClient) : WebsiteBaseControlle
             return LocalRedirect("/sign-in");
         }
 
-        return await ScreenAsync("Index", Shell(new HomePageModel(), AppSection.Home), async page => page.Home = await Api.LibraryHomeAsync(UserId));
+        return await ScreenAsync("Index", Shell(new HomePageModel(), AppSection.Home), async page =>
+        {
+            var home = Api.LibraryHomeAsync(UserId);
+            var library = Api.LibraryListAsync(UserId);
+            page.Home = await home;
+            page.Library = await library;
+        });
     }
 }
 
@@ -183,6 +189,7 @@ public sealed class GameController(LudexClient apiClient) : WebsiteBaseControlle
         Store = form.Store,
         Format = form.Format,
         Notes = form.Notes,
+        Quiet = form.Quiet,
     })));
 
     /// <summary>Sets only the status (the search page's and the cards' buttons).</summary>
@@ -234,6 +241,9 @@ public sealed class GameSaveForm
 
     /// <summary>Gets or sets the notes.</summary>
     public string? Notes { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether to leave the change out of the friends' feed (Undo).</summary>
+    public bool Quiet { get; set; }
 }
 
 /// <summary>A price target from the game page.</summary>
@@ -322,6 +332,26 @@ public sealed class SettingsController(LudexClient apiClient) : WebsiteBaseContr
         });
     }
 
+    /// <summary>Changes the colour theme (the page reloads with it).</summary>
+    /// <param name="form">The theme.</param>
+    /// <returns>The theme now, or the errors.</returns>
+    [HttpPost("/settings/accent")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Accent([FromBody] AccentForm form)
+    {
+        var result = await CallAsync(() => Api.ProfileAccentAsync(new ProfileAccentRequest { UserId = UserId, Accent = form.Accent }));
+        try
+        {
+            await Security.LudexAuthentication.RefreshAsync(HttpContext, await Api.UserGetAsync(UserId));
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
+        {
+            // Saved; the page catches up at the next check of the session.
+        }
+
+        return Json(result);
+    }
+
     /// <summary>Changes the password (the other devices are signed out).</summary>
     /// <param name="currentPassword">The current password.</param>
     /// <param name="newPassword">The new one.</param>
@@ -357,4 +387,11 @@ public sealed class SettingsController(LudexClient apiClient) : WebsiteBaseContr
         id == UserId
             ? Task.FromResult<IActionResult>(LocalRedirect("/settings"))
             : FormAsync(() => Api.UserDeleteAsync(id ?? string.Empty), "Account deleted.", "/settings");
+}
+
+/// <summary>The colour theme from the settings' swatches.</summary>
+public sealed class AccentForm
+{
+    /// <summary>Gets or sets the theme's key.</summary>
+    public string? Accent { get; set; }
 }
