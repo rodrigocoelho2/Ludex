@@ -1,0 +1,68 @@
+@model ProfileEditPageModel
+@{
+    Layout = "_App";
+    ViewData["Title"] = "Edit profile";
+    var p = Model.Profile;
+    var chosen = p.FavoriteChosen ? p.Favorite?.Game.Id : null;
+}
+
+<div class="edit-profile">
+    <a class="back rise" href="/profile">@Icons.Get("left")Your profile</a>
+    <h1 class="rise">Edit profile</h1>
+
+    <section class="panel glass rise d1">
+        <h2>Photo</h2>
+        <div class="photo-row" data-photo>
+            <span class="photo-preview" data-photo-preview>@Avatars.Get(p.Id, p.UserName, p.AvatarVersion, "huge")</span>
+            <div class="photo-acts">
+                <p class="muted">A square photo works best. It's shrunk to 256 px on this device before it's sent.</p>
+                <div class="actions">
+                    <label class="btn small">
+                        @Icons.Get("camera")<span data-photo-label>@(p.AvatarVersion is null ? "Upload photo" : "Change photo")</span>
+                        <input class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" data-photo-input />
+                    </label>
+                    @if (p.AvatarVersion is not null)
+                    {
+                        <form method="post" action="/profile/photo/remove" data-confirm="Remove your photo? Your initials come back.">
+                            @Html.AntiForgeryToken()
+                            <button class="btn small ghost" type="submit">@Icons.Get("trash")Remove</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <form class="panel glass rise d2" method="post" action="/profile/edit" autocomplete="off">
+        @Html.AntiForgeryToken()
+        <h2>About you</h2>
+
+        <label class="field">
+            <span class="label">Bio</span>
+            <textarea name="bio" rows="3" maxlength="300" placeholder="What do you play? What are you hunting for?" data-count-chars="300">@p.Bio</textarea>
+            <span class="hint" data-chars-left>@(300 - (p.Bio?.Length ?? 0)) characters left</span>
+        </label>
+
+        <label class="field">
+            <span class="label">Location</span>
+            <span class="in">@Icons.Get("pin")<input name="location" type="text" maxlength="80" value="@p.Location" placeholder="Lisbon, Portugal" /></span>
+        </label>
+
+        <label class="field">
+            <span class="label">Favourite game</span>
+            <select name="favoriteGameId">
+                <option value="">Best rated (picked for you)</option>
+                @foreach (var entry in p.FavoriteChoices)
+                {
+                    <option value="@entry.Game.Id" selected="@(chosen == entry.Game.Id ? "selected" : null)">@entry.Game.Name@(entry.Rating is { } r ? $" · {r}/10" : string.Empty)</option>
+                }
+            </select>
+            <span class="hint">Shown at the top of your profile. You can also pick it from a game's page.</span>
+        </label>
+
+        <div class="actions">
+            <button class="btn" type="submit">@Icons.Get("check")Save</button>
+            <a class="btn ghost" href="/profile">Cancel</a>
+        </div>
+    </form>
+</div>

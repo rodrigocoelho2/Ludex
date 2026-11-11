@@ -10,12 +10,13 @@
 
     <section class="panel rise">
         <div class="me-card">
-            <span class="avatar big" style="--av:@Fmt.AvatarColour(Model.UserName)" aria-hidden="true">@Model.Initials</span>
+            @Avatars.Get(Model.MyId, Model.UserName, Model.MyAvatarVersion, "big")
             <div>
                 <b>@Model.UserName</b>
                 <small class="muted">@(Model.IsAdmin ? "Admin" : "Member") · friends find you by this name</small>
             </div>
-            <form method="post" action="/sign-out" class="push">
+            <a class="btn ghost small push" href="/profile/edit">@Icons.Get("edit")Edit profile</a>
+            <form method="post" action="/sign-out">
                 @Html.AntiForgeryToken()
                 <button class="btn ghost small" type="submit">@Icons.Get("logout")Sign out</button>
             </form>
@@ -56,7 +57,7 @@
                 @foreach (var user in Model.Users)
                 {
                     <li class="person">
-                        <span class="avatar" style="--av:@Fmt.AvatarColour(user.UserName)" aria-hidden="true">@Fmt.Initials(user.UserName)</span>
+                        @Avatars.Get(user.Id, user.UserName, user.AvatarVersion)
                         <span class="person-text"><b>@user.UserName</b><small>@(user.Role == UserRole.Admin ? "Admin" : "Member") · @(user.LastSignInAt is { } at ? "last seen " + Fmt.Ago(at) : "never signed in")</small></span>
                         @if (user.Id != Model.UserId)
                         {

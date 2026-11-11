@@ -57,12 +57,26 @@
   Finished or Wishlist in one tap — or open it first.
 - Each result says which of your friends have it.
 
-**A game**
+**A game** (laid out like a Steam store page)
 
-- The **wide art** behind the title, the **cover**, the **screenshots** (open them full size), the summary and the
-  facts: developer, publisher, release date, modes, platforms, genres.
-- **Your entry**: status and a **1–10 rating** that save as you tap, hours played, the platform you played on and notes.
-- **Friends who have it**, with their status, hours and rating, and their average.
+- A **screenshot viewer** with arrows, thumbnails, keys and swipe (open them full size), the header art with the cover,
+  the summary and the facts: friends' rating ("Very positive · 8.0 from 3 friends"), release date, developer,
+  publisher, genres and platforms.
+- **Your game** bar: status and a **1–10 rating** that save as you tap, and **Make favourite** for your profile. Hours,
+  platform and notes below.
+- **Friends who have it**, with their photo, status, hours and rating, and their average; your playtime and dates.
+
+**Profiles** (Steam style)
+
+- A **profile photo** (shrunk to 256 px on the device before it's sent), a **bio**, a **location** and a **favourite
+  game**, all in **Edit profile**.
+- **Level and XP** from the library: 100 XP per finished game, 20 per rating, 5 per game, 1 per hour. Level L starts
+  at 100·(L−1)² XP, and the ring changes colour every ten levels.
+- **19 badges** to earn: First finish, Finisher, Completionist, Hall of fame, 100-hour club, Marathoner, Thousand hours,
+  Critic, Perfect ten, Tough crowd, Collector, Curator, Wishful thinking, Platform hopper, Retro soul, Day one, Good
+  company, Year of play, Not for me — with progress on the ones still to get.
+- **Playing now** and **Last seen**; showcases for the favourite game, the numbers, the top rated and recent activity;
+  friends with what they're playing. Someone who isn't a friend sees the header and an **Add friend** button only.
 
 **Friends**
 

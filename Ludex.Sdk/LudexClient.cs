@@ -122,6 +122,44 @@ public sealed class LudexClient(HttpClient httpClient)
     /// <returns>The friends page.</returns>
     public Task<FriendsDTO> FriendsRemoveAsync(FriendActionRequest item) => PostAsync<FriendsDTO>("friends/remove", item);
 
+    // ----- Profile -----
+
+    /// <summary>A profile as an account sees it.</summary>
+    /// <param name="viewerId">The signed-in account.</param>
+    /// <param name="userName">Whose profile (null: the viewer's own).</param>
+    /// <returns>The profile.</returns>
+    public Task<ProfileDTO> ProfileGetAsync(string viewerId, string? userName = null) =>
+        GetAsync<ProfileDTO>($"profile?viewerId={Uri.EscapeDataString(viewerId)}&userName={Uri.EscapeDataString(userName ?? string.Empty)}");
+
+    /// <summary>Saves the bio, location and favourite game.</summary>
+    /// <param name="item">The account and the values.</param>
+    /// <returns>The profile.</returns>
+    public Task<ProfileDTO> ProfileSaveAsync(ProfileSaveRequest item) => PostAsync<ProfileDTO>("profile/save", item);
+
+    /// <summary>Makes a game the favourite, or clears it.</summary>
+    /// <param name="item">The account and the game (null: clear).</param>
+    /// <returns>The favourite now.</returns>
+    public Task<ProfileFavoriteRequest> ProfileFavoriteAsync(ProfileFavoriteRequest item) => PostAsync<ProfileFavoriteRequest>("profile/favorite", item);
+
+    /// <summary>Sets the photo, or removes it (no data).</summary>
+    /// <param name="item">The account and the image.</param>
+    /// <returns>The new version.</returns>
+    public Task<AvatarDTO> ProfileAvatarSaveAsync(ProfileAvatarRequest item) => PostAsync<AvatarDTO>("profile/avatar", item);
+
+    /// <summary>A photo.</summary>
+    /// <param name="userId">The account.</param>
+    /// <returns>The image (a <see cref="LudexApiException"/> with 404 when there is none).</returns>
+    public Task<AvatarDTO> ProfileAvatarGetAsync(string userId) => GetAsync<AvatarDTO>($"profile/avatar?userId={Uri.EscapeDataString(userId)}");
+
+    /// <summary>Notes that the account is using the app now ("last seen").</summary>
+    /// <param name="userId">The account.</param>
+    /// <returns>A task.</returns>
+    public async Task ProfileTouchAsync(string userId)
+    {
+        using var response = await httpClient.PostAsJsonAsync("profile/touch", new ProfileUserRequest { UserId = userId }, SerializerOptions);
+        await EnsureSuccessAsync(response);
+    }
+
     // ----- Health -----
 
     /// <summary>Checks the WebApi and its database.</summary>

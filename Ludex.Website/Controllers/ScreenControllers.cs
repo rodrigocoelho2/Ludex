@@ -211,28 +211,40 @@ public sealed class FriendsController(LudexClient apiClient) : WebsiteBaseContro
 
     /// <summary>Asks someone to be friends.</summary>
     /// <param name="userName">Their user name.</param>
-    /// <returns>Back to the friends page.</returns>
+    /// <param name="back">Where to go afterwards (a profile page; default the friends page).</param>
+    /// <returns>Back to the friends page or the profile.</returns>
     [HttpPost("/friends/request")]
     [ValidateAntiForgeryToken]
-    public Task<IActionResult> SendRequest([FromForm] string? userName) =>
-        FormAsync(() => Api.FriendsRequestAsync(new FriendRequestRequest { UserId = UserId, UserName = userName }), $"Request sent to {userName?.Trim()}.", "/friends");
+    public Task<IActionResult> SendRequest([FromForm] string? userName, [FromForm] string? back = null) =>
+        FormAsync(
+            () => Api.FriendsRequestAsync(new FriendRequestRequest { UserId = UserId, UserName = userName }),
+            $"Request sent to {userName?.Trim()}.",
+            Back(back));
 
     /// <summary>Accepts a request.</summary>
     /// <param name="friendId">The account that asked.</param>
     /// <param name="name">Its user name (for the message).</param>
-    /// <returns>Back to the friends page.</returns>
+    /// <param name="back">Where to go afterwards (a profile page; default the friends page).</param>
+    /// <returns>Back to the friends page or the profile.</returns>
     [HttpPost("/friends/accept")]
     [ValidateAntiForgeryToken]
-    public Task<IActionResult> Accept([FromForm] string? friendId, [FromForm] string? name) =>
-        FormAsync(() => Api.FriendsAcceptAsync(new FriendActionRequest { UserId = UserId, FriendId = friendId }), $"You and {name} are friends now.", "/friends");
+    public Task<IActionResult> Accept([FromForm] string? friendId, [FromForm] string? name, [FromForm] string? back = null) =>
+        FormAsync(() => Api.FriendsAcceptAsync(new FriendActionRequest { UserId = UserId, FriendId = friendId }), $"You and {name} are friends now.", Back(back));
 
     /// <summary>Declines or cancels a request, or ends a friendship.</summary>
     /// <param name="friendId">The other account.</param>
-    /// <returns>Back to the friends page.</returns>
+    /// <param name="back">Where to go afterwards (a profile page; default the friends page).</param>
+    /// <returns>Back to the friends page or the profile.</returns>
     [HttpPost("/friends/remove")]
     [ValidateAntiForgeryToken]
-    public Task<IActionResult> Remove([FromForm] string? friendId) =>
-        FormAsync(() => Api.FriendsRemoveAsync(new FriendActionRequest { UserId = UserId, FriendId = friendId }), null, "/friends");
+    public Task<IActionResult> Remove([FromForm] string? friendId, [FromForm] string? back = null) =>
+        FormAsync(() => Api.FriendsRemoveAsync(new FriendActionRequest { UserId = UserId, FriendId = friendId }), null, Back(back));
+
+    // Only a profile page is a place to go back to; anything else goes to the friends page.
+    private static string Back(string? back) =>
+        back is { Length: > 3 } path && path.StartsWith("/u/", StringComparison.Ordinal) && !path.Contains("//", StringComparison.Ordinal) && !path.Contains('\\')
+            ? path
+            : "/friends";
 }
 
 /// <summary>

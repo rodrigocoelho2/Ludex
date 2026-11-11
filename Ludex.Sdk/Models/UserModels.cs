@@ -22,6 +22,9 @@ public sealed class UserDTO
 
     /// <summary>Gets or sets the security stamp (changes with the password; ends the other sessions).</summary>
     public string SecurityStamp { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the version of the profile photo (null: no photo; the URL changes with it).</summary>
+    public int? AvatarVersion { get; set; }
 }
 
 /// <summary>Whether any account exists (the first visit creates the first one).</summary>

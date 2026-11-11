@@ -15,7 +15,7 @@ else
             sub.Add(Fmt.Ago(line.At));
             <li>
                 <a class="feed-line row-link" href="/games/@line.Game.Id">
-                    <span class="avatar" style="--av:@Fmt.AvatarColour(line.UserName)" aria-hidden="true">@Fmt.Initials(line.UserName)</span>
+                    @Avatars.Get(line.UserId, line.UserName, line.AvatarVersion)
                     <span class="feed-text">
                         <span><b>@line.UserName</b> @Fmt.Did(line.Kind) <b>@line.Game.Name</b></span>
                         <small>@string.Join(" · ", sub)</small>

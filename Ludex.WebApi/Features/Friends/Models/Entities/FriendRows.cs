@@ -19,6 +19,9 @@ public sealed class FriendRow
 
     /// <summary>Gets or sets how many games the other account has.</summary>
     public int GameCount { get; set; }
+
+    /// <summary>Gets or sets the version of the friend's photo (null: none).</summary>
+    public int? AvatarVersion { get; set; }
 }
 
 /// <summary>A friend's entry for one game (dbo.FriendGameList).</summary>
@@ -44,6 +47,9 @@ public sealed class FriendGameRow
 
     /// <summary>Gets or sets when it last changed (UTC).</summary>
     public DateTime UpdatedAt { get; set; }
+
+    /// <summary>Gets or sets the version of the friend's photo (null: none).</summary>
+    public int? AvatarVersion { get; set; }
 }
 
 /// <summary>A friend who has one of the games asked about (dbo.FriendOwnership).</summary>
@@ -98,4 +104,7 @@ public sealed class ActivityRow
 
     /// <summary>Gets or sets the signed-in account's status for the game (null: not in its library).</summary>
     public byte? MyStatus { get; set; }
+
+    /// <summary>Gets or sets the version of the friend's photo (null: none).</summary>
+    public int? AvatarVersion { get; set; }
 }

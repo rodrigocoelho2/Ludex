@@ -1,0 +1,3 @@
+@model BadgeDTO
+@* One badge: its icon on its colour when earned, greyed with how far along it is when not. *@
+<span class="badge-ico@(Model.Earned ? " on" : string.Empty)" style="--badge:@Model.Color" title="@Model.Name — @Model.Description">@Icons.Get(Model.Icon)</span>

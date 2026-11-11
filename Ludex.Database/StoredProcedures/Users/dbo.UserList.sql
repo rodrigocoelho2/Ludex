@@ -15,7 +15,10 @@ BEGIN
            u.[IsAdmin],
            u.[SecurityStamp],
            u.[CreatedAt],
-           u.[LastLoginAt]
+           u.[LastLoginAt],
+           p.[AvatarVersion],
+           p.[LastSeenAt]
     FROM [dbo].[User] u
+    LEFT JOIN [dbo].[Profile] p ON p.[UserID] = u.[UserID]
     ORDER BY u.[UserID];
 END

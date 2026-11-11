@@ -19,6 +19,9 @@ public sealed class FriendDTO
 
     /// <summary>Gets or sets how many games the account has.</summary>
     public int GameCount { get; set; }
+
+    /// <summary>Gets or sets the version of the account's photo (null: none).</summary>
+    public int? AvatarVersion { get; set; }
 }
 
 /// <summary>Something a friend did with a game.</summary>
@@ -44,6 +47,9 @@ public sealed class ActivityDTO
 
     /// <summary>Gets or sets the game (MyStatus: whether the signed-in account has it too).</summary>
     public GameSummaryDTO Game { get; set; } = new();
+
+    /// <summary>Gets or sets the version of the account's photo (null: none).</summary>
+    public int? AvatarVersion { get; set; }
 }
 
 /// <summary>A game friends have and the signed-in account doesn't.</summary>

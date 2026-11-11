@@ -37,6 +37,23 @@ public static class Fmt
     /// <returns>"8.4", or "—".</returns>
     public static string Average(decimal? rating) => rating is { } value ? value.ToString("0.0", English) : "—";
 
+    /// <summary>What an average rating from friends reads as, Steam style.</summary>
+    /// <param name="rating">The average (1–10).</param>
+    /// <returns>"Overwhelmingly positive", "Very positive", "Positive", "Mixed" or "Negative".</returns>
+    public static string Reception(decimal rating) => rating switch
+    {
+        >= 9.0m => "Overwhelmingly positive",
+        >= 8.0m => "Very positive",
+        >= 6.5m => "Positive",
+        >= 5.0m => "Mixed",
+        _ => "Negative",
+    };
+
+    /// <summary>The CSS name of <see cref="Reception"/>'s colour.</summary>
+    /// <param name="rating">The average.</param>
+    /// <returns>good, mixed or bad.</returns>
+    public static string ReceptionCss(decimal rating) => rating >= 6.5m ? "good" : rating >= 5.0m ? "mixed" : "bad";
+
     /// <summary>Hours played.</summary>
     /// <param name="hours">The hours.</param>
     /// <returns>"38 h", "12.5 h", or "—".</returns>
@@ -65,6 +82,23 @@ public static class Fmt
         var local = TimeZoneInfo.ConvertTime(at, Clock.Zone);
         return local.Year == Clock.Now.Year ? local.ToString("d MMM", English) : local.ToString("d MMM yyyy", English);
     }
+
+    /// <summary>A month and year.</summary>
+    /// <param name="at">The time.</param>
+    /// <returns>"Nov 2026".</returns>
+    public static string MonthYear(DateTimeOffset at) => TimeZoneInfo.ConvertTime(at, Clock.Zone).ToString("MMM yyyy", English);
+
+    /// <summary>When someone was last around.</summary>
+    /// <param name="at">The time (null: never).</param>
+    /// <returns>"Online now" (the last 5 minutes), "Last seen 2 h ago"… or "Not seen yet".</returns>
+    public static string Seen(DateTimeOffset? at) => at is not { } when
+        ? "Not seen yet"
+        : DateTimeOffset.UtcNow - when < TimeSpan.FromMinutes(5) ? "Online now" : "Last seen " + Ago(when);
+
+    /// <summary>Whether someone was around in the last 5 minutes.</summary>
+    /// <param name="at">The time.</param>
+    /// <returns>True when online.</returns>
+    public static bool Online(DateTimeOffset? at) => at is { } when && DateTimeOffset.UtcNow - when < TimeSpan.FromMinutes(5);
 
     /// <summary>How long ago.</summary>
     /// <param name="at">The time.</param>

@@ -156,6 +156,7 @@ internal sealed partial class UserService(
         CreatedAt = new DateTimeOffset(DateTime.SpecifyKind(user.CreatedAt, DateTimeKind.Utc)),
         LastSignInAt = user.LastLoginAt is { } at ? new DateTimeOffset(DateTime.SpecifyKind(at, DateTimeKind.Utc)) : null,
         SecurityStamp = user.SecurityStamp,
+        AvatarVersion = user.AvatarVersion,
     };
 
     private static string NewStamp() => Convert.ToHexString(RandomNumberGenerator.GetBytes(16));

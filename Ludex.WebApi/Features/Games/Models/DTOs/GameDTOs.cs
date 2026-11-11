@@ -56,6 +56,9 @@ public sealed class FriendGameDTO
 
     /// <summary>Gets or sets when the friend last changed it.</summary>
     public DateTimeOffset UpdatedAt { get; set; }
+
+    /// <summary>Gets or sets the version of the account's photo (null: none).</summary>
+    public int? AvatarVersion { get; set; }
 }
 
 /// <summary>Everything the game page shows.</summary>
@@ -124,6 +127,9 @@ public sealed class MyGameDTO
 
     /// <summary>Gets or sets when it was first finished.</summary>
     public DateTimeOffset? FinishedAt { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether it is the favourite game on the account's profile.</summary>
+    public bool IsFavorite { get; set; }
 }
 
 /// <summary>The answer to a search.</summary>

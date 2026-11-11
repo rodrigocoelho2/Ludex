@@ -1,0 +1,82 @@
+using Ludex.WebApi.Extensions.Data;
+using Ludex.WebApi.Features.Profile.Models.Entities;
+
+namespace Ludex.WebApi.Features.Profile.Repositories;
+
+/// <summary>
+/// Profiles (dbo.Profile): bio, location, favourite game, photo and when the account was last seen.
+/// </summary>
+internal interface IProfileRepository
+{
+    /// <summary>An account and its profile.</summary>
+    /// <param name="userId">The account.</param>
+    /// <returns>The profile, or null when the account doesn't exist.</returns>
+    Task<ProfileRow?> GetAsync(Guid userId);
+
+    /// <summary>Saves the bio, location and favourite game.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="bio">The bio.</param>
+    /// <param name="location">The location.</param>
+    /// <param name="favoriteGameId">The favourite game.</param>
+    /// <returns>A task.</returns>
+    Task SaveAsync(Guid userId, string? bio, string? location, int? favoriteGameId);
+
+    /// <summary>Sets or clears the favourite game.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="gameId">The game (null: clear).</param>
+    /// <returns>A task.</returns>
+    Task SetFavoriteAsync(Guid userId, int? gameId);
+
+    /// <summary>Saves the photo, or removes it.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="data">The image (null: remove).</param>
+    /// <param name="contentType">Its media type.</param>
+    /// <returns>The new version (null: no photo).</returns>
+    Task<int?> SaveAvatarAsync(Guid userId, byte[]? data, string? contentType);
+
+    /// <summary>The photo.</summary>
+    /// <param name="userId">The account.</param>
+    /// <returns>The photo, or null when there is none.</returns>
+    Task<AvatarRow?> GetAvatarAsync(Guid userId);
+
+    /// <summary>Notes that the account is using the app now.</summary>
+    /// <param name="userId">The account.</param>
+    /// <returns>A task.</returns>
+    Task TouchAsync(Guid userId);
+
+    /// <summary>The account's friends, with what they are playing.</summary>
+    /// <param name="userId">The account.</param>
+    /// <returns>The friends, playing first.</returns>
+    Task<List<ProfileFriendRow>> FriendsAsync(Guid userId);
+}
+
+/// <summary>
+/// Profiles in SQL Server (stored procedures in Ludex.Database/StoredProcedures/Profile).
+/// </summary>
+/// <param name="connectionFactory">Opens connections.</param>
+internal sealed class ProfileRepository(ISqlConnectionFactory connectionFactory) : RepositoryBase(connectionFactory), IProfileRepository
+{
+    /// <inheritdoc />
+    public Task<ProfileRow?> GetAsync(Guid userId) => QuerySingleOrDefaultAsync<ProfileRow>("[dbo].[ProfileGet]", new { UserUniqueID = userId });
+
+    /// <inheritdoc />
+    public Task SaveAsync(Guid userId, string? bio, string? location, int? favoriteGameId) =>
+        ExecuteAsync("[dbo].[ProfileSave]", new { UserUniqueID = userId, Bio = bio, Location = location, FavoriteGameID = favoriteGameId });
+
+    /// <inheritdoc />
+    public Task SetFavoriteAsync(Guid userId, int? gameId) =>
+        ExecuteAsync("[dbo].[ProfileSetFavorite]", new { UserUniqueID = userId, FavoriteGameID = gameId });
+
+    /// <inheritdoc />
+    public Task<int?> SaveAvatarAsync(Guid userId, byte[]? data, string? contentType) =>
+        ExecuteScalarAsync<int?>("[dbo].[ProfileAvatarSave]", new { UserUniqueID = userId, Avatar = data, ContentType = contentType });
+
+    /// <inheritdoc />
+    public Task<AvatarRow?> GetAvatarAsync(Guid userId) => QuerySingleOrDefaultAsync<AvatarRow>("[dbo].[ProfileAvatarGet]", new { UserUniqueID = userId });
+
+    /// <inheritdoc />
+    public Task TouchAsync(Guid userId) => ExecuteAsync("[dbo].[ProfileTouch]", new { UserUniqueID = userId });
+
+    /// <inheritdoc />
+    public Task<List<ProfileFriendRow>> FriendsAsync(Guid userId) => QueryAsync<ProfileFriendRow>("[dbo].[ProfileFriends]", new { UserUniqueID = userId });
+}

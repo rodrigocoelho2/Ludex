@@ -7,6 +7,7 @@ using Ludex.WebApi.Features.Games.Models.DTOs;
 using Ludex.WebApi.Features.Games.Models.Entities;
 using Ludex.WebApi.Features.Games.Repositories;
 using Ludex.WebApi.Features.Library.Repositories;
+using Ludex.WebApi.Features.Profile.Repositories;
 
 namespace Ludex.WebApi.Features.Games.Services;
 
@@ -49,6 +50,7 @@ internal sealed class GameService(
     IGameRepository gameRepository,
     ILibraryRepository libraryRepository,
     IFriendRepository friendRepository,
+    IProfileRepository profileRepository,
     IGlobalizationHelper globalizationHelper,
     TimeProvider timeProvider,
     ILogger<GameService> logger) : IGameService
@@ -126,6 +128,7 @@ internal sealed class GameService(
 
         var mine = await libraryRepository.GetAsync(user, gameId);
         var friends = await friendRepository.GameAsync(user, gameId);
+        var favorite = mine is null ? null : (await profileRepository.GetAsync(user))?.FavoriteGameID;
         var rated = friends.Where(static f => f.Rating is not null).Select(static f => (decimal)f.Rating!.Value).ToList();
 
         return ServiceApiResponse<GameDetailDTO>.Success(new GameDetailDTO
@@ -148,6 +151,7 @@ internal sealed class GameService(
                 AddedAt = GameMapper.Utc(mine.AddedAt),
                 UpdatedAt = GameMapper.Utc(mine.UpdatedAt),
                 FinishedAt = mine.FinishedAt is { } finished ? GameMapper.Utc(finished) : null,
+                IsFavorite = favorite == gameId,
             },
             Friends = [.. friends.Select(static f => new FriendGameDTO
             {
@@ -158,6 +162,7 @@ internal sealed class GameService(
                 Hours = f.Hours,
                 Platform = f.Platform,
                 UpdatedAt = GameMapper.Utc(f.UpdatedAt),
+                AvatarVersion = f.AvatarVersion,
             })],
             FriendsAverageRating = rated.Count == 0 ? null : Math.Round(rated.Average(), 1),
             Source = catalog.Source,

@@ -26,6 +26,9 @@ internal static class LudexAuthentication
     /// <summary>The claim holding the account's security stamp.</summary>
     public const string StampClaim = "ludex:stamp";
 
+    /// <summary>The claim holding the version of the account's profile photo (absent: no photo).</summary>
+    public const string AvatarClaim = "ludex:avatar";
+
     private const string CheckedAtKey = "ludex:checked";
     private static readonly TimeSpan CheckEvery = TimeSpan.FromMinutes(2);
 
@@ -91,13 +94,42 @@ internal static class LudexAuthentication
     /// </summary>
     /// <param name="user">The account.</param>
     /// <returns>The principal stored in the cookie.</returns>
-    public static ClaimsPrincipal Principal(UserDTO user) => new(new ClaimsIdentity(
-    [
-        new Claim(ClaimTypes.NameIdentifier, user.Id),
-        new Claim(ClaimTypes.Name, user.UserName),
-        new Claim(ClaimTypes.Role, user.Role.ToString()),
-        new Claim(StampClaim, user.SecurityStamp),
-    ], CookieAuthenticationDefaults.AuthenticationScheme));
+    public static ClaimsPrincipal Principal(UserDTO user)
+    {
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.NameIdentifier, user.Id),
+            new(ClaimTypes.Name, user.UserName),
+            new(ClaimTypes.Role, user.Role.ToString()),
+            new(StampClaim, user.SecurityStamp),
+        };
+        if (user.AvatarVersion is { } version)
+        {
+            claims.Add(new Claim(AvatarClaim, version.ToString(CultureInfo.InvariantCulture)));
+        }
+
+        return new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
+    }
+
+    /// <summary>
+    /// Signs the browser in again as the same account, keeping how long the session lasts (after the photo changed).
+    /// </summary>
+    /// <param name="context">The request.</param>
+    /// <param name="user">The account as it is now.</param>
+    /// <returns>A task that completes when the cookie is set.</returns>
+    public static async Task RefreshAsync(HttpContext context, UserDTO user)
+    {
+        var current = await context.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        var properties = current.Properties ?? new AuthenticationProperties { AllowRefresh = true };
+        properties.Items[CheckedAtKey] = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
+        await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, Principal(user), properties);
+    }
+
+    /// <summary>The version of the signed-in account's photo.</summary>
+    /// <param name="user">The principal.</param>
+    /// <returns>The version, or null when there's no photo.</returns>
+    public static int? AvatarVersion(ClaimsPrincipal user) =>
+        int.TryParse(user.FindFirstValue(AvatarClaim), NumberStyles.Integer, CultureInfo.InvariantCulture, out var version) ? version : null;
 
     /// <summary>
     /// Signs the browser in as an account.
@@ -125,7 +157,8 @@ internal static class LudexAuthentication
     public static string UserId(ClaimsPrincipal user) => user.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
 
     /// <summary>
-    /// Every <see cref="CheckEvery"/>, makes sure the account still exists and its password did not change.
+    /// Every <see cref="CheckEvery"/>, makes sure the account still exists and its password did not change, refreshes
+    /// the claims (a new photo) and notes that the account was seen.
     /// When the WebApi cannot be reached, the session is kept (the pages show the connection problem instead).
     /// </summary>
     private static async Task ValidateAsync(CookieValidatePrincipalContext context)
@@ -151,6 +184,8 @@ internal static class LudexAuthentication
             }
 
             context.ReplacePrincipal(Principal(user));
+
+            await TouchAsync(client, id);
         }
         catch (LudexApiException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
@@ -164,6 +199,22 @@ internal static class LudexAuthentication
 
         context.Properties.Items[CheckedAtKey] = now.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
         context.ShouldRenew = true;
+    }
+
+    /// <summary>
+    /// "Last seen": the account is using the app now (this runs every few minutes, so it is a heartbeat). A failure
+    /// here never ends the session.
+    /// </summary>
+    private static async Task TouchAsync(LudexClient client, string id)
+    {
+        try
+        {
+            await client.ProfileTouchAsync(id);
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
+        {
+            // Not worth more than a missed "last seen".
+        }
     }
 
     private static async Task RejectAsync(CookieValidatePrincipalContext context)

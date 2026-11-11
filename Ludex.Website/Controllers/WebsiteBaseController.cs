@@ -37,6 +37,8 @@ public abstract class WebsiteBaseController(LudexClient apiClient) : Controller
         where T : AppPageModel
     {
         page.UserName = User.Identity?.Name ?? string.Empty;
+        page.MyId = UserId;
+        page.MyAvatarVersion = LudexAuthentication.AvatarVersion(User);
         page.IsAdmin = User.IsInRole("Admin");
         page.Section = section;
         page.Notice = TempData[NoticeKey] as string;

@@ -20,6 +20,9 @@ public enum AppSection
 
     /// <summary>Settings.</summary>
     Settings,
+
+    /// <summary>A profile (one's own or someone else's).</summary>
+    Profile,
 }
 
 /// <summary>
@@ -37,6 +40,12 @@ public class AppPageModel
 
     /// <summary>Gets or sets the signed-in user name.</summary>
     public string UserName { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the signed-in account's id.</summary>
+    public string MyId { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the version of the signed-in account's photo (null: none).</summary>
+    public int? MyAvatarVersion { get; set; }
 
     /// <summary>Gets or sets a value indicating whether the signed-in account is an admin.</summary>
     public bool IsAdmin { get; set; }
@@ -151,4 +160,44 @@ public sealed class SettingsPageModel : AppPageModel
 
     /// <summary>Gets or sets the signed-in account id.</summary>
     public string UserId { get; set; } = string.Empty;
+}
+
+/// <summary>A profile.</summary>
+public sealed class ProfilePageModel : AppPageModel
+{
+    /// <summary>Gets or sets the profile.</summary>
+    public ProfileDTO Profile { get; set; } = new();
+
+    /// <summary>Gets the share of the way from this level to the next (0–1).</summary>
+    public double LevelProgress
+    {
+        get
+        {
+            var level = Profile.Level;
+            var span = level.NextLevelXp - level.LevelXp;
+            return span <= 0 ? 0 : Math.Clamp((double)(level.Xp - level.LevelXp) / span, 0, 1);
+        }
+    }
+
+    /// <summary>Gets the badges earned.</summary>
+    public List<BadgeDTO> Earned => [.. Profile.Badges.Where(static b => b.Earned)];
+
+    /// <summary>Gets the colour of the level ring: it changes every ten levels, like Steam's.</summary>
+    public string LevelColour => ((Profile.Level.Level - 1) / 10) switch
+    {
+        0 => "#9FB0C3",
+        1 => "#C98B5B",
+        2 => "#4FC3F7",
+        3 => "#8EDB97",
+        4 => "#B794F6",
+        5 => "#F2777A",
+        _ => "#F5B841",
+    };
+}
+
+/// <summary>Editing one's profile.</summary>
+public sealed class ProfileEditPageModel : AppPageModel
+{
+    /// <summary>Gets or sets the profile.</summary>
+    public ProfileDTO Profile { get; set; } = new();
 }

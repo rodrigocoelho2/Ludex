@@ -22,6 +22,7 @@
     <Folder Include="StoredProcedures\Games\" />
     <Folder Include="StoredProcedures\Library\" />
     <Folder Include="StoredProcedures\Users\" />
+    <Folder Include="StoredProcedures\Profile\" />
     <Folder Include="Scripts\" />
   </ItemGroup>
 
@@ -30,6 +31,7 @@
     <Build Include="Tables\dbo.Friendship.sql" />
     <Build Include="Tables\dbo.Game.sql" />
     <Build Include="Tables\dbo.LibraryEntry.sql" />
+    <Build Include="Tables\dbo.Profile.sql" />
     <Build Include="Tables\dbo.User.sql" />
     <Build Include="StoredProcedures\Activity\dbo.ActivityAdd.sql" />
     <Build Include="StoredProcedures\Activity\dbo.ActivityFeed.sql" />
@@ -47,6 +49,13 @@
     <Build Include="StoredProcedures\Library\dbo.LibraryGet.sql" />
     <Build Include="StoredProcedures\Library\dbo.LibraryList.sql" />
     <Build Include="StoredProcedures\Library\dbo.LibrarySave.sql" />
+    <Build Include="StoredProcedures\Profile\dbo.ProfileAvatarGet.sql" />
+    <Build Include="StoredProcedures\Profile\dbo.ProfileAvatarSave.sql" />
+    <Build Include="StoredProcedures\Profile\dbo.ProfileFriends.sql" />
+    <Build Include="StoredProcedures\Profile\dbo.ProfileGet.sql" />
+    <Build Include="StoredProcedures\Profile\dbo.ProfileSave.sql" />
+    <Build Include="StoredProcedures\Profile\dbo.ProfileSetFavorite.sql" />
+    <Build Include="StoredProcedures\Profile\dbo.ProfileTouch.sql" />
     <Build Include="StoredProcedures\Users\dbo.UserCount.sql" />
     <Build Include="StoredProcedures\Users\dbo.UserCreate.sql" />
     <Build Include="StoredProcedures\Users\dbo.UserDelete.sql" />

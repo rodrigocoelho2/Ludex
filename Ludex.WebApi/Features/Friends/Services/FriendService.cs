@@ -133,6 +133,7 @@ internal sealed class FriendService(
         Kind = Enum.IsDefined((ActivityKind)row.Kind) ? (ActivityKind)row.Kind : ActivityKind.Added,
         Rating = row.Rating,
         At = GameMapper.Utc(row.At),
+        AvatarVersion = row.AvatarVersion,
         Game = new GameSummaryDTO
         {
             Id = row.GameID,
@@ -155,6 +156,7 @@ internal sealed class FriendService(
         State = Enum.IsDefined((FriendState)row.State) ? (FriendState)row.State : FriendState.None,
         Since = GameMapper.Utc(row.Since),
         GameCount = row.GameCount,
+        AvatarVersion = row.AvatarVersion,
     };
 
     private async Task<FriendsDTO> PageAsync(Guid user)

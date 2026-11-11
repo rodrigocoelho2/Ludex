@@ -11,6 +11,8 @@ using Ludex.WebApi.Features.Games.Repositories;
 using Ludex.WebApi.Features.Games.Services;
 using Ludex.WebApi.Features.Library.Repositories;
 using Ludex.WebApi.Features.Library.Services;
+using Ludex.WebApi.Features.Profile.Repositories;
+using Ludex.WebApi.Features.Profile.Services;
 using Ludex.WebApi.Features.Users.Repositories;
 using Ludex.WebApi.Features.Users.Services;
 using Microsoft.AspNetCore.Authentication;
@@ -83,6 +85,7 @@ internal static class LudexStartup
         services.AddSingleton<IGameRepository, GameRepository>();
         services.AddSingleton<ILibraryRepository, LibraryRepository>();
         services.AddSingleton<IFriendRepository, FriendRepository>();
+        services.AddSingleton<IProfileRepository, ProfileRepository>();
 
         // Services
         services.AddSingleton<GameStore>();
@@ -90,6 +93,7 @@ internal static class LudexStartup
         services.AddSingleton<IGameService, GameService>();
         services.AddSingleton<ILibraryService, LibraryService>();
         services.AddSingleton<IFriendService, FriendService>();
+        services.AddSingleton<IProfileService, ProfileService>();
 
         return services;
     }

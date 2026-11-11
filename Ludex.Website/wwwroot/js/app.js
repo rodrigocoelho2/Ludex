@@ -30,7 +30,7 @@
         const t = e.target;
         if (!t.matches) return;
         if (t.matches(SHARP)) failed(t);
-        else if (t.matches('img.cover-lq, img.art-lq, .feed-thumb img, .wall-tile img')) t.remove();
+        else if (t.matches('img.cover-lq, img.art-lq, .feed-thumb img, .wall-tile img, .avatar img, .recent-art img, .thumb img')) t.remove();
     }, true);
     sharpen(document);
 
@@ -228,8 +228,23 @@
             if (!entry) return;
             const added = form.dataset.inLibrary !== 'true';
             form.dataset.inLibrary = 'true';
-            const head = $('.eyebrow', form);
-            if (head) head.textContent = 'In your library';
+            const pill = $('[data-lib-pill]');
+            if (pill) {
+                pill.classList.remove('out');
+                const text = $('[data-lib-pill-text]', pill);
+                if (text) text.textContent = `In your library · ${statusWords[entry.status] || entry.status}`;
+                const icon = $('svg', pill);
+                if (icon) icon.innerHTML = '<path d="M5 12.5l4.5 4.5L19 7.5"/>';
+            }
+            const line = $('[data-your-line]', form);
+            if (line) {
+                const parts = [];
+                if (entry.hours != null) parts.push(`${Number(entry.hours).toLocaleString('en-IE')} h on record`);
+                parts.push('added ' + new Date(entry.addedAt).toLocaleDateString('en-IE', { day: 'numeric', month: 'short' }));
+                line.textContent = parts.join(' · ');
+            }
+            const fav = $('[data-favorite]', form);
+            if (fav) fav.hidden = false;
             toast(added ? 'Added to your library' : message);
         };
 
@@ -239,12 +254,135 @@
         form.addEventListener('submit', e => { e.preventDefault(); save('Saved'); });
     }
 
+    /* ---------- Game page: the favourite on the profile ---------- */
+    const favorite = $('[data-favorite]');
+    if (favorite && form) {
+        favorite.addEventListener('click', async () => {
+            const on = favorite.getAttribute('aria-pressed') !== 'true';
+            favorite.disabled = true;
+            const result = await post('/profile/favorite', { gameId: on ? Number(form.dataset.game) : null });
+            favorite.disabled = false;
+            if (!result) return;
+            favorite.setAttribute('aria-pressed', on ? 'true' : 'false');
+            const label = $('[data-favorite-label]', favorite);
+            if (label) label.textContent = on ? 'Your favourite' : 'Make favourite';
+            toast(on ? 'Shown on your profile' : 'Favourite cleared: your best rated shows instead');
+        });
+    }
+
+    /* ---------- Game page: the screenshot viewer (arrows, thumbnails, keys, swipe) ---------- */
+    const viewer = $('[data-viewer]');
+    if (viewer) {
+        const slides = $$('.viewer-shot', viewer);
+        const thumbs = $$('[data-viewer-pick]');
+        const count = $('[data-viewer-count]', viewer);
+        let index = 0;
+        const show = n => {
+            if (!slides.length) return;
+            index = (n + slides.length) % slides.length;
+            slides.forEach((s, i) => {
+                const on = i === index;
+                s.classList.toggle('on', on);
+                s.tabIndex = on ? 0 : -1;
+                const img = $('img', s);
+                if (on && img && img.dataset.big && img.getAttribute('src') !== img.dataset.big) {
+                    img.classList.remove('is-loaded');
+                    img.src = img.dataset.big;
+                }
+            });
+            thumbs.forEach((t, i) => {
+                t.classList.toggle('on', i === index);
+                t.setAttribute('aria-pressed', i === index ? 'true' : 'false');
+                if (i === index) t.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+            });
+            if (count) count.textContent = `${index + 1} / ${slides.length}`;
+        };
+        $$('[data-viewer-step]', viewer).forEach(b => b.addEventListener('click', () => show(index + Number(b.dataset.viewerStep))));
+        thumbs.forEach(t => t.addEventListener('click', () => show(Number(t.dataset.viewerPick))));
+        viewer.addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft') { e.preventDefault(); show(index - 1); }
+            if (e.key === 'ArrowRight') { e.preventDefault(); show(index + 1); }
+        });
+        let startX = null;
+        viewer.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
+        viewer.addEventListener('touchend', e => {
+            if (startX === null) return;
+            const dx = e.changedTouches[0].clientX - startX;
+            if (Math.abs(dx) > 40) show(index + (dx < 0 ? 1 : -1));
+            startX = null;
+        });
+    }
+
+    /* ---------- Profile photo: shrunk to 256 px here, then sent ---------- */
+    const photoInput = $('[data-photo-input]');
+    if (photoInput) {
+        const preview = $('[data-photo-preview]');
+        const shrink = file => new Promise((resolve, reject) => {
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => {
+                // A centred square, 256 px: avatars are square everywhere.
+                const side = Math.min(img.naturalWidth, img.naturalHeight);
+                const canvas = document.createElement('canvas');
+                canvas.width = canvas.height = 256;
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, 256, 256);
+                URL.revokeObjectURL(url);
+                canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('encode')), 'image/jpeg', 0.86);
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('read')); };
+            img.src = url;
+        });
+        photoInput.addEventListener('change', async () => {
+            const file = photoInput.files && photoInput.files[0];
+            if (!file) return;
+            let blob;
+            try { blob = await shrink(file); } catch { toast('That image can’t be read. Try a JPEG, PNG or WebP.', true); return; }
+            const body = new FormData();
+            body.append('photo', blob, 'avatar.jpg');
+            photoInput.disabled = true;
+            try {
+                const response = await fetch('/profile/photo', { method: 'POST', body, headers: { 'RequestVerificationToken': token }, credentials: 'same-origin' });
+                if (response.status === 401) { location.href = '/sign-in'; return; }
+                const result = await response.json();
+                if (!result.isValid) { toast((result.validationErrors || []).map(e => e.message).join(' ') || 'That didn’t work.', true); return; }
+                // Show it at once, everywhere on this page, then reload so every avatar uses the new address.
+                const local = URL.createObjectURL(blob);
+                $$('.avatar').forEach(av => {
+                    if (!av.closest('[data-photo-preview]') && !av.closest('.me') && !av.closest('.dock')) return;
+                    let img = $('img', av);
+                    if (!img) { img = document.createElement('img'); img.alt = ''; av.appendChild(img); }
+                    img.src = local;
+                });
+                if (preview) preview.classList.add('pop-in');
+                toast('Photo saved');
+                setTimeout(() => location.reload(), 900);
+            } catch {
+                toast('Can’t reach Ludex right now.', true);
+            } finally {
+                photoInput.disabled = false;
+                photoInput.value = '';
+            }
+        });
+    }
+
+    /* ---------- Characters left in a text box ---------- */
+    $$('[data-count-chars]').forEach(box => {
+        const max = Number(box.dataset.countChars);
+        const left = box.parentElement && $('[data-chars-left]', box.parentElement);
+        if (!left) return;
+        const paint = () => { const n = max - box.value.length; left.textContent = `${n} ${n === 1 ? 'character' : 'characters'} left`; };
+        box.addEventListener('input', paint);
+        paint();
+    });
+
     /* ---------- Screenshots open full size ---------- */
     const lightbox = $('[data-lightbox]');
     if (lightbox) {
         const img = $('img', lightbox);
         document.addEventListener('click', e => {
-            const shot = e.target.closest('.shot[data-full]');
+            const shot = e.target.closest('.shot[data-full], .viewer-shot[data-full]');
             if (!shot) return;
             img.src = shot.dataset.full;
             lightbox.showModal();

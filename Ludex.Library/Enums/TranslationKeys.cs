@@ -52,4 +52,10 @@ public enum TranslationKeys
 
     /// <summary>No account with that user name.</summary>
     FriendUnknown,
+
+    /// <summary>A profile photo that isn't a JPEG, PNG or WebP image, or is too big.</summary>
+    AvatarInvalid,
+
+    /// <summary>A favourite game that isn't in the library.</summary>
+    FavoriteNotInLibrary,
 }

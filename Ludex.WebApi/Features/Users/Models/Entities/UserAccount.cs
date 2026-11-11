@@ -28,4 +28,10 @@ public sealed class UserAccount
 
     /// <summary>Gets or sets the last successful sign-in (UTC).</summary>
     public DateTime? LastLoginAt { get; set; }
+
+    /// <summary>Gets or sets the version of the profile photo (null: no photo; dbo.Profile).</summary>
+    public int? AvatarVersion { get; set; }
+
+    /// <summary>Gets or sets the last time the account used the app (UTC; dbo.Profile).</summary>
+    public DateTime? LastSeenAt { get; set; }
 }

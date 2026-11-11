@@ -32,8 +32,10 @@ BEGIN
            u.[Username],
            l.[State],
            l.[Since],
-           (SELECT COUNT(*) FROM [dbo].[LibraryEntry] e WHERE e.[UserID] = u.[UserID]) AS [GameCount]
+           (SELECT COUNT(*) FROM [dbo].[LibraryEntry] e WHERE e.[UserID] = u.[UserID]) AS [GameCount],
+           p.[AvatarVersion]
     FROM [Links] l
     INNER JOIN [dbo].[User] u ON u.[UserID] = l.[OtherID]
+    LEFT JOIN [dbo].[Profile] p ON p.[UserID] = u.[UserID]
     ORDER BY l.[State], u.[Username];
 END

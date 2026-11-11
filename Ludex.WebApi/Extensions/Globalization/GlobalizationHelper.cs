@@ -53,6 +53,8 @@ internal sealed class GlobalizationHelper : IGlobalizationHelper
         [nameof(TranslationKeys.CatalogUnreachable)] = "Can't reach IGDB right now ({0}). Try again in a minute.",
         [nameof(TranslationKeys.FriendSelf)] = "That's you. Ask someone else.",
         [nameof(TranslationKeys.FriendUnknown)] = "There's no account called '{0}' here.",
+        [nameof(TranslationKeys.AvatarInvalid)] = "must be a JPEG, PNG or WebP image of at most {0} KB.",
+        [nameof(TranslationKeys.FavoriteNotInLibrary)] = "must be a game in your library.",
 
         ["UserName"] = "User name",
         ["Password"] = "Password",
@@ -67,6 +69,10 @@ internal sealed class GlobalizationHelper : IGlobalizationHelper
         ["Platform"] = "Platform",
         ["Notes"] = "Notes",
         ["Friend"] = "Friend",
+        ["Bio"] = "Bio",
+        ["Location"] = "Location",
+        ["FavoriteGameId"] = "Favourite game",
+        ["Avatar"] = "Photo",
     };
 
     /// <inheritdoc />

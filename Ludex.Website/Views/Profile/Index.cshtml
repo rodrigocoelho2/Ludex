@@ -1,0 +1,312 @@
+@model ProfilePageModel
+@{
+    Layout = "_App";
+    var p = Model.Profile;
+    ViewData["Title"] = p.IsMe ? "Your profile" : p.UserName;
+    var earned = Model.Earned;
+    var level = p.Level;
+    const double ring = 301.6;   // 2πr for r = 48
+    var art = p.Favorite?.Game ?? p.Playing?.Game ?? p.TopRated.FirstOrDefault()?.Game;
+    var sub = new List<string>();
+    if (p.Location is { } location) { sub.Add(location); }
+    sub.Add("member since " + Fmt.MonthYear(p.MemberSince));
+    var online = Fmt.Online(p.LastSeenAt);
+    var back = "/u/" + p.UserName;
+}
+
+<div class="profile" style="--tint:@(art?.Tint ?? "#1C2838")">
+    <div class="profile-bg" aria-hidden="true">
+        @if (art?.CoverImageId is { } cover)
+        {
+            <img class="art-img art-from-cover drift" src="@Igdb.Url(cover, Igdb.CoverBig)" alt="" decoding="async" />
+        }
+    </div>
+
+    <section class="profile-head rise">
+        <div class="profile-av@(p.Playing is not null ? " is-playing" : online ? " is-online" : string.Empty)">
+            @Avatars.Get(p.Id, p.UserName, p.AvatarVersion, "huge")
+            @if (p.Playing is not null)
+            {
+                <span class="presence">Playing</span>
+            }
+            else if (online)
+            {
+                <span class="presence online">Online</span>
+            }
+        </div>
+
+        <div class="profile-id">
+            <h1>@p.UserName</h1>
+            <span class="profile-sub">@string.Join(" · ", sub)</span>
+            @if (p.Bio is { } bio)
+            {
+                <p class="bio">@bio</p>
+            }
+            else if (p.IsMe)
+            {
+                <p class="bio muted">No bio yet. <a href="/profile/edit">Write a line about what you play.</a></p>
+            }
+            @if (p.Playing is { } playing)
+            {
+                <a class="profile-playing" href="/games/@playing.Game.Id">@Icons.Get("pad")Playing @playing.Game.Name@(playing.Hours is { } h ? $" · {Fmt.Hours(h)}" : string.Empty)</a>
+            }
+            else if (p.CanSeeLibrary && !p.IsMe)
+            {
+                <span class="profile-seen@(online ? " on" : string.Empty)">@Fmt.Seen(p.LastSeenAt)</span>
+            }
+        </div>
+
+        <div class="level-card">
+            <div class="level-row">
+                <span class="level-ring" role="img" aria-label="Level @level.Level, @((int)Math.Round(Model.LevelProgress * 100))% of the way to @(level.Level + 1)">
+                    <svg width="74" height="74" viewBox="0 0 110 110" aria-hidden="true">
+                        <circle cx="55" cy="55" r="48" class="ring-track" />
+                        <circle cx="55" cy="55" r="48" class="ring-fill" style="--ring:@Model.LevelColour;--to:@((ring * (1 - Model.LevelProgress)).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture))" transform="rotate(-90 55 55)" />
+                    </svg>
+                    <b class="num" aria-hidden="true">@level.Level</b>
+                </span>
+                <div class="level-text">
+                    <b>Level @level.Level</b>
+                    <span>@Fmt.Count(level.Xp) XP · @Fmt.Count(level.NextLevelXp - level.Xp) to @(level.Level + 1)</span>
+                </div>
+            </div>
+            @if (earned.Count > 0)
+            {
+                <a class="badge-row" href="#badges" aria-label="@Fmt.Plural(earned.Count, "badge", "badges")">
+                    @foreach (var badge in earned.Take(4))
+                    {
+                        <partial name="_Badge" model="badge" />
+                    }
+                    @if (earned.Count > 4)
+                    {
+                        <span class="badge-more">+@(earned.Count - 4)</span>
+                    }
+                </a>
+            }
+            else
+            {
+                <span class="level-hint">Finish, rate and play games to earn XP and badges.</span>
+            }
+
+            @if (p.IsMe)
+            {
+                <a class="btn soft wide" href="/profile/edit">@Icons.Get("edit")Edit profile</a>
+            }
+            else if (p.FriendState == FriendState.None)
+            {
+                <form method="post" action="/friends/request">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="userName" value="@p.UserName" />
+                    <input type="hidden" name="back" value="@back" />
+                    <button class="btn wide" type="submit">@Icons.Get("user-plus")Add friend</button>
+                </form>
+            }
+            else if (p.FriendState == FriendState.RequestReceived)
+            {
+                <form method="post" action="/friends/accept">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="friendId" value="@p.Id" />
+                    <input type="hidden" name="name" value="@p.UserName" />
+                    <input type="hidden" name="back" value="@back" />
+                    <button class="btn wide" type="submit">@Icons.Get("check")Accept request</button>
+                </form>
+            }
+            else if (p.FriendState == FriendState.RequestSent)
+            {
+                <span class="btn soft wide is-static">@Icons.Get("clock")Request sent</span>
+            }
+            else
+            {
+                <span class="btn soft wide is-static">@Icons.Get("friends")Friends</span>
+            }
+        </div>
+    </section>
+
+    @if (!p.CanSeeLibrary)
+    {
+        <section class="panel glass rise d1 locked">
+            <span class="empty-ico">@Icons.Get("lock")</span>
+            <div>
+                <h2>@p.UserName's library is for friends</h2>
+                <p class="muted">@Fmt.Plural(p.Counts.All, "game", "games") in it. Once you're friends you'll see what they play, how they rated it and the games you share.</p>
+            </div>
+        </section>
+    }
+    else
+    {
+        <div class="profile-body glass">
+            <div class="profile-main">
+                <section class="showcase rise d1">
+                    <h2 class="showcase-head">@(p.FavoriteChosen ? "Favourite game" : "Best rated")</h2>
+                    @if (p.Favorite is { } fav)
+                    {
+                        var g = fav.Game;
+                        var favLine = new List<string>();
+                        if (fav.Hours is { } favHours) { favLine.Add($"{Fmt.Hours(favHours)} on record"); }
+                        favLine.Add(fav.FinishedAt is { } favFinished ? $"finished {Fmt.ShortDate(favFinished)}" : Fmt.Status(fav.Status));
+                        <a class="fav" href="/games/@g.Id" style="--tint:@g.Tint">
+                            <span class="fav-art" aria-hidden="true">
+                                @if (g.CoverImageId is { } favCover)
+                                {
+                                    <img class="art-img art-from-cover" src="@Igdb.Url(favCover, Igdb.CoverBig)" alt="" loading="lazy" decoding="async" />
+                                }
+                            </span>
+                            <span class="fav-cover"><partial name="_Cover" model="new CoverView(g, Model.Transition(g.Id))" /></span>
+                            <span class="fav-text">
+                                <b>@g.Name</b>
+                                <span>@string.Join(" · ", favLine)</span>
+                                @if (fav.Rating is { } fr)
+                                {
+                                    <span class="pips" aria-label="Rated @fr out of 10">
+                                        @for (var n = 1; n <= 10; n++) { <i class="@(n <= fr ? "on" : null)"></i> }
+                                        <b class="num gold">@fr/10</b>
+                                    </span>
+                                }
+                            </span>
+                        </a>
+                    }
+                    else
+                    {
+                        <p class="showcase-empty muted">@(p.IsMe ? "Rate a game or pick one in Edit profile and it shows here." : "Nothing rated yet.")</p>
+                    }
+                </section>
+
+                <section class="stat-strip rise d1">
+                    <div><b class="num" data-count="@p.Counts.All">@p.Counts.All</b><span>Games</span></div>
+                    <div><b class="num" data-count="@p.Counts.Finished">@p.Counts.Finished</b><span>Finished</span></div>
+                    <div><b class="num" data-count="@((int)p.Stats.TotalHours)">@Fmt.Count(p.Stats.TotalHours)</b><span>Hours on record</span></div>
+                    <div><b class="num gold">@Fmt.Average(p.Stats.AverageRating)</b><span>Average rating</span></div>
+                </section>
+
+                @if (p.TopRated.Count > 0)
+                {
+                    <section class="showcase rise d2">
+                        <div class="showcase-head"><h2>Top rated</h2></div>
+                        <div class="top-grid stagger">
+                            @foreach (var entry in p.TopRated)
+                            {
+                                <a class="card" href="/games/@entry.Game.Id">
+                                    <span class="card-cover">
+                                        <partial name="_Cover" model="new CoverView(entry.Game, Model.Transition(entry.Game.Id))" />
+                                        <span class="badge-rating">@Fmt.Rating(entry.Rating)</span>
+                                    </span>
+                                </a>
+                            }
+                        </div>
+                    </section>
+                }
+
+                @if (p.Recent.Count > 0)
+                {
+                    var most = Math.Max(1m, p.Recent.Max(static r => r.Hours ?? 0m));
+                    <section class="showcase rise d2">
+                        <div class="showcase-head"><h2>Recent activity</h2></div>
+                        <ul class="recent-list">
+                            @foreach (var entry in p.Recent)
+                            {
+                                var share = (int)Math.Round((entry.Hours ?? 0m) / most * 100m);
+                                <li>
+                                    <a class="recent row-soft" href="/games/@entry.Game.Id">
+                                        <span class="recent-art" style="--tint:@entry.Game.Tint">
+                                            @if (entry.Game.CoverImageId is { } rc)
+                                            {
+                                                <img src="@Igdb.Url(rc, Igdb.CoverBig)" alt="" loading="lazy" decoding="async" />
+                                            }
+                                            <span>@entry.Game.Name</span>
+                                        </span>
+                                        <span class="recent-text">
+                                            <b>@entry.Game.Name</b>
+                                            <small>@(entry.Hours is { } rh ? $"{Fmt.Hours(rh)} on record · " : string.Empty)@Fmt.Status(entry.Status)</small>
+                                            <span class="bar"><i style="width:@share%"></i></span>
+                                        </span>
+                                        <span class="recent-side">
+                                            <b class="num @(entry.Rating is null ? "muted" : "gold")">@Fmt.Rating(entry.Rating)</b>
+                                            <small>@Fmt.Ago(entry.UpdatedAt)</small>
+                                        </span>
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </section>
+                }
+
+                <section class="showcase rise d2" id="badges">
+                    <div class="showcase-head"><h2>Badges</h2><span class="muted">@earned.Count of @p.Badges.Count</span></div>
+                    <ul class="badge-grid">
+                        @foreach (var badge in p.Badges)
+                        {
+                            <li class="badge@(badge.Earned ? " earned" : string.Empty)">
+                                <partial name="_Badge" model="badge" />
+                                <span class="badge-text">
+                                    <b>@badge.Name</b>
+                                    <small>@badge.Description</small>
+                                    @if (!badge.Earned && badge.Target > 1)
+                                    {
+                                        <span class="bar" aria-label="@badge.Progress of @badge.Target"><i style="width:@((int)Math.Round(100.0 * badge.Progress / badge.Target))%;background:@badge.Color"></i></span>
+                                    }
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                </section>
+            </div>
+
+            <aside class="profile-side">
+                <nav class="side-card counts rise d1" aria-label="Library">
+                    @{
+                        var link = p.IsMe;
+                    }
+                    <a class="row-soft" href="@(link ? "/library" : null)">Games <b>@p.Counts.All</b></a>
+                    <a class="row-soft" href="@(link ? "/library?status=playing" : null)">Playing <b>@p.Counts.Playing</b></a>
+                    <a class="row-soft" href="@(link ? "/library?status=wishlist" : null)">Wishlist <b>@p.Counts.Wishlist</b></a>
+                    <a class="row-soft" href="@(link ? "/friends" : "#friends")">Friends <b>@p.Friends.Count</b></a>
+                </nav>
+
+                @if (earned.Count > 0)
+                {
+                    <section class="side-card rise d2">
+                        <h2 class="side-head">Badges</h2>
+                        <div class="badge-mini">
+                            @foreach (var badge in earned.Take(6))
+                            {
+                                <span><partial name="_Badge" model="badge" />@badge.Name</span>
+                            }
+                        </div>
+                    </section>
+                }
+
+                <section class="side-card rise d2" id="friends">
+                    <div class="side-head-row"><h2 class="side-head">Friends</h2>@if (p.IsMe) { <a href="/friends">See all</a> }</div>
+                    @if (p.Friends.Count == 0)
+                    {
+                        <p class="muted small-empty">@(p.IsMe ? "No friends yet." : "No friends here yet.")</p>
+                    }
+                    else
+                    {
+                        <ul class="friend-mini">
+                            @foreach (var f in p.Friends.Take(8))
+                            {
+                                var fOnline = Fmt.Online(f.LastSeenAt);
+                                var state = f.PlayingName is not null ? "playing" : fOnline ? "online" : "away";
+                                <li>
+                                    <a class="row-soft" href="@(f.Id == Model.MyId ? "/profile" : "/u/" + f.UserName)">
+                                        @Avatars.Get(f.Id, f.UserName, f.AvatarVersion, "state-" + state)
+                                        <span class="friend-mini-text">
+                                            <b>@f.UserName</b>
+                                            <small class="@state">@(f.PlayingName is { } playingName ? "Playing " + playingName : Fmt.Seen(f.LastSeenAt))</small>
+                                        </span>
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </section>
+
+                @if (p.IsMe)
+                {
+                    <a class="side-link-quiet" href="/settings">@Icons.Get("settings")Settings</a>
+                }
+            </aside>
+        </div>
+    }
+</div>
