@@ -60,6 +60,7 @@ internal sealed class GameService(
     internal const int WallSize = 42;
 
     private static readonly TimeSpan WallRefresh = TimeSpan.FromHours(12);
+    private static readonly TimeSpan WallRetry = TimeSpan.FromMinutes(5);
     private readonly SemaphoreSlim _wallGate = new(1, 1);
     private List<CatalogGame> _famous = [];
     private DateTimeOffset _famousAt = DateTimeOffset.MinValue;
@@ -185,18 +186,19 @@ internal sealed class GameService(
         try
         {
             var now = timeProvider.GetUtcNow();
-            if (now - _famousAt > WallRefresh)
+            if (now - _famousAt > (_famous.Count > 0 ? WallRefresh : WallRetry))
             {
+                // A failure is tried again after a few minutes, not on every sign-in page and not only in 12 hours.
+                _famousAt = now;
                 try
                 {
                     _famous = await catalog.PopularAsync(WallSize);
+                    logger.LogInformation("Sign-in wall: {Count} well-known games from the catalog", _famous.Count);
                 }
-                catch (CatalogUnavailableException exception)
+                catch (Exception exception) when (exception is CatalogUnavailableException or System.Text.Json.JsonException)
                 {
-                    logger.LogWarning("No famous games for the wall: {Problem}", exception.Message);
+                    logger.LogWarning("No well-known games for the sign-in wall: {Problem}", exception.Message);
                 }
-
-                _famousAt = now;   // tried: don't ask IGDB again on every sign-in page, even after a failure
             }
 
             return _famous;
