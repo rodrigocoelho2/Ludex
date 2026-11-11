@@ -44,12 +44,17 @@
 - **Added lately**, and **what your friends did**: who finished, started, rated or wishlisted what, marked when you have
   the game too. And the **games your friends love** that you don't have yet, a heart away from your wishlist.
 
-**Library**
+**Library** (laid out like Steam's)
 
-- Every game as a cover with its **status** (Playing · Finished · Wishlist · Dropped) and your **rating**.
-- Filter by status, by **platform** (PC, PlayStation, Nintendo, Xbox, mobile), and to **only the games your friends
-  have**; find by name; sort by recently changed, added, rating, name or hours. The cards rearrange themselves with an
-  animation instead of jumping.
+- **The library down the side**, by status, with a search; it stays there when you open a game, so the game page
+  sits next to it like on Steam.
+- Every game as a cover with your **rating**, its status, the friends who have it, hours and **which copy** you own.
+- Sort like Steam: last played, alphabetical, friends who have it, your rating, hours played, release date, date
+  added. Filter by status, by **platform** (a family or one console: PS5, Switch…), by **copy** (physical, digital,
+  Steam, Epic Games, GOG…) and to **only the games your friends have**. The cards rearrange with an animation.
+- **Which copy**: on a PC, the store it came from (Steam, Epic Games, GOG, EA app, Ubisoft Connect, Battle.net,
+  Microsoft Store, Rockstar, itch.io); on a console, physical or digital — only what that console had (no digital
+  NES or PS2 games, no physical iOS ones).
 
 **Discover**
 

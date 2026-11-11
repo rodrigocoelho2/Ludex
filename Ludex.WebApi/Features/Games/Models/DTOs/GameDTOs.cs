@@ -116,6 +116,12 @@ public sealed class MyGameDTO
     /// <summary>Gets or sets where it was played.</summary>
     public string? Platform { get; set; }
 
+    /// <summary>Gets or sets the PC store the copy came from (Steam, Epic Games…).</summary>
+    public string? Store { get; set; }
+
+    /// <summary>Gets or sets the kind of copy: physical or digital.</summary>
+    public GameFormat? Format { get; set; }
+
     /// <summary>Gets or sets the notes.</summary>
     public string? Notes { get; set; }
 

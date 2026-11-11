@@ -19,6 +19,12 @@ public sealed class LibraryRow : GameRow
     /// <summary>Gets or sets where it was played.</summary>
     public string? Platform { get; set; }
 
+    /// <summary>Gets or sets the PC store the copy came from.</summary>
+    public string? Store { get; set; }
+
+    /// <summary>Gets or sets the kind of copy (<see cref="Ludex.Library.Enums.GameFormat"/>).</summary>
+    public byte? Format { get; set; }
+
     /// <summary>Gets or sets the notes.</summary>
     public string? Notes { get; set; }
 

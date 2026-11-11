@@ -105,6 +105,8 @@ internal static class LibraryRules
             Hours = row.Hours,
             Platform = row.Platform,
             PlatformFamily = PlatformNames.Family(row.Platform ?? GameRowFirstPlatform(row)),
+            Store = row.Store,
+            Format = row.Format is 1 or 2 ? (GameFormat)row.Format.Value : null,
             AddedAt = GameMapper.Utc(row.AddedAt),
             UpdatedAt = GameMapper.Utc(row.UpdatedAt),
             FinishedAt = row.FinishedAt is { } finished ? GameMapper.Utc(finished) : null,

@@ -55,6 +55,8 @@ internal sealed class GlobalizationHelper : IGlobalizationHelper
         [nameof(TranslationKeys.FriendUnknown)] = "There's no account called '{0}' here.",
         [nameof(TranslationKeys.AvatarInvalid)] = "must be a JPEG, PNG or WebP image of at most {0} KB.",
         [nameof(TranslationKeys.FavoriteNotInLibrary)] = "must be a game in your library.",
+        [nameof(TranslationKeys.StoreNotForPlatform)] = "is only for PC copies (Steam, Epic Games, GOG…).",
+        [nameof(TranslationKeys.FormatNotForPlatform)] = "isn't possible on {0}.",
 
         ["UserName"] = "User name",
         ["Password"] = "Password",
@@ -73,6 +75,8 @@ internal sealed class GlobalizationHelper : IGlobalizationHelper
         ["Location"] = "Location",
         ["FavoriteGameId"] = "Favourite game",
         ["Avatar"] = "Photo",
+        ["Store"] = "Store",
+        ["Format"] = "That kind of copy",
     };
 
     /// <inheritdoc />

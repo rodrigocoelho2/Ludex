@@ -1,4 +1,5 @@
 using Ludex.Library.Enums;
+using Ludex.Library.Platforms;
 using Ludex.Sdk.Models;
 
 namespace Ludex.Website.Model;
@@ -93,10 +94,25 @@ public sealed class LibraryPageModel : AppPageModel
     /// <summary>Gets the games shown.</summary>
     public IEnumerable<LibraryEntryDTO> Shown => Status is { } only ? Library.Entries.Where(e => e.Status == only) : Library.Entries;
 
-    /// <summary>Gets the platform families present, for the filter.</summary>
-    public IEnumerable<string> Families =>
-        new[] { "PC", "PlayStation", "Nintendo", "Xbox", "Mobile", "Other" }.Where(f => Library.Entries.Any(e => e.PlatformFamily == f));
+    /// <summary>Gets the platform families present, each with the platforms played on, for the filter.</summary>
+    public IEnumerable<(string Family, List<string> Platforms)> Families =>
+        new[] { "PC", "PlayStation", "Nintendo", "Xbox", "Mobile", "Other" }
+            .Select(f => (f, Library.Entries.Where(e => e.PlatformFamily == f).Select(static e => e.Platform).OfType<string>()
+                .Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase).ToList()))
+            .Where(f => Library.Entries.Any(e => e.PlatformFamily == f.Item1));
+
+    /// <summary>Gets the kinds of copy present: physical, digital, then the PC stores.</summary>
+    public IEnumerable<string> Copies =>
+        new[] { "Physical", "Digital" }.Where(f => Library.Entries.Any(e => e.Format?.ToString() == f))
+            .Concat(GameCopies.PcStores.Where(s => Library.Entries.Any(e => e.Store == s)));
 }
+
+/// <summary>
+/// What the library sidebar draws: every game by status, the one open highlighted.
+/// </summary>
+/// <param name="Entries">The library.</param>
+/// <param name="Current">The game open (null: the library page).</param>
+public sealed record LibrarySidebarView(IReadOnlyList<LibraryEntryDTO> Entries, int? Current);
 
 /// <summary>Discover: the search and the friends' favourites.</summary>
 public sealed class DiscoverPageModel : AppPageModel
@@ -122,6 +138,14 @@ public sealed class GamePageModel : AppPageModel
 {
     /// <summary>Gets or sets the game.</summary>
     public GameDetailDTO Detail { get; set; } = new();
+
+    /// <summary>Gets or sets the library down the side.</summary>
+    public List<LibraryEntryDTO> Sidebar { get; set; } = [];
+
+    /// <summary>Gets the copies each platform of the "played on" list can have, for the page script.</summary>
+    public Dictionary<string, IReadOnlyList<string>> CopyChoices =>
+        PlatformChoices.Append("Other").Append(string.Empty).Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(static p => p, static p => GameCopies.Choices(p.Length == 0 ? null : p), StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Gets the platforms offered in the "played on" list: the game's, plus the one saved if it's not among them.</summary>
     public IEnumerable<string> PlatformChoices

@@ -83,3 +83,15 @@ public enum CatalogSource
     /// <summary>The small list built into Ludex, without images (no IGDB credentials yet).</summary>
     Offline,
 }
+
+/// <summary>
+/// The kind of copy owned. Stored in the database: never renumber them.
+/// </summary>
+public enum GameFormat
+{
+    /// <summary>A disc or a cartridge.</summary>
+    Physical = 1,
+
+    /// <summary>A download (a console store, or a PC store such as Steam).</summary>
+    Digital = 2,
+}

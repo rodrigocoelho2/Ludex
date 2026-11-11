@@ -39,7 +39,7 @@
         </div>
     </header>
 
-    <main class="page" id="main">
+    <main class="page@(ViewData["Wide"] is true ? " wide" : string.Empty)" id="main">
         @if (Model.Notice is { } notice)
         {
             <div class="msg ok rise" role="status">@Icons.Get("check")<p>@notice</p></div>

@@ -5,6 +5,11 @@
     var game = detail.Game;
     var mine = detail.Mine;
     ViewData["Title"] = game.Name;
+    var hasSide = Model.Sidebar.Count > 0;
+    ViewData["Wide"] = hasSide;
+    var copyNow = mine?.Store ?? mine?.Format?.ToString();
+    var copyChoices = Ludex.Library.Platforms.GameCopies.Choices(mine?.Platform);
+    var copyLabel = Ludex.Library.Platforms.GameCopies.UsesStores(mine?.Platform) ? "Bought on" : "Copy";
     var statuses = new[] { GameStatus.Playing, GameStatus.Finished, GameStatus.Wishlist, GameStatus.Dropped };
     var shots = detail.Screenshots;
     var genre = detail.Genres.FirstOrDefault();
@@ -15,6 +20,12 @@
     if (mine is not null) { yourLine.Add($"added {Fmt.ShortDate(mine.AddedAt)}"); }
 }
 
+<div class="@(hasSide ? "lib-shell" : "game-solo")">
+@if (hasSide)
+{
+    <partial name="_LibrarySidebar" model="new LibrarySidebarView(Model.Sidebar, game.Id)" />
+}
+<div class="@(hasSide ? "lib-main" : "game-solo-main")">
 <article class="game2" data-game-page="@game.Id" style="--tint:@game.Tint">
     <div class="game-glow" aria-hidden="true">
         @if (art is not null)
@@ -205,6 +216,16 @@
                             <option value="Other" selected="@(mine?.Platform == "Other" ? "selected" : null)">Other</option>
                         </select>
                     </label>
+                    <label class="inline-field">
+                        <span data-copy-label>@copyLabel</span>
+                        <select name="copy" form="game-form" data-copy data-choices="@System.Text.Json.JsonSerializer.Serialize(Model.CopyChoices)">
+                            <option value="">—</option>
+                            @foreach (var choice in copyChoices)
+                            {
+                                <option value="@choice" selected="@(string.Equals(copyNow, choice, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@choice</option>
+                            }
+                        </select>
+                    </label>
                     <button class="btn small notes-save" type="submit" form="game-form">@Icons.Get("check")Save</button>
                 </div>
             </section>
@@ -258,6 +279,10 @@
                         {
                             <dt>Played on</dt><dd>@on</dd>
                         }
+                        @if (copyNow is not null)
+                        {
+                            <dt>@(mine.Store is null ? "Copy" : "Bought on")</dt><dd>@copyNow</dd>
+                        }
                     </dl>
                 </section>
                 <form method="post" action="/games/@game.Id/remove" class="remove" data-confirm="Take @game.Name out of your library? Its rating, hours and notes go too.">
@@ -268,6 +293,8 @@
         </aside>
     </div>
 </article>
+</div>
+</div>
 
 <dialog class="lightbox" data-lightbox aria-label="Screenshot">
     <form method="dialog"><button class="icon-btn close" aria-label="Close">@Icons.Get("x")</button></form>

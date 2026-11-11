@@ -146,49 +146,88 @@
         searchForm.addEventListener('submit', e => { e.preventDefault(); clearTimeout(timer); run(); });
     }
 
-    /* ---------- Library: filter by text, platform and friends, and sort, in the page ---------- */
+    /* ---------- Library: status, platform, copy, friends and text filters, and Steam's sorts, in the page ---------- */
+    const store = {
+        get: key => { try { return localStorage.getItem(key); } catch { return null; } },
+        set: (key, value) => { try { localStorage.setItem(key, value); } catch { /* private window */ } },
+    };
     const library = $('[data-library]');
     if (library) {
-        const cards = $$('.card', library);
+        const cards = $$('.lib-card', library);
         const text = $('[data-text-filter]');
-        const families = $$('[data-family-filter]');
+        const status = $('[data-status-filter]');
+        const platform = $('[data-platform-filter]');
+        const copy = $('[data-copy-filter]');
         const friendsOnly = $('[data-friends-filter]');
         const sort = $('[data-sort]');
         const label = $('[data-shown-label]');
         const none = $('[data-none]');
+        const num = (c, key) => Number(c.dataset[key] || 0);
         const keys = {
-            updated: c => -Number(c.dataset.updated),
-            added: c => -Number(c.dataset.added),
-            rating: c => -Number(c.dataset.rating),
-            hours: c => -Number(c.dataset.hours),
-            name: c => c.dataset.name,
+            played: (a, b) => num(b, 'updated') - num(a, 'updated'),
+            name: (a, b) => a.dataset.name.localeCompare(b.dataset.name),
+            friends: (a, b) => num(b, 'friends') - num(a, 'friends') || a.dataset.name.localeCompare(b.dataset.name),
+            rating: (a, b) => num(b, 'rating') - num(a, 'rating') || num(b, 'hours') - num(a, 'hours'),
+            hours: (a, b) => num(b, 'hours') - num(a, 'hours'),
+            release: (a, b) => num(b, 'release') - num(a, 'release') || a.dataset.name.localeCompare(b.dataset.name),
+            added: (a, b) => num(b, 'added') - num(a, 'added'),
         };
+        const saved = store.get('ludex.sort');
+        if (sort && saved && keys[saved]) sort.value = saved;
         const apply = () => {
             const q = (text?.value || '').trim().toLowerCase();
-            const allowed = new Set(families.filter(f => f.checked).map(f => f.value));
+            const st = status?.value || '';
+            const pf = platform?.value || '';
+            const cp = copy?.value || '';
             let shown = 0;
             cards.forEach(card => {
-                const visible = (!q || card.dataset.name.includes(q))
-                    && (!families.length || allowed.has(card.dataset.family))
-                    && (!friendsOnly?.checked || Number(card.dataset.friends) > 0);
+                const d = card.dataset;
+                const visible = (!q || d.name.includes(q))
+                    && (!st || d.status === st)
+                    && (!pf || (pf.startsWith('family:') ? d.family === pf.slice(7) : d.platform.toLowerCase() === pf.slice(9).toLowerCase()))
+                    && (!cp || (cp === 'Physical' || cp === 'Digital' ? d.format === cp : d.store === cp))
+                    && (!friendsOnly?.checked || Number(d.friends) > 0);
                 card.classList.toggle('is-hidden', !visible);
                 if (visible) shown++;
             });
-            const key = keys[sort?.value] || keys.updated;
-            cards.slice().sort((a, b) => {
-                const ka = key(a), kb = key(b);
-                return ka < kb ? -1 : ka > kb ? 1 : 0;
-            }).forEach(card => library.appendChild(card));
+            const compare = keys[sort?.value] || keys.played;
+            cards.slice().sort(compare).forEach(card => library.appendChild(card));
             if (label) label.textContent = `${shown} ${shown === 1 ? 'game' : 'games'}`;
             if (none) none.hidden = shown > 0;
+            if (status) {
+                const url = new URL(location.href);
+                if (st) url.searchParams.set('status', st.toLowerCase()); else url.searchParams.delete('status');
+                history.replaceState(null, '', url);
+            }
         };
         // Cards carry their cover's view-transition name, so a filter or a new order animates every card into place.
         const animate = () => (document.startViewTransition && !reduceMotion) ? document.startViewTransition(apply) : apply();
         let textTimer;
         text?.addEventListener('input', () => { clearTimeout(textTimer); textTimer = setTimeout(animate, 140); });
-        families.forEach(f => f.addEventListener('change', animate));
-        friendsOnly?.addEventListener('change', animate);
-        sort?.addEventListener('change', animate);
+        [status, platform, copy, friendsOnly].forEach(el => el?.addEventListener('change', animate));
+        sort?.addEventListener('change', () => { store.set('ludex.sort', sort.value); animate(); });
+        apply();
+    }
+
+    /* ---------- Library sidebar: find a game, and keep the list where it was between pages ---------- */
+    const side = $('[data-lib-side]');
+    if (side) {
+        const list = $('.lib-side-groups', side);
+        const top = Number(store.get('ludex.side') || 0);
+        if (list && top) list.scrollTop = top;
+        const current = $('a[aria-current="page"]', list || side);
+        if (list && current && !top) current.scrollIntoView({ block: 'center' });
+        list?.addEventListener('scroll', () => store.set('ludex.side', String(list.scrollTop)), { passive: true });
+        const find = $('[data-side-filter]', side);
+        find?.addEventListener('input', () => {
+            const q = find.value.trim().toLowerCase();
+            $$('[data-side-name]', side).forEach(li => { li.hidden = !!q && !li.dataset.sideName.includes(q); });
+            $$('.lib-group', side).forEach(g => {
+                const any = $$('[data-side-name]', g).some(li => !li.hidden);
+                g.hidden = !any;
+                if (q) g.open = true;
+            });
+        });
     }
 
     /* ---------- Game page: status and rating save at once; hours, platform and notes with Save ---------- */
@@ -201,6 +240,22 @@
         const clearRating = $('[data-clear-rating]', form);
         let status = statusButtons.find(b => b.getAttribute('aria-pressed') === 'true')?.dataset.setStatus || null;
         let rating = Number(rateButtons.find(b => b.getAttribute('aria-pressed') === 'true')?.dataset.setRating || 0) || null;
+
+        // The copy: the stores for a PC, physical or digital for a console (only what that platform had).
+        const copySelect = form.elements.copy;
+        const copyChoices = (() => { try { return JSON.parse(copySelect?.dataset.choices || '{}'); } catch { return {}; } })();
+        const copyLabel = $('[data-copy-label]');
+        const fillCopies = () => {
+            if (!copySelect) return;
+            const platformName = form.elements.platform.value || '';
+            const key = Object.keys(copyChoices).find(k => k.toLowerCase() === platformName.toLowerCase());
+            const choices = copyChoices[key ?? ''] || ['Physical', 'Digital'];
+            const keep = copySelect.value;
+            copySelect.innerHTML = '<option value="">—</option>' + choices.map(c => `<option value="${c}">${c}</option>`).join('');
+            copySelect.value = choices.includes(keep) ? keep : (choices.length === 1 ? choices[0] : '');
+            if (copyLabel) copyLabel.textContent = choices.includes('Steam') ? 'Bought on' : 'Copy';
+        };
+        form.elements.platform?.addEventListener('change', fillCopies);
 
         const paint = () => {
             statusButtons.forEach(b => b.setAttribute('aria-pressed', b.dataset.setStatus === status ? 'true' : 'false'));
@@ -223,6 +278,8 @@
                 rating,
                 hours: hours === '' ? null : Number(hours.replace(',', '.')),
                 platform: form.elements.platform.value || null,
+                store: copySelect && copySelect.value && copySelect.value !== 'Physical' && copySelect.value !== 'Digital' ? copySelect.value : null,
+                format: copySelect && (copySelect.value === 'Physical' || copySelect.value === 'Digital') ? copySelect.value : null,
                 notes: form.elements.notes.value.trim() || null,
             });
             if (!entry) return;

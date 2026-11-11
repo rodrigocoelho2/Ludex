@@ -2,10 +2,11 @@
     LibraryImport
     Adds many games to an account's library at once (the Steam import), in one call. The games must already be in
     dbo.Game. @Games is a JSON array of { GameID, Status, Hours, PlayedAt }.
-    A game already there keeps its status, rating, platform and notes; only its hours go up (never down: hours played
-    elsewhere stay). A new game goes in with the status chosen, platform PC, "last changed" and (when Finished)
+    A game already there keeps its status, rating and notes; its hours go up (never down: hours played elsewhere stay),
+    and a PC copy with no store yet becomes a Steam copy. A new game goes in with the status chosen, platform PC, store
+    Steam (digital), "last changed" and (when Finished)
     "finished" set to when it was last played rather than now, so the import doesn't make everything look recent.
-    Nothing goes into the friends' feed. Returns how many games were added and how many got more hours.
+    Nothing goes into the friends' feed. Returns how many games were added and how many were updated.
 */
 CREATE PROCEDURE [dbo].[LibraryImport]
     @UserUniqueID UNIQUEIDENTIFIER,
@@ -46,12 +47,15 @@ BEGIN
           AND EXISTS (SELECT 1 FROM [dbo].[Game] g WHERE g.[GameID] = j.[GameID])
     ) AS s
     ON t.[UserID] = @UserID AND t.[GameID] = s.[GameID]
-    WHEN MATCHED AND s.[Hours] > ISNULL(t.[Hours], 0) THEN
-        UPDATE SET [Hours] = s.[Hours],
-                   [UpdatedAt] = CASE WHEN s.[PlayedAt] > t.[UpdatedAt] THEN s.[PlayedAt] ELSE t.[UpdatedAt] END
+    WHEN MATCHED AND (s.[Hours] > ISNULL(t.[Hours], 0) OR (t.[Store] IS NULL AND (t.[Platform] IS NULL OR t.[Platform] = N'PC'))) THEN
+        UPDATE SET [Hours] = CASE WHEN s.[Hours] > ISNULL(t.[Hours], 0) THEN s.[Hours] ELSE t.[Hours] END,
+                   [Platform] = ISNULL(t.[Platform], N'PC'),
+                   [Store] = CASE WHEN t.[Store] IS NULL AND (t.[Platform] IS NULL OR t.[Platform] = N'PC') THEN N'Steam' ELSE t.[Store] END,
+                   [Format] = CASE WHEN t.[Store] IS NULL AND (t.[Platform] IS NULL OR t.[Platform] = N'PC') THEN 2 ELSE t.[Format] END,
+                   [UpdatedAt] = CASE WHEN s.[Hours] > ISNULL(t.[Hours], 0) AND s.[PlayedAt] > t.[UpdatedAt] THEN s.[PlayedAt] ELSE t.[UpdatedAt] END
     WHEN NOT MATCHED THEN
-        INSERT ([UserID], [GameID], [Status], [Hours], [Platform], [UpdatedAt], [FinishedAt])
-        VALUES (@UserID, s.[GameID], s.[Status], NULLIF(s.[Hours], 0), N'PC', s.[PlayedAt], CASE WHEN s.[Status] = 2 THEN s.[PlayedAt] END)
+        INSERT ([UserID], [GameID], [Status], [Hours], [Platform], [Store], [Format], [UpdatedAt], [FinishedAt])
+        VALUES (@UserID, s.[GameID], s.[Status], NULLIF(s.[Hours], 0), N'PC', N'Steam', 2, s.[PlayedAt], CASE WHEN s.[Status] = 2 THEN s.[PlayedAt] END)
     OUTPUT $action INTO @Changes;
 
     COMMIT TRANSACTION;

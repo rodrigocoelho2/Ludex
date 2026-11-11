@@ -6,6 +6,8 @@ CREATE TABLE [dbo].[LibraryEntry]
     [Rating]     TINYINT         NULL,
     [Hours]      DECIMAL (7, 1)  NULL,
     [Platform]   NVARCHAR (60)   NULL,
+    [Store]      NVARCHAR (30)   NULL,
+    [Format]     TINYINT         NULL,
     [Notes]      NVARCHAR (2000) NULL,
     [AddedAt]    DATETIME2 (3)   NOT NULL CONSTRAINT [DF_LibraryEntry_AddedAt] DEFAULT (SYSUTCDATETIME()),
     [UpdatedAt]  DATETIME2 (3)   NOT NULL CONSTRAINT [DF_LibraryEntry_UpdatedAt] DEFAULT (SYSUTCDATETIME()),
@@ -15,7 +17,8 @@ CREATE TABLE [dbo].[LibraryEntry]
     CONSTRAINT [FK_LibraryEntry_Game] FOREIGN KEY ([GameID]) REFERENCES [dbo].[Game] ([GameID]),
     CONSTRAINT [CK_LibraryEntry_Status] CHECK ([Status] BETWEEN 1 AND 4),
     CONSTRAINT [CK_LibraryEntry_Rating] CHECK ([Rating] IS NULL OR [Rating] BETWEEN 1 AND 10),
-    CONSTRAINT [CK_LibraryEntry_Hours] CHECK ([Hours] IS NULL OR [Hours] >= 0)
+    CONSTRAINT [CK_LibraryEntry_Hours] CHECK ([Hours] IS NULL OR [Hours] >= 0),
+    CONSTRAINT [CK_LibraryEntry_Format] CHECK ([Format] IS NULL OR [Format] IN (1, 2))
 );
 GO
 
@@ -24,5 +27,5 @@ CREATE NONCLUSTERED INDEX [IX_LibraryEntry_GameID]
     INCLUDE ([Status], [Rating]);
 GO
 
-EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'One game in one account''s library. Status: 1 Playing, 2 Finished, 3 Wishlist, 4 Dropped. Rating 1–10. FinishedAt is set the first time the status becomes Finished.',
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'One game in one account''s library. Status: 1 Playing, 2 Finished, 3 Wishlist, 4 Dropped. Rating 1–10. FinishedAt is set the first time the status becomes Finished. Store: where a PC copy was bought (Steam, Epic Games, GOG…). Format: 1 Physical, 2 Digital (the WebApi checks it against the platform).',
     @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'LibraryEntry';

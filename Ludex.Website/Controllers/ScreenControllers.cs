@@ -123,6 +123,16 @@ public sealed class GameController(LudexClient apiClient) : WebsiteBaseControlle
         {
             var detail = await Api.GamesDetailAsync(UserId, id);
             var page = Shell(new GamePageModel { Detail = detail }, AppSection.Library);
+            try
+            {
+                // The library down the side, as on Steam (the page still works without it).
+                page.Sidebar = (await Api.LibraryListAsync(UserId)).Entries;
+            }
+            catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
+            {
+                page.Sidebar = [];
+            }
+
             return View("Index", page);
         }
         catch (LudexApiException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -151,6 +161,8 @@ public sealed class GameController(LudexClient apiClient) : WebsiteBaseControlle
         Rating = form.Rating,
         Hours = form.Hours,
         Platform = form.Platform,
+        Store = form.Store,
+        Format = form.Format,
         Notes = form.Notes,
     })));
 
@@ -185,6 +197,12 @@ public sealed class GameSaveForm
 
     /// <summary>Gets or sets the platform.</summary>
     public string? Platform { get; set; }
+
+    /// <summary>Gets or sets the PC store (Steam, Epic Games…).</summary>
+    public string? Store { get; set; }
+
+    /// <summary>Gets or sets physical or digital.</summary>
+    public GameFormat? Format { get; set; }
 
     /// <summary>Gets or sets the notes.</summary>
     public string? Notes { get; set; }

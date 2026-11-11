@@ -2,8 +2,10 @@
 @{
     Layout = "_App";
     ViewData["Title"] = "Library";
+    ViewData["Wide"] = true;
     var counts = Model.Library.Counts;
-    var filters = new (GameStatus? Status, string Label, int Count)[]
+    var entries = Model.Library.Entries;
+    var statuses = new (GameStatus? Status, string Label, int Count)[]
     {
         (null, "All games", counts.All),
         (GameStatus.Playing, "Playing", counts.Playing),
@@ -11,81 +13,120 @@
         (GameStatus.Wishlist, "Wishlist", counts.Wishlist),
         (GameStatus.Dropped, "Dropped", counts.Dropped),
     };
-    var shown = Model.Shown.ToList();
+    var sorts = new (string Key, string Label)[]
+    {
+        ("played", "Last played"),
+        ("name", "Alphabetical"),
+        ("friends", "Friends who have it"),
+        ("rating", "Your rating"),
+        ("hours", "Hours played"),
+        ("release", "Release date"),
+        ("added", "Date added to library"),
+    };
 }
 
-<div class="with-side">
-    <aside class="side rise">
-        <nav class="side-group" aria-label="By status">
-            <h2 class="eyebrow">Collection</h2>
-            @foreach (var (status, label, count) in filters)
-            {
-                var href = status is { } s ? $"/library?status={s.ToString().ToLowerInvariant()}" : "/library";
-                <a class="side-link" href="@href" aria-current="@(Model.Status == status ? "page" : null)"><span>@label</span><b>@count</b></a>
-            }
-        </nav>
-        @if (Model.Families.Count() > 1)
-        {
-            <fieldset class="side-group">
-                <legend class="eyebrow">Platform</legend>
-                @foreach (var family in Model.Families)
-                {
-                    <label class="check"><input type="checkbox" data-family-filter value="@family" checked /><span>@family</span></label>
-                }
-            </fieldset>
-        }
-        <fieldset class="side-group">
-            <legend class="eyebrow">Friends</legend>
-            <label class="check"><input type="checkbox" data-friends-filter /><span>Only games friends have</span></label>
-        </fieldset>
-    </aside>
+<div class="lib-shell">
+    <partial name="_LibrarySidebar" model="new LibrarySidebarView(entries, null)" />
 
-    <section class="side-main">
-        <div class="page-head">
-            <div>
-                <h1 class="rise">Your library</h1>
-                <p class="muted" data-shown-label>@Fmt.Plural(shown.Count, "game", "games")</p>
-            </div>
-            <div class="toolbar">
-                <label class="sr-only" for="lib-q">Filter the library</label>
-                <span class="in compact">@Icons.Get("search")<input id="lib-q" type="search" placeholder="Filter…" autocomplete="off" data-text-filter /></span>
-                <label class="sr-only" for="lib-sort">Sort</label>
-                <select id="lib-sort" data-sort>
-                    <option value="updated">Recently changed</option>
-                    <option value="added">Recently added</option>
-                    <option value="rating">Rating</option>
-                    <option value="name">Name A–Z</option>
-                    <option value="hours">Hours played</option>
-                </select>
-            </div>
-        </div>
-
-        @if (shown.Count == 0)
+    <section class="lib-main">
+        @if (entries.Count == 0)
         {
             <div class="empty rise">
                 <span class="empty-ico">@Icons.Get("library")</span>
-                <h2>@(Model.Status is { } st ? $"Nothing under {Fmt.Status(st)} yet" : "Your library is empty")</h2>
-                <p>Find a game and add it: it lands here with its cover.</p>
-                <a class="btn" href="/discover">@Icons.Get("search")Find a game</a>
+                <h1>Your library is empty</h1>
+                <p>Find a game and add it, or bring in your whole Steam library with its hours.</p>
+                <div class="actions">
+                    <a class="btn" href="/discover">@Icons.Get("search")Find a game</a>
+                    <a class="btn ghost" href="/steam">Import from Steam</a>
+                </div>
             </div>
         }
         else
         {
-            <div class="grid covers lib stagger" data-library>
-                @foreach (var entry in shown)
+            <div class="lib-bar rise" data-lib-bar>
+                <label class="lib-status">
+                    <span class="sr-only">Show</span>
+                    <select data-status-filter>
+                        @foreach (var (status, label, count) in statuses)
+                        {
+                            <option value="@(status?.ToString() ?? string.Empty)" selected="@(Model.Status == status ? "selected" : null)">@label (@count)</option>
+                        }
+                    </select>
+                </label>
+                <label class="lib-sort">
+                    <span>Sort by</span>
+                    <select data-sort>
+                        @foreach (var (key, label) in sorts)
+                        {
+                            <option value="@key">@label</option>
+                        }
+                    </select>
+                </label>
+                <label class="lib-filter">
+                    <span class="sr-only">Platform</span>
+                    <select data-platform-filter>
+                        <option value="">All platforms</option>
+                        @foreach (var (family, platforms) in Model.Families)
+                        {
+                            <option value="family:@family">@family</option>
+                            foreach (var platform in platforms.Where(p => !string.Equals(p, family, StringComparison.OrdinalIgnoreCase)))
+                            {
+                                <option value="platform:@platform">&nbsp;&nbsp;@platform</option>
+                            }
+                        }
+                    </select>
+                </label>
+                @if (Model.Copies.Any())
+                {
+                    <label class="lib-filter">
+                        <span class="sr-only">Copy</span>
+                        <select data-copy-filter>
+                            <option value="">All copies</option>
+                            @foreach (var copy in Model.Copies)
+                            {
+                                <option value="@copy">@copy</option>
+                            }
+                        </select>
+                    </label>
+                }
+                <label class="check lib-friends"><input type="checkbox" data-friends-filter /><span>Friends have it</span></label>
+                <span class="lib-bar-push"></span>
+                <span class="in compact lib-find">@Icons.Get("search")<input type="search" placeholder="Filter" aria-label="Filter the library" autocomplete="off" data-text-filter /></span>
+            </div>
+            <p class="lib-count muted" data-shown-label>@Fmt.Plural(entries.Count, "game", "games")</p>
+
+            <div class="lib-grid" data-library>
+                @foreach (var entry in entries)
                 {
                     var game = entry.Game;
-                    <a class="card" href="/games/@game.Id"
-                       data-name="@game.Name.ToLowerInvariant()" data-family="@entry.PlatformFamily" data-friends="@game.FriendNames.Count"
-                       data-rating="@(entry.Rating ?? 0)" data-hours="@Fmt.Input(entry.Hours ?? 0)"
-                       data-added="@entry.AddedAt.ToUnixTimeSeconds()" data-updated="@entry.UpdatedAt.ToUnixTimeSeconds()">
-                        <span class="card-cover">
+                    var copy = Ludex.Library.Platforms.GameCopies.Label(entry.Store, entry.Format);
+                    <a class="lib-card" href="/games/@game.Id" title="@game.Name" aria-label="@game.Name"
+                       data-name="@game.Name.ToLowerInvariant()" data-status="@entry.Status" data-family="@entry.PlatformFamily"
+                       data-platform="@(entry.Platform ?? string.Empty)" data-format="@(entry.Format?.ToString() ?? string.Empty)" data-store="@(entry.Store ?? string.Empty)"
+                       data-friends="@game.FriendNames.Count" data-rating="@(entry.Rating ?? 0)" data-hours="@Fmt.Input(entry.Hours ?? 0)"
+                       data-release="@(game.Year ?? 0)" data-added="@entry.AddedAt.ToUnixTimeSeconds()" data-updated="@entry.UpdatedAt.ToUnixTimeSeconds()">
+                        <span class="lib-cover">
                             <partial name="_Cover" model="new CoverView(game, Model.Transition(game.Id))" />
-                            <span class="badge-status"><partial name="_StatusChip" model="entry.Status" /></span>
-                            <span class="badge-rating">@Fmt.Rating(entry.Rating)</span>
+                            @if (entry.Status != GameStatus.Finished)
+                            {
+                                <span class="lib-status-tag tag-@Fmt.StatusCss(entry.Status)">@Fmt.Status(entry.Status)</span>
+                            }
+                            @if (game.FriendNames.Count > 0)
+                            {
+                                <span class="lib-friends-dot" title="@Fmt.Owners(game.FriendNames)">@game.FriendNames.Count</span>
+                            }
+                            @if (entry.Rating is { } rating)
+                            {
+                                <span class="lib-score">@rating</span>
+                            }
                         </span>
-                        <span class="card-name">@game.Name</span>
-                        <span class="card-sub">@(game.FriendNames.Count == 0 ? (entry.Platform ?? game.Platforms.FirstOrDefault() ?? " ") : Fmt.Plural(game.FriendNames.Count, "friend has it", "friends have it"))</span>
+                        <span class="lib-meta">
+                            <span>@(entry.Hours is { } h && h > 0 ? Fmt.Hours(h) : Fmt.Status(entry.Status))</span>
+                            @if (copy is not null || entry.Platform is not null)
+                            {
+                                <span class="lib-copy">@(string.Join(" · ", new[] { entry.Platform, copy }.Where(static s => s is not null).Distinct()))</span>
+                            }
+                        </span>
                     </a>
                 }
             </div>

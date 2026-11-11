@@ -1,4 +1,5 @@
 using Ludex.Library.Enums;
+using Ludex.Library.Platforms;
 using Ludex.Library.Services;
 using Ludex.Library.Validation;
 using Ludex.WebApi.Extensions.Globalization;
@@ -124,6 +125,16 @@ internal sealed class LibraryService(
             errors.Add(await globalizationHelper.ValidationErrorAsync("Notes", nameof(TranslationKeys.TooLong), MaxNotesLength));
         }
 
+        var (store, format, copyProblem) = GameCopies.Normalize(platform, Clean(item.Store), item.Format);
+        if (copyProblem == "store")
+        {
+            errors.Add(await globalizationHelper.ValidationErrorAsync("Store", nameof(TranslationKeys.StoreNotForPlatform)));
+        }
+        else if (copyProblem == "format")
+        {
+            errors.Add(await globalizationHelper.ValidationErrorAsync("Format", nameof(TranslationKeys.FormatNotForPlatform), platform ?? "this platform"));
+        }
+
         if (errors.Count > 0)
         {
             return ServiceApiResponse<LibraryEntryDTO>.ValidationProblems(await globalizationHelper.TranslateAsync(nameof(TranslationKeys.ValidationProblems)))
@@ -131,7 +142,7 @@ internal sealed class LibraryService(
         }
 
         var hours = item.Hours is { } value ? Math.Round(value, 1, MidpointRounding.AwayFromZero) : (decimal?)null;
-        return await StoreAsync(user, item.GameId, item.Status, item.Rating, hours, platform, notes, keepDetails: false);
+        return await StoreAsync(user, item.GameId, item.Status, item.Rating, hours, platform, notes, store, format, keepDetails: false);
     }
 
     /// <inheritdoc />
@@ -148,7 +159,7 @@ internal sealed class LibraryService(
                 .AddError("Status", (await globalizationHelper.ValidationErrorAsync("Status", nameof(TranslationKeys.RequiredField))).Message);
         }
 
-        return await StoreAsync(user, item.GameId, item.Status, null, null, null, null, keepDetails: true);
+        return await StoreAsync(user, item.GameId, item.Status, null, null, null, null, null, null, keepDetails: true);
     }
 
     /// <inheritdoc />
@@ -205,7 +216,7 @@ internal sealed class LibraryService(
     }
 
     private async Task<ServiceApiResponse<LibraryEntryDTO>> StoreAsync(
-        Guid user, int gameId, GameStatus status, int? rating, decimal? hours, string? platform, string? notes, bool keepDetails)
+        Guid user, int gameId, GameStatus status, int? rating, decimal? hours, string? platform, string? notes, string? store, GameFormat? format, bool keepDetails)
     {
         GameRow? game;
         try
@@ -231,9 +242,11 @@ internal sealed class LibraryService(
             hours = before.Hours;
             platform = before.Platform;
             notes = before.Notes;
+            store = before.Store;
+            format = before.Format is 1 or 2 ? (GameFormat)before.Format.Value : null;
         }
 
-        await libraryRepository.SaveAsync(user, gameId, (byte)status, (byte?)rating, hours, platform, notes);
+        await libraryRepository.SaveAsync(user, gameId, (byte)status, (byte?)rating, hours, platform, notes, store, (byte?)format);
         foreach (var (kind, lineRating) in LibraryRules.Activities(GameMapper.Status(before?.Status), before?.Rating, status, rating))
         {
             await libraryRepository.AddActivityAsync(user, gameId, (byte)kind, (byte?)lineRating);

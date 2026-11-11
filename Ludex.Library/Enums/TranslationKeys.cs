@@ -58,4 +58,10 @@ public enum TranslationKeys
 
     /// <summary>A favourite game that isn't in the library.</summary>
     FavoriteNotInLibrary,
+
+    /// <summary>A store that isn't a PC store, or a store on a platform that isn't a PC.</summary>
+    StoreNotForPlatform,
+
+    /// <summary>A format the platform never had (a digital NES game, a physical iOS one).</summary>
+    FormatNotForPlatform,
 }

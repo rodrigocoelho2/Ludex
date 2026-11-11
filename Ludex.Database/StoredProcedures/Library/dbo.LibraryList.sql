@@ -12,7 +12,7 @@ BEGIN
 
     DECLARE @UserID BIGINT = (SELECT [UserID] FROM [dbo].[User] WHERE [UserUniqueID] = @UserUniqueID);
 
-    SELECT e.[Status], e.[Rating], e.[Hours], e.[Platform], e.[Notes], e.[AddedAt], e.[UpdatedAt], e.[FinishedAt],
+    SELECT e.[Status], e.[Rating], e.[Hours], e.[Platform], e.[Store], e.[Format], e.[Notes], e.[AddedAt], e.[UpdatedAt], e.[FinishedAt],
            g.[GameID], g.[Name], g.[Slug], g.[Summary], g.[CoverImageID], g.[HeroImageID], g.[Screenshots],
            g.[FirstReleaseDate], g.[Developer], g.[Publisher], g.[Genres], g.[Platforms], g.[Modes], g.[FetchedAt],
            (SELECT COUNT(*)

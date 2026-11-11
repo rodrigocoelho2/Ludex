@@ -25,6 +25,12 @@ public sealed class LibraryEntryDTO
     /// <summary>Gets or sets the family of that platform (PC, PlayStation, Nintendo, Xbox, Mobile, Other), for the filter.</summary>
     public string PlatformFamily { get; set; } = "Other";
 
+    /// <summary>Gets or sets the PC store the copy came from (Steam, Epic Games…).</summary>
+    public string? Store { get; set; }
+
+    /// <summary>Gets or sets the kind of copy: physical or digital.</summary>
+    public GameFormat? Format { get; set; }
+
     /// <summary>Gets or sets when it was added.</summary>
     public DateTimeOffset AddedAt { get; set; }
 
@@ -137,6 +143,12 @@ public sealed class LibrarySaveRequest
 
     /// <summary>Gets or sets where it was played.</summary>
     public string? Platform { get; set; }
+
+    /// <summary>Gets or sets the PC store the copy came from (Steam, Epic Games…).</summary>
+    public string? Store { get; set; }
+
+    /// <summary>Gets or sets the kind of copy: physical or digital.</summary>
+    public GameFormat? Format { get; set; }
 
     /// <summary>Gets or sets the notes.</summary>
     public string? Notes { get; set; }

@@ -147,6 +147,8 @@ internal sealed class GameService(
                 Rating = mine.Rating,
                 Hours = mine.Hours,
                 Platform = mine.Platform,
+                Store = mine.Store,
+                Format = mine.Format is 1 or 2 ? (GameFormat)mine.Format.Value : null,
                 Notes = mine.Notes,
                 AddedAt = GameMapper.Utc(mine.AddedAt),
                 UpdatedAt = GameMapper.Utc(mine.UpdatedAt),

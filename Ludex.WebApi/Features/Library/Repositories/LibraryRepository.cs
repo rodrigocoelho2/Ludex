@@ -27,8 +27,10 @@ internal interface ILibraryRepository
     /// <param name="hours">The hours.</param>
     /// <param name="platform">The platform.</param>
     /// <param name="notes">The notes.</param>
+    /// <param name="store">The PC store.</param>
+    /// <param name="format">The kind of copy (1 physical, 2 digital).</param>
     /// <returns>A task.</returns>
-    Task SaveAsync(Guid userId, int gameId, byte status, byte? rating, decimal? hours, string? platform, string? notes);
+    Task SaveAsync(Guid userId, int gameId, byte status, byte? rating, decimal? hours, string? platform, string? notes, string? store, byte? format);
 
     /// <summary>Takes a game out of a library.</summary>
     /// <param name="userId">The account.</param>
@@ -85,7 +87,7 @@ internal sealed class LibraryRepository(ISqlConnectionFactory connectionFactory)
         QuerySingleOrDefaultAsync<LibraryRow>("[dbo].[LibraryGet]", new { UserUniqueID = userId, GameID = gameId });
 
     /// <inheritdoc />
-    public Task SaveAsync(Guid userId, int gameId, byte status, byte? rating, decimal? hours, string? platform, string? notes) =>
+    public Task SaveAsync(Guid userId, int gameId, byte status, byte? rating, decimal? hours, string? platform, string? notes, string? store, byte? format) =>
         ExecuteAsync("[dbo].[LibrarySave]", new
         {
             UserUniqueID = userId,
@@ -95,6 +97,8 @@ internal sealed class LibraryRepository(ISqlConnectionFactory connectionFactory)
             Hours = hours,
             Platform = platform,
             Notes = notes,
+            Store = store,
+            Format = format,
         });
 
     /// <inheritdoc />

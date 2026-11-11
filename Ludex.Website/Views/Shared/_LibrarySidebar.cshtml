@@ -1,0 +1,47 @@
+@model LibrarySidebarView
+@* The library down the side, as on Steam: a filter, then every game by status. Stays put between the library and the
+   game pages (app.js keeps its scroll position). *@
+@{
+    var groups = new[] { GameStatus.Playing, GameStatus.Finished, GameStatus.Wishlist, GameStatus.Dropped };
+}
+<aside class="lib-side" data-lib-side aria-label="Your library">
+    <a class="lib-side-home" href="/library" aria-current="@(Model.Current is null ? "page" : null)">
+        @Icons.Get("library")<span>Library</span><b>@Model.Entries.Count</b>
+    </a>
+    <label class="lib-side-search">
+        <span class="sr-only">Find in your library</span>
+        @Icons.Get("search")
+        <input type="search" placeholder="Search your games" autocomplete="off" data-side-filter />
+    </label>
+    <nav class="lib-side-groups">
+        @foreach (var status in groups)
+        {
+            var games = Model.Entries.Where(e => e.Status == status).OrderBy(static e => e.Game.Name, StringComparer.OrdinalIgnoreCase).ToList();
+            if (games.Count == 0)
+            {
+                continue;
+            }
+
+            <details class="lib-group" open data-lib-group="@status">
+                <summary><span>@Fmt.Status(status)</span><small>(@games.Count)</small></summary>
+                <ul>
+                    @foreach (var entry in games)
+                    {
+                        var game = entry.Game;
+                        <li data-side-name="@game.Name.ToLowerInvariant()">
+                            <a href="/games/@game.Id" aria-current="@(Model.Current == game.Id ? "page" : null)">
+                                <span class="lib-thumb" style="--tint:@game.Tint">
+                                    @if (game.CoverImageId is { } cover)
+                                    {
+                                        <img src="@Igdb.Url(cover, Igdb.CoverSmall)" alt="" loading="lazy" decoding="async" />
+                                    }
+                                </span>
+                                <span class="lib-side-name">@game.Name</span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </details>
+        }
+    </nav>
+</aside>
