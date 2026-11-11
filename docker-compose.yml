@@ -36,7 +36,7 @@ services:
         max-file: "3"
 
   # The engine: accounts, the IGDB catalog, libraries and friends. Not published on any port: only the website reaches
-  # it, over the stack's own network. It reaches out to Twitch and IGDB when the credentials are set.
+  # it, over the stack's own network. It reaches out to Twitch and IGDB, and to Steam, when the credentials are set.
   webapi:
     build:
       context: .
@@ -56,6 +56,8 @@ services:
       # IGDB, through a Twitch application (https://dev.twitch.tv/console). Empty: the short built-in list of games.
       Ludex__IgdbClientId: ${IGDB_CLIENT_ID:-}
       Ludex__IgdbClientSecret: ${IGDB_CLIENT_SECRET:-}
+      # The Steam import (Settings → Import from Steam): a Steam Web API key. Empty: the import is off.
+      Ludex__SteamApiKey: ${STEAM_API_KEY:-}
       DOTNET_gcServer: "0"
       TZ: ${TIME_ZONE:-Europe/Lisbon}
     cpus: ${LUDEX_CPUS:-1}

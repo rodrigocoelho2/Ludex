@@ -43,6 +43,32 @@ internal interface ILibraryRepository
     /// <param name="rating">The rating, for a Rated line.</param>
     /// <returns>A task.</returns>
     Task AddActivityAsync(Guid userId, int gameId, byte kind, byte? rating);
+
+    /// <summary>
+    /// Adds many games at once (the Steam import): new ones with their status, hours and platform PC; ones already
+    /// there only get more hours. Nothing goes into the friends' feed.
+    /// </summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="games">The games (each once; already in dbo.Game).</param>
+    /// <returns>How many were added and how many got more hours.</returns>
+    Task<LibraryImportCounts> ImportAsync(Guid userId, IReadOnlyCollection<LibraryImportRow> games);
+}
+
+/// <summary>A game for <see cref="ILibraryRepository.ImportAsync"/> (sent as JSON to dbo.LibraryImport).</summary>
+/// <param name="GameID">The game.</param>
+/// <param name="Status">The status for a new entry.</param>
+/// <param name="Hours">The hours played.</param>
+/// <param name="PlayedAt">When it was last played (UTC).</param>
+internal sealed record LibraryImportRow(int GameID, byte Status, decimal? Hours, DateTime? PlayedAt);
+
+/// <summary>What dbo.LibraryImport did.</summary>
+public sealed class LibraryImportCounts
+{
+    /// <summary>Gets or sets how many games were added.</summary>
+    public int Added { get; set; }
+
+    /// <summary>Gets or sets how many games got more hours.</summary>
+    public int Updated { get; set; }
 }
 
 /// <summary>
@@ -77,4 +103,10 @@ internal sealed class LibraryRepository(ISqlConnectionFactory connectionFactory)
     /// <inheritdoc />
     public Task AddActivityAsync(Guid userId, int gameId, byte kind, byte? rating) =>
         ExecuteAsync("[dbo].[ActivityAdd]", new { UserUniqueID = userId, GameID = gameId, Kind = kind, Rating = rating });
+
+    /// <inheritdoc />
+    public async Task<LibraryImportCounts> ImportAsync(Guid userId, IReadOnlyCollection<LibraryImportRow> games) =>
+        games.Count == 0
+            ? new LibraryImportCounts()
+            : await QuerySingleOrDefaultAsync<LibraryImportCounts>("[dbo].[LibraryImport]", new { UserUniqueID = userId, Games = Json(games) }) ?? new LibraryImportCounts();
 }

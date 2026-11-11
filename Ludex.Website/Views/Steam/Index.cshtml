@@ -1,0 +1,126 @@
+@model SteamPageModel
+@{
+    Layout = "_App";
+    ViewData["Title"] = "Import from Steam";
+    var preview = Model.Preview;
+    var statuses = new[] { GameStatus.Playing, GameStatus.Finished, GameStatus.Dropped, GameStatus.Wishlist };
+    var fresh = Model.New;
+    var known = Model.Known;
+}
+
+<div class="steam-page" data-steam="@preview?.SteamId">
+    <a class="back rise" href="/settings">@Icons.Get("left")Settings</a>
+    <div class="page-head rise">
+        <div>
+            <h1>Import from Steam</h1>
+            <p class="muted">Your Steam games and hours go into your library. Ratings stay yours to give.</p>
+        </div>
+    </div>
+
+    @if (preview is { Available: false })
+    {
+        <div class="msg err rise" role="alert">@Icons.Get("info")<p>@preview.Problem</p></div>
+    }
+    else
+    {
+        <form class="panel glass rise d1 steam-form" method="get" action="/steam" data-steam-load>
+            <label class="field">
+                <span class="label">Your Steam profile</span>
+                <span class="in">@Icons.Get("user")<input name="profile" type="text" value="@Model.ProfileInput" placeholder="steamcommunity.com/id/yourname — or the name, or the 17-digit id" autocapitalize="none" spellcheck="false" required /></span>
+                <span class="hint">On Steam: your name at the top → Profile, then copy the address. Your profile's <b>Game details</b> must be Public (Edit profile → Privacy settings).</span>
+            </label>
+            <div class="actions">
+                <button class="btn" type="submit" data-steam-load-button>@Icons.Get("search")<span>@(preview?.SteamId is null ? "Load my Steam games" : "Load again")</span></button>
+            </div>
+            <p class="steam-wait muted" hidden data-steam-wait>@Icons.Get("clock")Reading your Steam library and matching it to IGDB… big libraries take a little while.</p>
+        </form>
+
+        @if (Model.ReadProblem is { } problem)
+        {
+            <div class="msg err rise" role="alert">@Icons.Get("info")<p>@problem</p></div>
+        }
+
+        @if (preview?.SteamId is { } steamId)
+        {
+            <section class="steam-account panel glass rise d1">
+                <span class="steam-av">
+                    @if (preview.AvatarUrl is { } avatar)
+                    {
+                        <img src="@avatar" alt="" />
+                    }
+                </span>
+                <div class="steam-who">
+                    <b>@(preview.PersonaName ?? steamId)</b>
+                    <span class="muted">@Fmt.Plural(preview.OwnedCount, "game", "games") on Steam · @preview.Games.Count matched · @fresh.Count new to your library</span>
+                </div>
+                @if (preview.ProfileUrl is { } profileUrl)
+                {
+                    <a class="btn ghost small" href="@profileUrl" target="_blank" rel="noopener">Steam profile</a>
+                }
+            </section>
+
+            @if (preview.Problem is { } readProblem)
+            {
+                <div class="msg err" role="alert">@Icons.Get("info")<p>@readProblem</p></div>
+            }
+
+            @if (preview.Games.Count > 0)
+            {
+                <p class="muted steam-rule">Suggested: played in the last 30 days → <b>Playing</b>; 2 h or more → <b>Finished</b>; less → <b>Dropped</b>; never played → left out. Change any of them before importing.</p>
+
+                @if (fresh.Count > 0)
+                {
+                    <section class="steam-block">
+                        <div class="steam-block-head">
+                            <h2 class="g-h">New to your library <span class="muted">· @fresh.Count</span></h2>
+                            <div class="steam-quick">
+                                <button type="button" class="link-btn" data-steam-pick="all">Tick all</button>
+                                <button type="button" class="link-btn" data-steam-pick="played">Only played</button>
+                                <button type="button" class="link-btn" data-steam-pick="none">None</button>
+                                <label class="inline-field"><span>Set all to</span>
+                                    <select data-steam-all>
+                                        <option value="">—</option>
+                                        @foreach (var s in statuses) { <option value="@s">@Fmt.Status(s)</option> }
+                                    </select>
+                                </label>
+                            </div>
+                        </div>
+                        <ul class="steam-list">
+                            @foreach (var g in fresh)
+                            {
+                                <partial name="_SteamRow" model="g" />
+                            }
+                        </ul>
+                    </section>
+                }
+
+                @if (known.Count > 0)
+                {
+                    <section class="steam-block">
+                        <h2 class="g-h">Already in your library <span class="muted">· @known.Count</span></h2>
+                        <p class="muted small-empty">These keep their status, rating and notes. Ticked ones take Steam's hours when Steam has more.</p>
+                        <ul class="steam-list">
+                            @foreach (var g in known)
+                            {
+                                <partial name="_SteamRow" model="g" />
+                            }
+                        </ul>
+                    </section>
+                }
+
+                <div class="steam-bar" data-steam-bar>
+                    <span><b data-steam-count>0</b> <span data-steam-count-word>games</span> ticked</span>
+                    <button class="btn" type="button" data-steam-import>@Icons.Get("check")<span>Import</span></button>
+                </div>
+            }
+
+            @if (preview.Unmatched.Count > 0)
+            {
+                <details class="steam-unmatched">
+                    <summary>@Fmt.Plural(preview.Unmatched.Count, "Steam item", "Steam items") IGDB doesn't know (tools, soundtracks, demos…)</summary>
+                    <p class="muted">@string.Join(" · ", preview.Unmatched)</p>
+                </details>
+            }
+        }
+    }
+</div>

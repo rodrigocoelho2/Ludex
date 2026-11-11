@@ -48,7 +48,7 @@ internal sealed class IgdbCatalog(
     public async Task<List<CatalogGame>> SearchAsync(string query, int take, CancellationToken cancellationToken = default)
     {
         var body = $"search \"{Escape(query)}\"; fields {SearchFields}; where version_parent = null; limit {Math.Clamp(take, 1, 50)};";
-        var games = await QueryAsync(body, cancellationToken);
+        var games = await QueryAsync<IgdbGame>("games", body, cancellationToken);
         return [.. games.Select(Map)];
     }
 
@@ -56,7 +56,7 @@ internal sealed class IgdbCatalog(
     public async Task<CatalogGame?> GetAsync(int id, CancellationToken cancellationToken = default)
     {
         var body = $"fields {DetailFields}; where id = {id.ToString(CultureInfo.InvariantCulture)}; limit 1;";
-        var games = await QueryAsync(body, cancellationToken);
+        var games = await QueryAsync<IgdbGame>("games", body, cancellationToken);
         return games.Count == 0 ? null : Map(games[0]);
     }
 
@@ -67,8 +67,61 @@ internal sealed class IgdbCatalog(
         var body = "fields name,slug,cover.image_id,first_release_date; "
                    + "where cover != null & version_parent = null & total_rating_count > 400; "
                    + $"sort total_rating_count desc; limit {Math.Clamp(take, 1, 100)};";
-        var games = await QueryAsync(body, cancellationToken);
+        var games = await QueryAsync<IgdbGame>("games", body, cancellationToken);
         return [.. games.Select(Map)];
+    }
+
+    /// <inheritdoc />
+    public async Task<Dictionary<int, CatalogGame>> SteamAsync(IReadOnlyCollection<int> appIds, CancellationToken cancellationToken = default)
+    {
+        // Steam app → IGDB game, through IGDB's external games (source 1 is Steam; the uid is the app id, as text).
+        var gameByApp = new Dictionary<int, int>();
+        foreach (var chunk in appIds.Distinct().Chunk(200))
+        {
+            var uids = string.Join(",", chunk.Select(static id => $"\"{id.ToString(CultureInfo.InvariantCulture)}\""));
+            var rows = await QueryAsync<IgdbExternalGame>("external_games", $"fields uid,game; where external_game_source = 1 & uid = ({uids}); limit 500;", cancellationToken);
+            foreach (var row in rows)
+            {
+                if (row.Game is { } game && int.TryParse(row.Uid, NumberStyles.None, CultureInfo.InvariantCulture, out var app))
+                {
+                    gameByApp.TryAdd(app, game);
+                }
+            }
+
+            await PaceAsync(cancellationToken);
+        }
+
+        var games = await GamesAsync([.. gameByApp.Values.Distinct()], cancellationToken);
+
+        // An edition or a version ("Deluxe Edition", "Game of the Year") counts as its main game.
+        var parents = games.Values
+            .Select(static g => g.VersionParent)
+            .OfType<int>()
+            .Where(id => !games.ContainsKey(id))
+            .Distinct()
+            .ToList();
+        foreach (var (id, parent) in await GamesAsync(parents, cancellationToken))
+        {
+            games[id] = parent;
+        }
+
+        var result = new Dictionary<int, CatalogGame>();
+        foreach (var (app, id) in gameByApp)
+        {
+            if (!games.TryGetValue(id, out var game))
+            {
+                continue;
+            }
+
+            if (game.VersionParent is { } parentId && games.TryGetValue(parentId, out var main))
+            {
+                game = main;
+            }
+
+            result[app] = Map(game);
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -117,12 +170,33 @@ internal sealed class IgdbCatalog(
         return trimmed.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal);
     }
 
-    private async Task<List<IgdbGame>> QueryAsync(string body, CancellationToken cancellationToken)
+    /// <summary>Several games by id, with everything the game page shows, in as few calls as IGDB allows.</summary>
+    private async Task<Dictionary<int, IgdbGame>> GamesAsync(IReadOnlyCollection<int> ids, CancellationToken cancellationToken)
+    {
+        var games = new Dictionary<int, IgdbGame>();
+        foreach (var chunk in ids.Chunk(400))
+        {
+            var list = string.Join(",", chunk.Select(static id => id.ToString(CultureInfo.InvariantCulture)));
+            foreach (var game in await QueryAsync<IgdbGame>("games", $"fields {DetailFields},version_parent; where id = ({list}); limit 500;", cancellationToken))
+            {
+                games[game.Id] = game;
+            }
+
+            await PaceAsync(cancellationToken);
+        }
+
+        return games;
+    }
+
+    /// <summary>IGDB allows four calls a second: a pause between the calls of a long run (the Steam import).</summary>
+    private Task PaceAsync(CancellationToken cancellationToken) => Task.Delay(TimeSpan.FromMilliseconds(260), timeProvider, cancellationToken);
+
+    private async Task<List<T>> QueryAsync<T>(string endpoint, string body, CancellationToken cancellationToken)
     {
         for (var attempt = 1; attempt <= 2; attempt++)
         {
             var token = await TokenAsync(forceNew: attempt > 1, cancellationToken);
-            using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(new Uri(options.Value.IgdbUrl), "games"))
+            using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(new Uri(options.Value.IgdbUrl), endpoint))
             {
                 Content = new StringContent(body, Encoding.UTF8, "text/plain"),
             };
@@ -153,7 +227,7 @@ internal sealed class IgdbCatalog(
                     throw new CatalogUnavailableException($"IGDB answered {(int)response.StatusCode}");
                 }
 
-                return await response.Content.ReadFromJsonAsync<List<IgdbGame>>(JsonOptions, cancellationToken) ?? [];
+                return await response.Content.ReadFromJsonAsync<List<T>>(JsonOptions, cancellationToken) ?? [];
             }
         }
 
@@ -257,6 +331,19 @@ internal sealed class IgdbGame
 
     [JsonPropertyName("involved_companies")]
     public List<IgdbInvolvedCompany>? InvolvedCompanies { get; set; }
+
+    [JsonPropertyName("version_parent")]
+    public int? VersionParent { get; set; }
+}
+
+/// <summary>A game in another store, as IGDB links it (here: a Steam app).</summary>
+internal sealed class IgdbExternalGame
+{
+    [JsonPropertyName("uid")]
+    public string? Uid { get; set; }
+
+    [JsonPropertyName("game")]
+    public int? Game { get; set; }
 }
 
 /// <summary>An IGDB image (cover, artwork, screenshot).</summary>

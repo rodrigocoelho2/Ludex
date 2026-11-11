@@ -44,6 +44,12 @@ internal interface IProfileRepository
     /// <returns>A task.</returns>
     Task TouchAsync(Guid userId);
 
+    /// <summary>Remembers the Steam account a library was imported from.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="steamId">The SteamID64.</param>
+    /// <returns>A task.</returns>
+    Task SetSteamAsync(Guid userId, string steamId);
+
     /// <summary>The account's friends, with what they are playing.</summary>
     /// <param name="userId">The account.</param>
     /// <returns>The friends, playing first.</returns>
@@ -76,6 +82,9 @@ internal sealed class ProfileRepository(ISqlConnectionFactory connectionFactory)
 
     /// <inheritdoc />
     public Task TouchAsync(Guid userId) => ExecuteAsync("[dbo].[ProfileTouch]", new { UserUniqueID = userId });
+
+    /// <inheritdoc />
+    public Task SetSteamAsync(Guid userId, string steamId) => ExecuteAsync("[dbo].[ProfileSetSteam]", new { UserUniqueID = userId, SteamID = steamId });
 
     /// <inheritdoc />
     public Task<List<ProfileFriendRow>> FriendsAsync(Guid userId) => QueryAsync<ProfileFriendRow>("[dbo].[ProfileFriends]", new { UserUniqueID = userId });

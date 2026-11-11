@@ -47,6 +47,11 @@ internal sealed class OfflineCatalog : IGameCatalog
     public Task<List<CatalogGame>> PopularAsync(int take, CancellationToken cancellationToken = default) =>
         Task.FromResult(Games.Take(Math.Max(1, take)).ToList());
 
+    /// <inheritdoc />
+    /// <remarks>The built-in list knows nothing about Steam: the import needs IGDB.</remarks>
+    public Task<Dictionary<int, CatalogGame>> SteamAsync(IReadOnlyCollection<int> appIds, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new Dictionary<int, CatalogGame>());
+
     /// <summary>
     /// Lower case without accents or punctuation, for matching ("Pokémon: Z-A" → "pokemon z a").
     /// </summary>

@@ -89,4 +89,13 @@ internal interface IGameCatalog
     /// <returns>The games (search fields only).</returns>
     /// <exception cref="CatalogUnavailableException">The catalog can't be reached.</exception>
     Task<List<CatalogGame>> PopularAsync(int take, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The catalog's games for Steam apps (the Steam import). Editions and versions are given as their main game.
+    /// </summary>
+    /// <param name="appIds">Steam app ids.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The game of each app the catalog knows (apps it doesn't know are left out), with everything the game page shows.</returns>
+    /// <exception cref="CatalogUnavailableException">The catalog can't be reached.</exception>
+    Task<Dictionary<int, CatalogGame>> SteamAsync(IReadOnlyCollection<int> appIds, CancellationToken cancellationToken = default);
 }

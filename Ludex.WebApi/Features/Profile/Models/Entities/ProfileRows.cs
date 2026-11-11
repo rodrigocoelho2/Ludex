@@ -29,6 +29,9 @@ public sealed class ProfileRow
 
     /// <summary>Gets or sets the last time the account used the app (UTC).</summary>
     public DateTime? LastSeenAt { get; set; }
+
+    /// <summary>Gets or sets the SteamID64 the library was last imported from.</summary>
+    public string? SteamID { get; set; }
 }
 
 /// <summary>A profile photo (dbo.ProfileAvatarGet).</summary>

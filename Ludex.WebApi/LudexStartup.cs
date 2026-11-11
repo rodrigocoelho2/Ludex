@@ -13,6 +13,7 @@ using Ludex.WebApi.Features.Library.Repositories;
 using Ludex.WebApi.Features.Library.Services;
 using Ludex.WebApi.Features.Profile.Repositories;
 using Ludex.WebApi.Features.Profile.Services;
+using Ludex.WebApi.Features.Steam.Services;
 using Ludex.WebApi.Features.Users.Repositories;
 using Ludex.WebApi.Features.Users.Services;
 using Microsoft.AspNetCore.Authentication;
@@ -65,6 +66,13 @@ internal static class LudexStartup
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Ludex/1.0 (+https://github.com/rodrigocoelho2/Ludex)");
         });
 
+        // The Steam Web API (the Steam import).
+        services.AddHttpClient(SteamClient.HttpClientName, static client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Ludex/1.0 (+https://github.com/rodrigocoelho2/Ludex)");
+        });
+
         // Infrastructure
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IGlobalizationHelper, GlobalizationHelper>();
@@ -94,6 +102,8 @@ internal static class LudexStartup
         services.AddSingleton<ILibraryService, LibraryService>();
         services.AddSingleton<IFriendService, FriendService>();
         services.AddSingleton<IProfileService, ProfileService>();
+        services.AddSingleton<SteamClient>();
+        services.AddSingleton<ISteamService, SteamService>();
 
         return services;
     }
@@ -115,6 +125,9 @@ internal static class LudexStartup
         app.Logger.LogInformation(
             "Game catalog: {Catalog}",
             catalog.Source == Ludex.Library.Enums.CatalogSource.Igdb ? "IGDB" : "the built-in list (set IGDB_CLIENT_ID and IGDB_CLIENT_SECRET for IGDB)");
+        app.Logger.LogInformation(
+            "Steam import: {Steam}",
+            app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<LudexOptions>>().Value.HasSteam ? "on" : "off (set STEAM_API_KEY)");
 
         app.UseAuthentication();
         app.UseAuthorization();

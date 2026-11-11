@@ -160,6 +160,20 @@ public sealed class LudexClient(HttpClient httpClient)
         await EnsureSuccessAsync(response);
     }
 
+    // ----- Steam -----
+
+    /// <summary>Reads a Steam library and matches it to the catalog.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="profile">The Steam profile typed (null: the one imported from last time).</param>
+    /// <returns>The games with a suggested status (a <see cref="LudexApiException"/> with 400 when the profile can't be read).</returns>
+    public Task<SteamPreviewDTO> SteamPreviewAsync(string userId, string? profile = null) =>
+        GetAsync<SteamPreviewDTO>($"steam?userId={Uri.EscapeDataString(userId)}&profile={Uri.EscapeDataString(profile ?? string.Empty)}");
+
+    /// <summary>Adds the games ticked.</summary>
+    /// <param name="item">The account, the Steam account and the games.</param>
+    /// <returns>How many were added and updated.</returns>
+    public Task<SteamImportResultDTO> SteamImportAsync(SteamImportRequest item) => PostAsync<SteamImportResultDTO>("steam/import", item);
+
     // ----- Health -----
 
     /// <summary>Checks the WebApi and its database.</summary>

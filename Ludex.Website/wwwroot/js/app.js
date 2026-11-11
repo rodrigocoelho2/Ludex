@@ -367,6 +367,75 @@
         });
     }
 
+    /* ---------- Steam import: load (with a wait note), tick, pick statuses, import ---------- */
+    const steamLoad = $('[data-steam-load]');
+    if (steamLoad) {
+        steamLoad.addEventListener('submit', () => {
+            const button = $('[data-steam-load-button]', steamLoad);
+            if (button) { button.disabled = true; button.classList.add('is-busy'); }
+            const wait = $('[data-steam-wait]', steamLoad);
+            if (wait) wait.hidden = false;
+        });
+    }
+    const steam = $('[data-steam]');
+    if (steam && steam.dataset.steam) {
+        const rows = $$('[data-steam-row]', steam);
+        const boxes = () => rows.map(r => ({ row: r, box: $('input[type=checkbox]', r) })).filter(x => x.box && !x.box.disabled);
+        const count = $('[data-steam-count]', steam);
+        const word = $('[data-steam-count-word]', steam);
+        const bar = $('[data-steam-bar]', steam);
+        const paint = () => {
+            const n = boxes().filter(x => x.box.checked).length;
+            if (count) count.textContent = n;
+            if (word) word.textContent = n === 1 ? 'game' : 'games';
+            rows.forEach(r => { const b = $('input[type=checkbox]', r); r.classList.toggle('is-off', !!b && !b.checked); });
+            const go = $('[data-steam-import]', steam);
+            if (go) go.disabled = n === 0;
+        };
+        steam.addEventListener('change', e => {
+            if (e.target.matches('input[type=checkbox]')) paint();
+            if (e.target.matches('.steam-status')) {
+                // Choosing a status means "import this one".
+                const box = $('input[type=checkbox]', e.target.closest('[data-steam-row]'));
+                if (box && !box.disabled) { box.checked = true; paint(); }
+            }
+            if (e.target.matches('[data-steam-all]') && e.target.value) {
+                $$('.steam-status', steam).forEach(sel => { sel.value = e.target.value; });
+                e.target.value = '';
+            }
+        });
+        $$('[data-steam-pick]', steam).forEach(b => b.addEventListener('click', () => {
+            const how = b.dataset.steamPick;
+            const section = b.closest('.steam-block');
+            boxes().filter(x => section.contains(x.row)).forEach(x => {
+                x.box.checked = how === 'all' || (how === 'played' && x.row.dataset.minutesPlayed === '1');
+            });
+            paint();
+        }));
+        $('[data-steam-import]', steam)?.addEventListener('click', async e => {
+            const button = e.currentTarget;
+            const games = boxes().filter(x => x.box.checked).map(({ row }) => ({
+                gameId: Number(row.dataset.game),
+                status: $('.steam-status', row)?.value || 'Finished',
+                hours: row.dataset.hours === '' ? null : Number(row.dataset.hours),
+                lastPlayedAt: row.dataset.played || null,
+            }));
+            if (!games.length) return;
+            button.disabled = true;
+            button.classList.add('is-busy');
+            const result = await post('/steam/import', { steamId: steam.dataset.steam, games });
+            button.classList.remove('is-busy');
+            if (!result) { button.disabled = false; return; }
+            const parts = [];
+            if (result.added) parts.push(`${result.added} added`);
+            if (result.updated) parts.push(`${result.updated} with more hours`);
+            toast(parts.length ? `Steam: ${parts.join(', ')}` : 'Already up to date');
+            setTimeout(() => { location.href = '/library'; }, 1200);
+        });
+        if (bar) bar.classList.add('is-ready');
+        paint();
+    }
+
     /* ---------- Characters left in a text box ---------- */
     $$('[data-count-chars]').forEach(box => {
         const max = Number(box.dataset.countChars);

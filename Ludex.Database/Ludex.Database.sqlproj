@@ -56,6 +56,8 @@
     <Build Include="StoredProcedures\Profile\dbo.ProfileSave.sql" />
     <Build Include="StoredProcedures\Profile\dbo.ProfileSetFavorite.sql" />
     <Build Include="StoredProcedures\Profile\dbo.ProfileTouch.sql" />
+    <Build Include="StoredProcedures\Profile\dbo.ProfileSetSteam.sql" />
+    <Build Include="StoredProcedures\Library\dbo.LibraryImport.sql" />
     <Build Include="StoredProcedures\Users\dbo.UserCount.sql" />
     <Build Include="StoredProcedures\Users\dbo.UserCreate.sql" />
     <Build Include="StoredProcedures\Users\dbo.UserDelete.sql" />

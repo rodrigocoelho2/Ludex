@@ -29,6 +29,18 @@ public sealed class LudexOptions
     /// <summary>Gets or sets after how many days a game's data is fetched from IGDB again when someone opens it.</summary>
     public int RefreshDays { get; set; } = 30;
 
+    /// <summary>
+    /// Gets or sets the Steam Web API key (https://steamcommunity.com/dev/apikey), for importing a Steam library.
+    /// Empty: the import is off. Never commit a real value.
+    /// </summary>
+    public string SteamApiKey { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the Steam Web API address.</summary>
+    public string SteamUrl { get; set; } = "https://api.steampowered.com/";
+
+    /// <summary>Gets a value indicating whether the Steam Web API key is set.</summary>
+    public bool HasSteam => !string.IsNullOrWhiteSpace(SteamApiKey);
+
     /// <summary>Gets a value indicating whether the IGDB credentials are set.</summary>
     public bool HasIgdb => !string.IsNullOrWhiteSpace(IgdbClientId) && !string.IsNullOrWhiteSpace(IgdbClientSecret);
 }

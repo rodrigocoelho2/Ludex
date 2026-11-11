@@ -195,6 +195,25 @@ public sealed class ProfilePageModel : AppPageModel
     };
 }
 
+/// <summary>The Steam import.</summary>
+public sealed class SteamPageModel : AppPageModel
+{
+    /// <summary>Gets or sets the Steam profile typed.</summary>
+    public string ProfileInput { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets what was read (null: nothing yet).</summary>
+    public SteamPreviewDTO? Preview { get; set; }
+
+    /// <summary>Gets or sets why the profile couldn't be read.</summary>
+    public string? ReadProblem { get; set; }
+
+    /// <summary>Gets the games new to the library.</summary>
+    public List<SteamGameDTO> New => Preview is null ? [] : [.. Preview.Games.Where(static g => g.Game.MyStatus is null)];
+
+    /// <summary>Gets the games already in the library.</summary>
+    public List<SteamGameDTO> Known => Preview is null ? [] : [.. Preview.Games.Where(static g => g.Game.MyStatus is not null)];
+}
+
 /// <summary>Editing one's profile.</summary>
 public sealed class ProfileEditPageModel : AppPageModel
 {

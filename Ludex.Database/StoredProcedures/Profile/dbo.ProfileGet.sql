@@ -17,7 +17,8 @@ BEGIN
            p.[Location],
            p.[FavoriteGameID],
            p.[AvatarVersion],
-           p.[LastSeenAt]
+           p.[LastSeenAt],
+           p.[SteamID]
     FROM [dbo].[User] u
     LEFT JOIN [dbo].[Profile] p ON p.[UserID] = u.[UserID]
     WHERE u.[UserUniqueID] = @UserUniqueID;
