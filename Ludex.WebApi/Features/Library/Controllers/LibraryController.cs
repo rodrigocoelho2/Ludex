@@ -68,4 +68,13 @@ internal sealed class LibraryController(ILibraryService libraryService) : Intern
     [ProducesResponseType<HomeDTO>((int)HttpStatusCode.OK)]
     [SwaggerOperation(Summary = "LibraryHome", OperationId = "LibraryHome")]
     public async Task<ActionResult<HomeDTO>> LibraryHomeAsync(string userId) => (await libraryService.HomeAsync(userId)).ToActionResult();
+
+    /// <summary>Sets the price under which a wishlisted game raises an alert.</summary>
+    /// <param name="item">The account, the game and the price.</param>
+    /// <returns>The price now.</returns>
+    [HttpPost("price-target")]
+    [Consumes(MediaTypeNames.Application.Json)]
+    [ProducesResponseType<PriceTargetRequest>((int)HttpStatusCode.OK)]
+    [SwaggerOperation(Summary = "LibraryPriceTarget", OperationId = "LibraryPriceTarget")]
+    public async Task<ActionResult<PriceTargetRequest>> LibraryPriceTargetAsync(PriceTargetRequest item) => (await libraryService.SetPriceTargetAsync(item)).ToActionResult();
 }

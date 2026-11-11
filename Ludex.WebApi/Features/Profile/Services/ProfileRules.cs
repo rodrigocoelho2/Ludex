@@ -9,7 +9,8 @@ namespace Ludex.WebApi.Features.Profile.Services;
 /// <summary>
 /// The rules of a profile, kept apart from the database so the tests can check them: XP and levels, badges, and
 /// what a profile photo may be.
-/// XP: 100 per finished game, 20 per rating, 5 per game in the library (the wishlist left out), 1 per hour played.
+/// XP: 100 per finished game, 20 per rating, 5 per game in the library (the wishlist left out), 1 per hour played,
+/// 2 per Steam achievement.
 /// Level L starts at 100·(L−1)² XP: level 2 at 100, 3 at 400, 4 at 900, 10 at 8,100.
 /// </summary>
 internal static class ProfileRules
@@ -32,6 +33,9 @@ internal static class ProfileRules
     /// <summary>XP for each game in the library (not the wishlist).</summary>
     public const int XpPerGame = 5;
 
+    /// <summary>XP for each Steam achievement.</summary>
+    public const int XpPerAchievement = 2;
+
     /// <summary>
     /// The XP a library is worth.
     /// </summary>
@@ -44,6 +48,7 @@ internal static class ProfileRules
         return (played.Count(static r => r.Status == (byte)GameStatus.Finished) * XpPerFinished)
             + (rows.Count(static r => r.Rating is not null) * XpPerRating)
             + (played.Count * XpPerGame)
+            + (rows.Sum(static r => (int)(r.AchievementsUnlocked ?? 0)) * XpPerAchievement)
             + hours;
     }
 
@@ -103,6 +108,8 @@ internal static class ProfileRules
             .DefaultIfEmpty(0)
             .Max();
         var retro = finished.Count(static r => r.FirstReleaseDate is { Year: < 2000 });
+        var platinums = rows.Count(static r => r.AchievementsTotal is > 0 && r.AchievementsUnlocked >= r.AchievementsTotal);
+        var achievements = rows.Sum(static r => (int)(r.AchievementsUnlocked ?? 0));
         var dayOne = rows.Count(static r => r.FirstReleaseDate is { } release
             && r.AddedAt >= release.AddDays(-1)
             && r.AddedAt <= release.AddDays(30));
@@ -121,13 +128,16 @@ internal static class ProfileRules
             Badge("tough-crowd", "Tough crowd", "Give a game 3 or less.", "thumb-down", Red, ratings.Count(static r => r <= 3), 1),
             Badge("collector", "Collector", "Have 50 games in the library.", "library", Bronze, played.Count, 50),
             Badge("curator", "Curator", "Have 100 games in the library.", "library", Purple, played.Count, 100),
-            Badge("wishful", "Wishful thinking", "Put 10 games on the wishlist.", "heart", Purple, rows.Count - played.Count, 10),
+            Badge("wishful", "Wishful thinking", "Put 10 games on the wishlist.", "heart", Purple, rows.Count(static r => r.Status == (byte)GameStatus.Wishlist), 10),
             Badge("platform-hopper", "Platform hopper", "Play on 4 families of platforms.", "pad", Green, families, 4),
             Badge("retro-soul", "Retro soul", "Finish a game released before 2000.", "sparkle", Bronze, retro, 1),
             Badge("day-one", "Day one", "Add a game within 30 days of its release.", "bolt", Accent, dayOne, 1),
             Badge("good-company", "Good company", "Have 5 friends.", "friends", Green, friendCount, 5),
             Badge("year-of-play", "Year of play", "Finish 12 games in one year.", "calendar", Silver, bestYear, 12),
             Badge("not-for-me", "Not for me", "Drop a game.", "x", Red, rows.Count(static r => r.Status == (byte)GameStatus.Dropped), 1),
+            Badge("platinum", "Platinum", "Unlock every Steam achievement of a game.", "badge", Gold, platinums, 1),
+            Badge("trophy-cabinet", "Trophy cabinet", "Unlock every achievement of 10 games.", "trophy", Purple, platinums, 10),
+            Badge("achievement-hunter", "Achievement hunter", "Unlock 500 Steam achievements.", "sparkle", Accent, achievements, 500),
         };
 
         return [.. badges

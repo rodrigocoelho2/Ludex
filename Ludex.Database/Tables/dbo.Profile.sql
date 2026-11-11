@@ -9,6 +9,7 @@ CREATE TABLE [dbo].[Profile]
     [AvatarVersion]     INT             NULL,
     [LastSeenAt]        DATETIME2 (3)   NULL,
     [SteamID]           VARCHAR (20)    NULL,
+    [SteamSyncedAt]     DATETIME2 (3)   NULL,
     [UpdatedAt]         DATETIME2 (3)   NOT NULL CONSTRAINT [DF_Profile_UpdatedAt] DEFAULT (SYSUTCDATETIME()),
     CONSTRAINT [PK_Profile] PRIMARY KEY CLUSTERED ([UserID] ASC),
     CONSTRAINT [FK_Profile_User] FOREIGN KEY ([UserID]) REFERENCES [dbo].[User] ([UserID]) ON DELETE CASCADE,

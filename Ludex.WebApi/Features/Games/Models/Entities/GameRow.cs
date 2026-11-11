@@ -52,6 +52,23 @@ public class GameRow
     /// <summary>Gets or sets when the data was copied from the catalog (UTC).</summary>
     public DateTime FetchedAt { get; set; }
 
+    /// <summary>Gets or sets the critics' rating (0–100).</summary>
+    public byte? CriticScore { get; set; }
+
+    /// <summary>Gets or sets the hours to finish the main story.</summary>
+    public decimal? TimeToBeatMain { get; set; }
+
+    /// <summary>Gets or sets the hours to finish everything.</summary>
+    public decimal? TimeToBeatFull { get; set; }
+
+    /// <summary>Gets or sets which fields were fetched (<see cref="CurrentDataVersion"/>: all of them).</summary>
+    public byte DataVersion { get; set; } = 1;
+
+    /// <summary>
+    /// The data a game row has now: 2 added the critics' rating and the times to beat. Rows below it are fetched again.
+    /// </summary>
+    public const byte CurrentDataVersion = 2;
+
     /// <summary>
     /// Splits a list column.
     /// </summary>
@@ -105,6 +122,10 @@ public class GameRow
         Genres = Join(game.Genres, ListSeparator, 400),
         Platforms = Join(game.Platforms, ListSeparator, 1000),
         Modes = Join(game.Modes, ListSeparator, 400),
+        CriticScore = game.CriticScore is >= 0 and <= 100 ? (byte)game.CriticScore.Value : null,
+        TimeToBeatMain = game.TimeToBeatMain is > 0 and < 10000 ? game.TimeToBeatMain : null,
+        TimeToBeatFull = game.TimeToBeatFull is > 0 and < 10000 ? game.TimeToBeatFull : null,
+        DataVersion = CurrentDataVersion,
     };
 
     private static string? Cut(string? value, int length) => value is { } text && text.Length > length ? text[..length] : value;

@@ -31,6 +31,9 @@ public sealed class SteamPreviewDTO
 
     /// <summary>Gets or sets the Steam names the catalog doesn't know (tools, soundtracks, demos…).</summary>
     public List<string> Unmatched { get; set; } = [];
+
+    /// <summary>Gets or sets when the library was last synced with Steam (null: never).</summary>
+    public DateTimeOffset? SyncedAt { get; set; }
 }
 
 /// <summary>One Steam game, matched to the catalog.</summary>
@@ -88,6 +91,12 @@ public sealed class SteamImportGameRequest
 
     /// <summary>Gets or sets when it was last played on Steam.</summary>
     public DateTimeOffset? LastPlayedAt { get; set; }
+
+    /// <summary>Gets or sets its Steam app.</summary>
+    public int? AppId { get; set; }
+
+    /// <summary>Gets or sets the hours played on Steam in the last two weeks.</summary>
+    public decimal? RecentHours { get; set; }
 }
 
 /// <summary>What an import did.</summary>
@@ -98,4 +107,68 @@ public sealed class SteamImportResultDTO
 
     /// <summary>Gets or sets how many games got more hours.</summary>
     public int Updated { get; set; }
+}
+
+/// <summary>Syncs an account's library with Steam now.</summary>
+public sealed class SteamSyncRequest
+{
+    /// <summary>Gets or sets the account.</summary>
+    public string? UserId { get; set; }
+}
+
+/// <summary>What a sync did.</summary>
+public sealed class SteamSyncResultDTO
+{
+    /// <summary>Gets or sets how many games bought since were added (as Backlog, or by how they were played).</summary>
+    public int Added { get; set; }
+
+    /// <summary>Gets or sets how many games got more hours.</summary>
+    public int Updated { get; set; }
+
+    /// <summary>Gets or sets how many games had their achievements read.</summary>
+    public int Achievements { get; set; }
+}
+
+/// <summary>An account's Steam achievements in a game.</summary>
+public sealed class AchievementsDTO
+{
+    /// <summary>Gets or sets the Steam app.</summary>
+    public int AppId { get; set; }
+
+    /// <summary>Gets or sets how many are unlocked.</summary>
+    public int Unlocked { get; set; }
+
+    /// <summary>Gets or sets how many the game has.</summary>
+    public int Total { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether Steam wouldn't say (private game details).</summary>
+    public bool Private { get; set; }
+
+    /// <summary>Gets or sets the achievements: unlocked first (latest first), then the rarest still locked.</summary>
+    public List<AchievementDTO> Items { get; set; } = [];
+}
+
+/// <summary>One achievement.</summary>
+public sealed class AchievementDTO
+{
+    /// <summary>Gets or sets the name.</summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets what it takes (null for a hidden one still locked).</summary>
+    public string? Description { get; set; }
+
+    /// <summary>Gets or sets the icon (the grey one while locked).</summary>
+    public string? IconUrl { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether it is unlocked.</summary>
+    public bool Unlocked { get; set; }
+
+    /// <summary>Gets or sets when it was unlocked.</summary>
+    public DateTimeOffset? UnlockedAt { get; set; }
+
+    /// <summary>Gets or sets the % of players who have it (null: unknown).</summary>
+    public double? GlobalPercent { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether it is hidden until unlocked.</summary>
+    public bool Hidden { get; set; }
 }

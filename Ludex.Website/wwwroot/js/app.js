@@ -69,7 +69,7 @@
         }
     }
 
-    const statusWords = { Playing: 'Playing', Finished: 'Finished', Wishlist: 'Wishlist', Dropped: 'Dropped' };
+    const statusWords = { Playing: 'Playing', Finished: 'Finished', Wishlist: 'Wishlist', Dropped: 'Dropped', Backlog: 'Backlog' };
 
     /* ---------- Count-up on the home tiles ---------- */
     function countUp() {
@@ -158,6 +158,7 @@
         const status = $('[data-status-filter]');
         const platform = $('[data-platform-filter]');
         const copy = $('[data-copy-filter]');
+        const collection = $('[data-collection-filter]');
         const friendsOnly = $('[data-friends-filter]');
         const sort = $('[data-sort]');
         const label = $('[data-shown-label]');
@@ -168,6 +169,11 @@
             name: (a, b) => a.dataset.name.localeCompare(b.dataset.name),
             friends: (a, b) => num(b, 'friends') - num(a, 'friends') || a.dataset.name.localeCompare(b.dataset.name),
             rating: (a, b) => num(b, 'rating') - num(a, 'rating') || num(b, 'hours') - num(a, 'hours'),
+            achievements: (a, b) => num(b, 'achievements') - num(a, 'achievements') || a.dataset.name.localeCompare(b.dataset.name),
+            critic: (a, b) => num(b, 'critic') - num(a, 'critic') || a.dataset.name.localeCompare(b.dataset.name),
+            recent: (a, b) => num(b, 'recent') - num(a, 'recent') || num(b, 'updated') - num(a, 'updated'),
+            // Unknown times go last.
+            shortest: (a, b) => (num(a, 'ttb') || 1e9) - (num(b, 'ttb') || 1e9) || a.dataset.name.localeCompare(b.dataset.name),
             hours: (a, b) => num(b, 'hours') - num(a, 'hours'),
             release: (a, b) => num(b, 'release') - num(a, 'release') || a.dataset.name.localeCompare(b.dataset.name),
             added: (a, b) => num(b, 'added') - num(a, 'added'),
@@ -179,6 +185,7 @@
             const st = status?.value || '';
             const pf = platform?.value || '';
             const cp = copy?.value || '';
+            const col = collection?.value || '';
             let shown = 0;
             cards.forEach(card => {
                 const d = card.dataset;
@@ -186,6 +193,7 @@
                     && (!st || d.status === st)
                     && (!pf || (pf.startsWith('family:') ? d.family === pf.slice(7) : d.platform.toLowerCase() === pf.slice(9).toLowerCase()))
                     && (!cp || (cp === 'Physical' || cp === 'Digital' ? d.format === cp : d.store === cp))
+                    && (!col || (d.collections || '').includes(`,${col},`))
                     && (!friendsOnly?.checked || Number(d.friends) > 0);
                 card.classList.toggle('is-hidden', !visible);
                 if (visible) shown++;
@@ -194,17 +202,30 @@
             cards.slice().sort(compare).forEach(card => library.appendChild(card));
             if (label) label.textContent = `${shown} ${shown === 1 ? 'game' : 'games'}`;
             if (none) none.hidden = shown > 0;
-            if (status) {
-                const url = new URL(location.href);
-                if (st) url.searchParams.set('status', st.toLowerCase()); else url.searchParams.delete('status');
-                history.replaceState(null, '', url);
-            }
+            const url = new URL(location.href);
+            if (st) url.searchParams.set('status', st.toLowerCase()); else url.searchParams.delete('status');
+            if (col) url.searchParams.set('collection', col); else url.searchParams.delete('collection');
+            history.replaceState(null, '', url);
+            const acts = $('[data-col-acts]');
+            if (acts) acts.hidden = !col;
         };
         // Cards carry their cover's view-transition name, so a filter or a new order animates every card into place.
         const animate = () => (document.startViewTransition && !reduceMotion) ? document.startViewTransition(apply) : apply();
         let textTimer;
         text?.addEventListener('input', () => { clearTimeout(textTimer); textTimer = setTimeout(animate, 140); });
-        [status, platform, copy, friendsOnly].forEach(el => el?.addEventListener('change', animate));
+        [status, platform, copy, collection, friendsOnly].forEach(el => el?.addEventListener('change', animate));
+        $('[data-col-rename]')?.addEventListener('click', async () => {
+            const id = Number(collection.value);
+            const current = collection.selectedOptions[0]?.textContent.replace(/\s\(\d+\)$/, '') || '';
+            const name = (window.prompt('New name for the collection', current) || '').trim();
+            if (!name || name === current) return;
+            if (await post('/collections/rename', { id, name })) location.reload();
+        });
+        $('[data-col-delete]')?.addEventListener('click', async () => {
+            const id = Number(collection.value);
+            if (!window.confirm('Delete this collection? Its games stay in your library.')) return;
+            if (await post('/collections/delete', { id })) { location.href = '/library'; }
+        });
         sort?.addEventListener('change', () => { store.set('ludex.sort', sort.value); animate(); });
         apply();
     }
@@ -218,6 +239,65 @@
         const current = $('a[aria-current="page"]', list || side);
         if (list && current && !top) current.scrollIntoView({ block: 'center' });
         list?.addEventListener('scroll', () => store.set('ludex.side', String(list.scrollTop)), { passive: true });
+        // A new collection.
+        const newButton = $('[data-new-collection]', side);
+        const newForm = $('[data-new-collection-form]', side);
+        newButton?.addEventListener('click', () => {
+            newForm.hidden = !newForm.hidden;
+            if (!newForm.hidden) $('input', newForm).focus();
+        });
+        newForm?.addEventListener('submit', async e => {
+            e.preventDefault();
+            const name = $('input', newForm).value.trim();
+            if (!name) return;
+            if (await post('/collections/create', { name })) location.reload();
+        });
+
+        // Drag a game (a card, or a game in the sidebar) onto a collection to put it there.
+        document.addEventListener('dragstart', e => {
+            const source = e.target.closest && e.target.closest('[data-drag-game]');
+            if (!source) return;
+            e.dataTransfer.setData('text/x-ludex-game', source.dataset.dragGame);
+            e.dataTransfer.effectAllowed = 'copy';
+            side.classList.add('is-dragging');
+        });
+        document.addEventListener('dragend', () => {
+            side.classList.remove('is-dragging');
+            $$('.is-drop', side).forEach(el => el.classList.remove('is-drop'));
+        });
+        $$('[data-drop-collection]', side).forEach(group => {
+            group.addEventListener('dragover', e => {
+                if (!e.dataTransfer.types.includes('text/x-ludex-game')) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+                group.classList.add('is-drop');
+            });
+            group.addEventListener('dragleave', e => { if (!group.contains(e.relatedTarget)) group.classList.remove('is-drop'); });
+            group.addEventListener('drop', async e => {
+                e.preventDefault();
+                group.classList.remove('is-drop');
+                const gameId = Number(e.dataTransfer.getData('text/x-ludex-game'));
+                if (!gameId) return;
+                const collectionId = Number(group.dataset.dropCollection);
+                const list = $('ul', group);
+                if ($(`[data-drag-game="${gameId}"]`, list)) { toast('Already in this collection'); return; }
+                if (!(await post('/collections/game', { collectionId, gameId, in: true }))) return;
+                const item = $(`.lib-group:not(.lib-col) [data-drag-game="${gameId}"]`, side)?.closest('li');
+                if (item) {
+                    const copy = item.cloneNode(true);
+                    $('a', copy)?.removeAttribute('aria-current');
+                    copy.classList.add('pop-in');
+                    list.appendChild(copy);
+                }
+                const count = $('[data-col-count]', group);
+                if (count) count.textContent = String(Number(count.textContent) + 1);
+                const card = $(`.lib-card[data-drag-game="${gameId}"]`);
+                if (card) card.dataset.collections = (card.dataset.collections || ',') + collectionId + ',';
+                group.open = true;
+                toast(`Added to ${$('summary span', group)?.textContent || 'the collection'}`);
+            });
+        });
+
         const find = $('[data-side-filter]', side);
         find?.addEventListener('input', () => {
             const q = find.value.trim().toLowerCase();
@@ -491,6 +571,122 @@
         });
         if (bar) bar.classList.add('is-ready');
         paint();
+    }
+
+    /* ---------- Game page: collections ---------- */
+    const colBox = $('[data-collections]');
+    if (colBox) {
+        const gameId = Number(colBox.dataset.game);
+        colBox.addEventListener('click', async e => {
+            const out = e.target.closest('[data-col-out]');
+            if (!out) return;
+            const collectionId = Number(out.dataset.colOut);
+            if (!(await post('/collections/game', { collectionId, gameId, in: false }))) return;
+            location.reload();
+        });
+        $('[data-col-add]', colBox)?.addEventListener('change', async e => {
+            const value = e.target.value;
+            e.target.value = '';
+            if (!value) return;
+            let collectionId = Number(value);
+            if (value === 'new') {
+                const name = (window.prompt('Name of the new collection') || '').trim();
+                if (!name) return;
+                const list = await post('/collections/create', { name });
+                const made = list && list.find(c => c.name.toLowerCase() === name.toLowerCase());
+                if (!made) return;
+                collectionId = made.id;
+            }
+            if (await post('/collections/game', { collectionId, gameId, in: true })) location.reload();
+        });
+    }
+
+    /* ---------- Game page: every achievement ---------- */
+    $('[data-ach-more]')?.addEventListener('click', e => {
+        $$('[data-ach-item]').forEach(li => { li.hidden = false; });
+        e.currentTarget.remove();
+    });
+
+    /* ---------- Game page: the price alert ---------- */
+    const priceBox = $('[data-price]');
+    if (priceBox) {
+        $('[data-price-save]', priceBox)?.addEventListener('click', async () => {
+            const raw = $('[data-price-target]', priceBox).value.trim().replace(',', '.');
+            const target = raw === '' ? null : Number(raw);
+            const result = await post(`/games/${priceBox.dataset.game}/price-target`, { target });
+            if (result) toast(target === null ? 'No price alert' : `You'll get an alert under ${target.toFixed(2)}`);
+        });
+    }
+
+    /* ---------- The bell ---------- */
+    const bell = $('[data-bell-count]');
+    if (bell) {
+        fetch('/notifications/count', { credentials: 'same-origin' })
+            .then(r => r.ok ? r.json() : { unread: 0 })
+            .then(d => { if (d.unread > 0) { bell.textContent = d.unread > 9 ? '9+' : String(d.unread); bell.hidden = false; } })
+            .catch(() => { });
+    }
+
+    /* ---------- Steam: sync now ---------- */
+    $('[data-steam-sync]')?.addEventListener('click', async e => {
+        const button = e.currentTarget;
+        button.disabled = true;
+        button.classList.add('is-busy');
+        const result = await post('/steam/sync', {});
+        button.disabled = false;
+        button.classList.remove('is-busy');
+        if (!result) return;
+        const parts = [];
+        if (result.added) parts.push(`${result.added} new`);
+        if (result.updated) parts.push(`${result.updated} with more hours`);
+        if (result.achievements) parts.push(`${result.achievements} achievement counts`);
+        toast(parts.length ? `Synced: ${parts.join(', ')}` : 'Synced: nothing new');
+    });
+
+    /* ---------- Library: what should I play next? ---------- */
+    const nextDialog = $('[data-next]');
+    if (nextDialog && library) {
+        let hours = 10;
+        let from = 'Backlog';
+        const picks = $('[data-next-picks]', nextDialog);
+        const note = $('[data-next-note]', nextDialog);
+        const press = (selector, value) => $$(selector, nextDialog).forEach(b => b.setAttribute('aria-pressed', b.dataset[selector.includes('hours') ? 'nextHours' : 'nextFrom'] === String(value) ? 'true' : 'false'));
+        const pick = () => {
+            const pool = $$('.lib-card', library).filter(c => {
+                const st = c.dataset.status;
+                const okFrom = from === 'both' ? (st === 'Backlog' || st === 'Wishlist') : st === from;
+                const ttb = Number(c.dataset.ttb || 0);
+                return okFrom && (hours === 0 || (ttb > 0 && ttb <= hours));
+            });
+            // Better-rated by critics and liked by friends come up more often.
+            const weight = c => 1 + Number(c.dataset.critic || 0) / 25 + Number(c.dataset.friends || 0);
+            const chosen = [];
+            const rest = pool.slice();
+            while (chosen.length < 3 && rest.length) {
+                const total = rest.reduce((s, c) => s + weight(c), 0);
+                let r = Math.random() * total;
+                const i = rest.findIndex(c => (r -= weight(c)) <= 0);
+                chosen.push(rest.splice(i < 0 ? 0 : i, 1)[0]);
+            }
+            picks.innerHTML = chosen.map(c => {
+                const ttb = Number(c.dataset.ttb || 0);
+                const name = c.getAttribute('aria-label') || '';
+                const esc = s => s.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+                return `<a class="next-pick pop-in" href="${c.getAttribute('href')}">`
+                    + `<span class="next-cover" style="--tint:${c.dataset.tint}">${c.dataset.cover ? `<img src="${c.dataset.cover}" alt="">` : `<span>${esc(name)}</span>`}</span>`
+                    + `<b>${esc(name)}</b><small>${ttb ? `${ttb} h main story` : 'Length unknown'}${Number(c.dataset.critic) ? ` · critics ${c.dataset.critic}` : ''}</small></a>`;
+            }).join('');
+            note.textContent = pool.length ? `${pool.length} ${pool.length === 1 ? 'game fits' : 'games fit'}` : 'Nothing fits: try more time, or Both.';
+        };
+        $('[data-next-open]')?.addEventListener('click', () => { nextDialog.showModal(); pick(); });
+        nextDialog.addEventListener('click', e => {
+            const h = e.target.closest('[data-next-hours]');
+            const f = e.target.closest('[data-next-from]');
+            if (h) { hours = Number(h.dataset.nextHours); press('[data-next-hours]', hours); pick(); }
+            if (f) { from = f.dataset.nextFrom; press('[data-next-from]', from); pick(); }
+            if (e.target.closest('[data-next-shuffle]')) pick();
+            if (e.target === nextDialog) nextDialog.close();
+        });
     }
 
     /* ---------- Characters left in a text box ---------- */

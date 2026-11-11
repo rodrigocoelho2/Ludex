@@ -35,7 +35,7 @@ internal static class LibraryRules
                 _ => ActivityKind.Added,
             }, null));
         }
-        else if (statusBefore != status)
+        else if (statusBefore != status && status != GameStatus.Backlog)
         {
             lines.Add((status switch
             {
@@ -66,6 +66,7 @@ internal static class LibraryRules
         Finished = rows.Count(static r => r.Status == (byte)GameStatus.Finished),
         Wishlist = rows.Count(static r => r.Status == (byte)GameStatus.Wishlist),
         Dropped = rows.Count(static r => r.Status == (byte)GameStatus.Dropped),
+        Backlog = rows.Count(static r => r.Status == (byte)GameStatus.Backlog),
     };
 
     /// <summary>
@@ -93,8 +94,9 @@ internal static class LibraryRules
     /// </summary>
     /// <param name="row">The entry.</param>
     /// <param name="friendNames">The friends who have it.</param>
+    /// <param name="collectionIds">The collections it is in.</param>
     /// <returns>The entry.</returns>
-    public static LibraryEntryDTO Entry(LibraryRow row, List<string>? friendNames = null)
+    public static LibraryEntryDTO Entry(LibraryRow row, List<string>? friendNames = null, List<int>? collectionIds = null)
     {
         var status = GameMapper.Status(row.Status) ?? GameStatus.Playing;
         return new LibraryEntryDTO
@@ -110,8 +112,34 @@ internal static class LibraryRules
             AddedAt = GameMapper.Utc(row.AddedAt),
             UpdatedAt = GameMapper.Utc(row.UpdatedAt),
             FinishedAt = row.FinishedAt is { } finished ? GameMapper.Utc(finished) : null,
+            SteamAppId = row.SteamAppID,
+            RecentHours = row.RecentMinutes is > 0 ? Math.Round(row.RecentMinutes.Value / 60m, 1, MidpointRounding.AwayFromZero) : null,
+            AchievementsUnlocked = row.AchievementsUnlocked,
+            AchievementsTotal = row.AchievementsTotal,
+            CollectionIds = collectionIds ?? [],
+            Price = Price(row),
         };
     }
+
+    /// <summary>
+    /// A game's price and alert, when there's either.
+    /// </summary>
+    /// <param name="row">The entry.</param>
+    /// <returns>The price, or null.</returns>
+    public static PriceDTO? Price(LibraryRow row) => row.PriceCheckedAt is null && row.PriceTarget is null
+        ? null
+        : new PriceDTO
+        {
+            Amount = row.PriceAmount,
+            Regular = row.PriceRegular,
+            Cut = row.PriceCut,
+            Currency = row.PriceCurrency,
+            Shop = row.PriceShop,
+            Url = row.PriceUrl,
+            Low = row.PriceLow,
+            CheckedAt = row.PriceCheckedAt is { } checkedAt ? GameMapper.Utc(checkedAt) : null,
+            Target = row.PriceTarget,
+        };
 
     private static string? GameRowFirstPlatform(LibraryRow row) =>
         Ludex.WebApi.Features.Games.Models.Entities.GameRow.Split(row.Platforms).FirstOrDefault();

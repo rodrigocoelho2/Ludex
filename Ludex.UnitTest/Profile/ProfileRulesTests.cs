@@ -44,7 +44,7 @@ public sealed class ProfileRulesTests
     {
         var badges = ProfileRules.Badges([], 0);
 
-        Assert.Equal(19, badges.Count);
+        Assert.Equal(22, badges.Count);
         Assert.DoesNotContain(badges, static b => b.Earned);
         Assert.Equal(badges.Count, badges.Select(static b => b.Id).Distinct().Count());
     }

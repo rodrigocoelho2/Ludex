@@ -52,6 +52,10 @@ internal sealed class OfflineCatalog : IGameCatalog
     public Task<Dictionary<int, CatalogGame>> SteamAsync(IReadOnlyCollection<int> appIds, CancellationToken cancellationToken = default) =>
         Task.FromResult(new Dictionary<int, CatalogGame>());
 
+    /// <inheritdoc />
+    public Task<List<CatalogGame>> GetManyAsync(IReadOnlyCollection<int> ids, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Games.Where(g => ids.Contains(g.Id)).ToList());
+
     /// <summary>
     /// Lower case without accents or punctuation, for matching ("Pokémon: Z-A" → "pokemon z a").
     /// </summary>

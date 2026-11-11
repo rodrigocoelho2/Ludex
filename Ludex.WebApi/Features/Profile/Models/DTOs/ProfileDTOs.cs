@@ -60,8 +60,14 @@ public sealed class ProfileDTO
     /// <summary>Gets or sets the best rated games.</summary>
     public List<LibraryEntryDTO> TopRated { get; set; } = [];
 
-    /// <summary>Gets or sets the games changed last.</summary>
+    /// <summary>Gets or sets the games played last (the most played on Steam in the last two weeks first).</summary>
     public List<LibraryEntryDTO> Recent { get; set; } = [];
+
+    /// <summary>Gets or sets the hours played on Steam in the last two weeks.</summary>
+    public decimal RecentHours { get; set; }
+
+    /// <summary>Gets or sets the Steam achievements unlocked in all.</summary>
+    public int Achievements { get; set; }
 
     /// <summary>Gets or sets the friends, playing first.</summary>
     public List<ProfileFriendDTO> Friends { get; set; } = [];

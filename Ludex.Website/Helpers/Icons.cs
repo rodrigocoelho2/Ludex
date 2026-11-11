@@ -47,6 +47,9 @@ public static class Icons
         ["thumb-down"] = "<path d=\"M8 4h9l2.5 8.5H14l1 4.5a2 2 0 0 1-3.6 1.5L8 13.5z\"/><path d=\"M4.5 4H8v9.5H4.5z\"/>",
         ["bolt"] = "<path d=\"M13 3 5.5 13.5H11L10 21l8.5-11H13z\"/>",
         ["badge"] = "<circle cx=\"12\" cy=\"9.5\" r=\"5.5\"/><path d=\"M8.8 14 7.5 21l4.5-2.4 4.5 2.4-1.3-7\"/>",
+        ["bell"] = "<path d=\"M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z\"/><path d=\"M10 20.5h4\"/>",
+        ["tag"] = "<path d=\"M3.5 12.5V4h8.5l8.5 8.5-8.5 8.5z\"/><circle cx=\"8\" cy=\"8.5\" r=\"1.4\"/>",
+        ["refresh"] = "<path d=\"M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4v4.5H15\"/>",
         ["other"] = "<circle cx=\"12\" cy=\"12\" r=\"8\"/><path d=\"M9 12l2 2 4-4\"/>",
     };
 

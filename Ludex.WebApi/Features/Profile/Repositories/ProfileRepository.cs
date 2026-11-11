@@ -50,6 +50,21 @@ internal interface IProfileRepository
     /// <returns>A task.</returns>
     Task SetSteamAsync(Guid userId, string steamId);
 
+    /// <summary>The Steam apps the account had at its last import or sync.</summary>
+    /// <param name="userId">The account.</param>
+    /// <returns>The app ids.</returns>
+    Task<List<int>> SteamAppsAsync(Guid userId);
+
+    /// <summary>Remembers Steam apps as seen, and that the account was synced now.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="appIds">The apps owned.</param>
+    /// <returns>A task.</returns>
+    Task RememberSteamAppsAsync(Guid userId, IReadOnlyCollection<int> appIds);
+
+    /// <summary>The accounts with a Steam library to sync, the least recently synced first.</summary>
+    /// <returns>The accounts.</returns>
+    Task<List<SteamAccountRow>> SteamAccountsAsync();
+
     /// <summary>The account's friends, with what they are playing.</summary>
     /// <param name="userId">The account.</param>
     /// <returns>The friends, playing first.</returns>
@@ -85,6 +100,16 @@ internal sealed class ProfileRepository(ISqlConnectionFactory connectionFactory)
 
     /// <inheritdoc />
     public Task SetSteamAsync(Guid userId, string steamId) => ExecuteAsync("[dbo].[ProfileSetSteam]", new { UserUniqueID = userId, SteamID = steamId });
+
+    /// <inheritdoc />
+    public Task<List<int>> SteamAppsAsync(Guid userId) => QueryAsync<int>("[dbo].[SteamOwnedList]", new { UserUniqueID = userId });
+
+    /// <inheritdoc />
+    public Task RememberSteamAppsAsync(Guid userId, IReadOnlyCollection<int> appIds) =>
+        ExecuteAsync("[dbo].[SteamOwnedRemember]", new { UserUniqueID = userId, AppIDs = Json(appIds.Distinct()) });
+
+    /// <inheritdoc />
+    public Task<List<SteamAccountRow>> SteamAccountsAsync() => QueryAsync<SteamAccountRow>("[dbo].[SteamAccountList]");
 
     /// <inheritdoc />
     public Task<List<ProfileFriendRow>> FriendsAsync(Guid userId) => QueryAsync<ProfileFriendRow>("[dbo].[ProfileFriends]", new { UserUniqueID = userId });

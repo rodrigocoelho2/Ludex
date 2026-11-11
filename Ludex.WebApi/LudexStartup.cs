@@ -5,12 +5,19 @@ using Ludex.WebApi.Extensions.Globalization;
 using Ludex.WebApi.Extensions.Mvc;
 using Ludex.WebApi.Features;
 using Ludex.WebApi.Features.Catalog;
+using Ludex.WebApi.Features.Collections.Repositories;
+using Ludex.WebApi.Features.Collections.Services;
 using Ludex.WebApi.Features.Friends.Repositories;
 using Ludex.WebApi.Features.Friends.Services;
 using Ludex.WebApi.Features.Games.Repositories;
 using Ludex.WebApi.Features.Games.Services;
+using Ludex.WebApi.Features.Jobs;
 using Ludex.WebApi.Features.Library.Repositories;
 using Ludex.WebApi.Features.Library.Services;
+using Ludex.WebApi.Features.Notifications.Repositories;
+using Ludex.WebApi.Features.Notifications.Services;
+using Ludex.WebApi.Features.Prices.Repositories;
+using Ludex.WebApi.Features.Prices.Services;
 using Ludex.WebApi.Features.Profile.Repositories;
 using Ludex.WebApi.Features.Profile.Services;
 using Ludex.WebApi.Features.Steam.Services;
@@ -73,8 +80,16 @@ internal static class LudexStartup
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Ludex/1.0 (+https://github.com/rodrigocoelho2/Ludex)");
         });
 
+        // IsThereAnyDeal (wishlist prices).
+        services.AddHttpClient(ItadClient.HttpClientName, static client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Ludex/1.0 (+https://github.com/rodrigocoelho2/Ludex)");
+        });
+
         // Infrastructure
         services.AddSingleton(TimeProvider.System);
+        services.AddMemoryCache();
         services.AddSingleton<IGlobalizationHelper, GlobalizationHelper>();
         services.AddSingleton<ISqlConnectionFactory, SqlConnectionFactory>();
 
@@ -94,6 +109,9 @@ internal static class LudexStartup
         services.AddSingleton<ILibraryRepository, LibraryRepository>();
         services.AddSingleton<IFriendRepository, FriendRepository>();
         services.AddSingleton<IProfileRepository, ProfileRepository>();
+        services.AddSingleton<ICollectionRepository, CollectionRepository>();
+        services.AddSingleton<INotificationRepository, NotificationRepository>();
+        services.AddSingleton<IPriceRepository, PriceRepository>();
 
         // Services
         services.AddSingleton<GameStore>();
@@ -104,6 +122,13 @@ internal static class LudexStartup
         services.AddSingleton<IProfileService, ProfileService>();
         services.AddSingleton<SteamClient>();
         services.AddSingleton<ISteamService, SteamService>();
+        services.AddSingleton<ICollectionService, CollectionService>();
+        services.AddSingleton<INotificationService, NotificationService>();
+        services.AddSingleton<ItadClient>();
+        services.AddSingleton<PriceService>();
+
+        // What Ludex does on its own: catalog refresh, the daily Steam sync, wishlist prices.
+        services.AddHostedService<LudexJobs>();
 
         return services;
     }
@@ -128,6 +153,9 @@ internal static class LudexStartup
         app.Logger.LogInformation(
             "Steam import: {Steam}",
             app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<LudexOptions>>().Value.HasSteam ? "on" : "off (set STEAM_API_KEY)");
+        app.Logger.LogInformation(
+            "Wishlist prices: {Prices}",
+            app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<LudexOptions>>().Value.HasItad ? "on" : "off (set ITAD_API_KEY)");
 
         app.UseAuthentication();
         app.UseAuthorization();

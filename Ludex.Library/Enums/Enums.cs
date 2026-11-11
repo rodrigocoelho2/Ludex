@@ -28,6 +28,9 @@ public enum GameStatus
 
     /// <summary>Started and left.</summary>
     Dropped = 4,
+
+    /// <summary>Owned, not started yet (games bought on Steam come in like this).</summary>
+    Backlog = 5,
 }
 
 /// <summary>
@@ -94,4 +97,16 @@ public enum GameFormat
 
     /// <summary>A download (a console store, or a PC store such as Steam).</summary>
     Digital = 2,
+}
+
+/// <summary>
+/// What a notification is about. Stored in the database: never renumber them.
+/// </summary>
+public enum NotificationKind
+{
+    /// <summary>A wishlisted game's price reached its target.</summary>
+    PriceAlert = 1,
+
+    /// <summary>The daily Steam sync added games bought since.</summary>
+    SteamNewGames = 2,
 }

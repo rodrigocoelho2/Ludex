@@ -31,6 +31,15 @@ public sealed class GameSummaryDTO
 
     /// <summary>Gets or sets the friends who have it (user names).</summary>
     public List<string> FriendNames { get; set; } = [];
+
+    /// <summary>Gets or sets the critics' rating (0–100).</summary>
+    public int? CriticScore { get; set; }
+
+    /// <summary>Gets or sets the hours to finish the main story.</summary>
+    public decimal? TimeToBeatMain { get; set; }
+
+    /// <summary>Gets or sets the hours to finish everything.</summary>
+    public decimal? TimeToBeatFull { get; set; }
 }
 
 /// <summary>A friend's place in a game.</summary>
@@ -99,6 +108,12 @@ public sealed class GameDetailDTO
 
     /// <summary>Gets or sets the catalog the data came from.</summary>
     public CatalogSource Source { get; set; }
+
+    /// <summary>Gets or sets the account's collections (to put the game in).</summary>
+    public List<CollectionDTO> Collections { get; set; } = [];
+
+    /// <summary>Gets or sets the best PC price (wishlist; null: not checked or not tracked).</summary>
+    public PriceDTO? Price { get; set; }
 }
 
 /// <summary>The signed-in account's own entry for a game.</summary>
@@ -133,6 +148,21 @@ public sealed class MyGameDTO
 
     /// <summary>Gets or sets when it was first finished.</summary>
     public DateTimeOffset? FinishedAt { get; set; }
+
+    /// <summary>Gets or sets its Steam app (null: not from Steam).</summary>
+    public int? SteamAppId { get; set; }
+
+    /// <summary>Gets or sets the hours played on Steam in the last two weeks.</summary>
+    public decimal? RecentHours { get; set; }
+
+    /// <summary>Gets or sets the Steam achievements unlocked.</summary>
+    public int? AchievementsUnlocked { get; set; }
+
+    /// <summary>Gets or sets the game's Steam achievements.</summary>
+    public int? AchievementsTotal { get; set; }
+
+    /// <summary>Gets or sets the collections it is in.</summary>
+    public List<int> CollectionIds { get; set; } = [];
 
     /// <summary>Gets or sets a value indicating whether it is the favourite game on the account's profile.</summary>
     public bool IsFavorite { get; set; }

@@ -57,6 +57,8 @@ internal sealed class GlobalizationHelper : IGlobalizationHelper
         [nameof(TranslationKeys.FavoriteNotInLibrary)] = "must be a game in your library.",
         [nameof(TranslationKeys.StoreNotForPlatform)] = "is only for PC copies (Steam, Epic Games, GOG…).",
         [nameof(TranslationKeys.FormatNotForPlatform)] = "isn't possible on {0}.",
+        [nameof(TranslationKeys.CollectionNameTaken)] = "You already have a collection called '{0}'.",
+        [nameof(TranslationKeys.PriceTargetInvalid)] = "must be a price between 0 and 1,000.",
 
         ["UserName"] = "User name",
         ["Password"] = "Password",
@@ -77,6 +79,8 @@ internal sealed class GlobalizationHelper : IGlobalizationHelper
         ["Avatar"] = "Photo",
         ["Store"] = "Store",
         ["Format"] = "That kind of copy",
+        ["Name"] = "Name",
+        ["Target"] = "Alert price",
     };
 
     /// <inheritdoc />

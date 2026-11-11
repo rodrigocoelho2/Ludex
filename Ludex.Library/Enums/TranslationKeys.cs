@@ -64,4 +64,10 @@ public enum TranslationKeys
 
     /// <summary>A format the platform never had (a digital NES game, a physical iOS one).</summary>
     FormatNotForPlatform,
+
+    /// <summary>A collection name already used by the account.</summary>
+    CollectionNameTaken,
+
+    /// <summary>A price target that isn't a price.</summary>
+    PriceTargetInvalid,
 }

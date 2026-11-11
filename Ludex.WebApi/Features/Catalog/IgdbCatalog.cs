@@ -33,7 +33,7 @@ internal sealed class IgdbCatalog(
         + "involved_companies.company.name,involved_companies.developer,involved_companies.publisher,genres.name";
 
     private const string DetailFields =
-        SearchFields + ",summary,artworks.image_id,screenshots.image_id,game_modes.name";
+        SearchFields + ",summary,artworks.image_id,screenshots.image_id,game_modes.name,aggregated_rating";
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -57,7 +57,22 @@ internal sealed class IgdbCatalog(
     {
         var body = $"fields {DetailFields}; where id = {id.ToString(CultureInfo.InvariantCulture)}; limit 1;";
         var games = await QueryAsync<IgdbGame>("games", body, cancellationToken);
-        return games.Count == 0 ? null : Map(games[0]);
+        if (games.Count == 0)
+        {
+            return null;
+        }
+
+        var game = Map(games[0]);
+        await AddTimesAsync([game], cancellationToken);
+        return game;
+    }
+
+    /// <inheritdoc />
+    public async Task<List<CatalogGame>> GetManyAsync(IReadOnlyCollection<int> ids, CancellationToken cancellationToken = default)
+    {
+        var games = (await GamesAsync(ids, cancellationToken)).Values.Select(Map).ToList();
+        await AddTimesAsync(games, cancellationToken);
+        return games;
     }
 
     /// <inheritdoc />
@@ -121,6 +136,18 @@ internal sealed class IgdbCatalog(
             result[app] = Map(game);
         }
 
+        await AddTimesAsync([.. result.Values.DistinctBy(static g => g.Id)], cancellationToken);
+        foreach (var (app, game) in result.ToList())
+        {
+            // The same game for two apps: the times were added to the first copy only.
+            var withTimes = result.Values.FirstOrDefault(g => g.Id == game.Id && (g.TimeToBeatMain is not null || g.TimeToBeatFull is not null));
+            if (withTimes is not null && !ReferenceEquals(withTimes, game))
+            {
+                game.TimeToBeatMain = withTimes.TimeToBeatMain;
+                game.TimeToBeatFull = withTimes.TimeToBeatFull;
+            }
+        }
+
         return result;
     }
 
@@ -151,6 +178,7 @@ internal sealed class IgdbCatalog(
             Genres = [.. (game.Genres ?? []).Select(static g => g.Name).OfType<string>().Select(static n => n.Replace(';', ',')).Distinct().Take(6)],
             Platforms = [.. (game.Platforms ?? []).Select(static p => PlatformNames.Friendly(p.Name, p.Abbreviation)).Where(static p => p.Length > 0).Distinct().Take(12)],
             Modes = [.. (game.GameModes ?? []).Select(static m => m.Name).OfType<string>().Select(static n => n.Replace(';', ',')).Distinct()],
+            CriticScore = game.AggregatedRating is > 0 and <= 100 ? (int)Math.Round(game.AggregatedRating.Value) : null,
         };
     }
 
@@ -187,6 +215,50 @@ internal sealed class IgdbCatalog(
 
         return games;
     }
+
+    /// <summary>
+    /// Adds how long the games take to finish (IGDB's game_time_to_beats, in seconds: hastily is the main story,
+    /// completely is 100%).
+    /// </summary>
+    private async Task AddTimesAsync(IReadOnlyCollection<CatalogGame> games, CancellationToken cancellationToken)
+    {
+        if (games.Count == 0)
+        {
+            return;
+        }
+
+        var byId = games.GroupBy(static g => g.Id).ToDictionary(static g => g.Key, static g => g.First());
+        foreach (var chunk in byId.Keys.Chunk(400))
+        {
+            var list = string.Join(",", chunk.Select(static id => id.ToString(CultureInfo.InvariantCulture)));
+            List<IgdbTimeToBeat> times;
+            try
+            {
+                times = await QueryAsync<IgdbTimeToBeat>("game_time_to_beats", $"fields game_id,hastily,normally,completely; where game_id = ({list}); limit 500;", cancellationToken);
+            }
+            catch (CatalogUnavailableException exception)
+            {
+                logger.LogWarning("IGDB times to beat skipped: {Problem}", exception.Message);
+                return;   // nice to have: the games are fine without
+            }
+
+            foreach (var time in times)
+            {
+                if (time.GameId is { } id && byId.TryGetValue(id, out var game))
+                {
+                    game.TimeToBeatMain = Hours(time.Hastily ?? time.Normally);
+                    game.TimeToBeatFull = Hours(time.Completely);
+                }
+            }
+
+            if (byId.Count > 400)
+            {
+                await PaceAsync(cancellationToken);
+            }
+        }
+    }
+
+    private static decimal? Hours(long? seconds) => seconds is > 0 ? Math.Round(seconds.Value / 3600m, 1, MidpointRounding.AwayFromZero) : null;
 
     /// <summary>IGDB allows four calls a second: a pause between the calls of a long run (the Steam import).</summary>
     private Task PaceAsync(CancellationToken cancellationToken) => Task.Delay(TimeSpan.FromMilliseconds(260), timeProvider, cancellationToken);
@@ -334,6 +406,25 @@ internal sealed class IgdbGame
 
     [JsonPropertyName("version_parent")]
     public int? VersionParent { get; set; }
+
+    [JsonPropertyName("aggregated_rating")]
+    public double? AggregatedRating { get; set; }
+}
+
+/// <summary>How long a game takes (IGDB's game_time_to_beats, in seconds).</summary>
+internal sealed class IgdbTimeToBeat
+{
+    [JsonPropertyName("game_id")]
+    public int? GameId { get; set; }
+
+    [JsonPropertyName("hastily")]
+    public long? Hastily { get; set; }
+
+    [JsonPropertyName("normally")]
+    public long? Normally { get; set; }
+
+    [JsonPropertyName("completely")]
+    public long? Completely { get; set; }
 }
 
 /// <summary>A game in another store, as IGDB links it (here: a Steam app).</summary>

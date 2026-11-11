@@ -1,0 +1,31 @@
+@model NotificationsPageModel
+@{
+    Layout = "_App";
+    ViewData["Title"] = "Notifications";
+    var items = Model.Notifications.Items;
+}
+
+<div class="notes-page">
+    <h1 class="rise">Notifications</h1>
+    @if (items.Count == 0)
+    {
+        <div class="empty compact rise">
+            <span class="empty-ico">@Icons.Get("bell")</span>
+            <p>Nothing yet. Price alerts for your wishlist and games the Steam sync adds show up here.</p>
+        </div>
+    }
+    else
+    {
+        <ul class="note-list stagger">
+            @foreach (var n in items)
+            {
+                <li>
+                    <a class="note row-soft@(n.Read ? string.Empty : " new")" href="@(n.Url ?? "#")">
+                        <span class="note-ico">@Icons.Get(n.Kind == NotificationKind.PriceAlert ? "tag" : "library")</span>
+                        <span class="note-text"><span>@n.Text</span><small>@Fmt.Ago(n.CreatedAt)</small></span>
+                    </a>
+                </li>
+            }
+        </ul>
+    }
+</div>

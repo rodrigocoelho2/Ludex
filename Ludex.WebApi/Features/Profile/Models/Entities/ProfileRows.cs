@@ -32,6 +32,9 @@ public sealed class ProfileRow
 
     /// <summary>Gets or sets the SteamID64 the library was last imported from.</summary>
     public string? SteamID { get; set; }
+
+    /// <summary>Gets or sets when the library was last synced with Steam (UTC).</summary>
+    public DateTime? SteamSyncedAt { get; set; }
 }
 
 /// <summary>A profile photo (dbo.ProfileAvatarGet).</summary>
@@ -70,4 +73,17 @@ public sealed class ProfileFriendRow
 
     /// <summary>Gets or sets how many games the friend has.</summary>
     public int GameCount { get; set; }
+}
+
+/// <summary>An account with a Steam library (dbo.SteamAccountList).</summary>
+public sealed class SteamAccountRow
+{
+    /// <summary>Gets or sets the account.</summary>
+    public Guid UserUniqueID { get; set; }
+
+    /// <summary>Gets or sets its SteamID64.</summary>
+    public string SteamID { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets when it was last synced (UTC).</summary>
+    public DateTime? SteamSyncedAt { get; set; }
 }

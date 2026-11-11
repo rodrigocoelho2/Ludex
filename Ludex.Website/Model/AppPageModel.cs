@@ -91,6 +91,9 @@ public sealed class LibraryPageModel : AppPageModel
     /// <summary>Gets or sets the status shown (null: all).</summary>
     public GameStatus? Status { get; set; }
 
+    /// <summary>Gets or sets the collection shown (null: all).</summary>
+    public int? Collection { get; set; }
+
     /// <summary>Gets the games shown.</summary>
     public IEnumerable<LibraryEntryDTO> Shown => Status is { } only ? Library.Entries.Where(e => e.Status == only) : Library.Entries;
 
@@ -112,7 +115,8 @@ public sealed class LibraryPageModel : AppPageModel
 /// </summary>
 /// <param name="Entries">The library.</param>
 /// <param name="Current">The game open (null: the library page).</param>
-public sealed record LibrarySidebarView(IReadOnlyList<LibraryEntryDTO> Entries, int? Current);
+/// <param name="Collections">The account's collections.</param>
+public sealed record LibrarySidebarView(IReadOnlyList<LibraryEntryDTO> Entries, int? Current, IReadOnlyList<CollectionDTO> Collections);
 
 /// <summary>Discover: the search and the friends' favourites.</summary>
 public sealed class DiscoverPageModel : AppPageModel
@@ -141,6 +145,12 @@ public sealed class GamePageModel : AppPageModel
 
     /// <summary>Gets or sets the library down the side.</summary>
     public List<LibraryEntryDTO> Sidebar { get; set; } = [];
+
+    /// <summary>Gets or sets the collections down the side.</summary>
+    public List<CollectionDTO> SidebarCollections { get; set; } = [];
+
+    /// <summary>Gets or sets the account's Steam achievements in this game (null: not a Steam game, none, or unreachable).</summary>
+    public AchievementsDTO? Achievements { get; set; }
 
     /// <summary>Gets the copies each platform of the "played on" list can have, for the page script.</summary>
     public Dictionary<string, IReadOnlyList<string>> CopyChoices =>
@@ -243,4 +253,11 @@ public sealed class ProfileEditPageModel : AppPageModel
 {
     /// <summary>Gets or sets the profile.</summary>
     public ProfileDTO Profile { get; set; } = new();
+}
+
+/// <summary>The bell's page.</summary>
+public sealed class NotificationsPageModel : AppPageModel
+{
+    /// <summary>Gets or sets the notifications.</summary>
+    public NotificationsDTO Notifications { get; set; } = new();
 }

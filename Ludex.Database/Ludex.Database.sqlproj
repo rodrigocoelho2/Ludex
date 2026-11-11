@@ -23,6 +23,10 @@
     <Folder Include="StoredProcedures\Library\" />
     <Folder Include="StoredProcedures\Users\" />
     <Folder Include="StoredProcedures\Profile\" />
+    <Folder Include="StoredProcedures\Collections\" />
+    <Folder Include="StoredProcedures\Notifications\" />
+    <Folder Include="StoredProcedures\Prices\" />
+    <Folder Include="StoredProcedures\Steam\" />
     <Folder Include="Scripts\" />
   </ItemGroup>
 
@@ -58,6 +62,29 @@
     <Build Include="StoredProcedures\Profile\dbo.ProfileTouch.sql" />
     <Build Include="StoredProcedures\Profile\dbo.ProfileSetSteam.sql" />
     <Build Include="StoredProcedures\Library\dbo.LibraryImport.sql" />
+    <Build Include="StoredProcedures\Collections\dbo.CollectionDelete.sql" />
+    <Build Include="StoredProcedures\Collections\dbo.CollectionList.sql" />
+    <Build Include="StoredProcedures\Collections\dbo.CollectionSave.sql" />
+    <Build Include="StoredProcedures\Collections\dbo.CollectionSetGame.sql" />
+    <Build Include="StoredProcedures\Games\dbo.GameStaleList.sql" />
+    <Build Include="StoredProcedures\Notifications\dbo.NotificationAdd.sql" />
+    <Build Include="StoredProcedures\Notifications\dbo.NotificationList.sql" />
+    <Build Include="StoredProcedures\Notifications\dbo.NotificationRead.sql" />
+    <Build Include="StoredProcedures\Notifications\dbo.NotificationUnread.sql" />
+    <Build Include="StoredProcedures\Prices\dbo.PriceSave.sql" />
+    <Build Include="StoredProcedures\Prices\dbo.PriceTargetSet.sql" />
+    <Build Include="StoredProcedures\Prices\dbo.PriceTargets.sql" />
+    <Build Include="StoredProcedures\Steam\dbo.AchievementSave.sql" />
+    <Build Include="StoredProcedures\Steam\dbo.AchievementTargets.sql" />
+    <Build Include="StoredProcedures\Steam\dbo.SteamAccountList.sql" />
+    <Build Include="StoredProcedures\Steam\dbo.SteamOwnedList.sql" />
+    <Build Include="StoredProcedures\Steam\dbo.SteamOwnedRemember.sql" />
+    <Build Include="Tables\dbo.Collection.sql" />
+    <Build Include="Tables\dbo.CollectionGame.sql" />
+    <Build Include="Tables\dbo.GamePrice.sql" />
+    <Build Include="Tables\dbo.Notification.sql" />
+    <Build Include="Tables\dbo.PlaytimeDay.sql" />
+    <Build Include="Tables\dbo.SteamOwned.sql" />
     <Build Include="StoredProcedures\Users\dbo.UserCount.sql" />
     <Build Include="StoredProcedures\Users\dbo.UserCreate.sql" />
     <Build Include="StoredProcedures\Users\dbo.UserDelete.sql" />

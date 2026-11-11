@@ -35,12 +35,17 @@ public sealed class HomeController(LudexClient apiClient) : WebsiteBaseControlle
 public sealed class LibraryController(LudexClient apiClient) : WebsiteBaseController(apiClient)
 {
     /// <summary>The library.</summary>
-    /// <param name="status">playing, finished, wishlist or dropped (empty: all).</param>
+    /// <param name="status">playing, finished, wishlist, dropped or backlog (empty: all).</param>
+    /// <param name="collection">A collection (empty: all).</param>
     /// <returns>The view.</returns>
     [HttpGet("/library")]
-    public async Task<IActionResult> Index(string? status = null)
+    public async Task<IActionResult> Index(string? status = null, int? collection = null)
     {
-        var page = Shell(new LibraryPageModel { Status = Enum.TryParse<GameStatus>(status, true, out var only) && Enum.IsDefined(only) ? only : null }, AppSection.Library);
+        var page = Shell(new LibraryPageModel
+        {
+            Status = Enum.TryParse<GameStatus>(status, true, out var only) && Enum.IsDefined(only) ? only : null,
+            Collection = collection,
+        }, AppSection.Library);
         return await ScreenAsync("Index", page, async p => p.Library = await Api.LibraryListAsync(UserId));
     }
 }
@@ -126,11 +131,25 @@ public sealed class GameController(LudexClient apiClient) : WebsiteBaseControlle
             try
             {
                 // The library down the side, as on Steam (the page still works without it).
-                page.Sidebar = (await Api.LibraryListAsync(UserId)).Entries;
+                var library = await Api.LibraryListAsync(UserId);
+                page.Sidebar = library.Entries;
+                page.SidebarCollections = library.Collections;
             }
             catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
             {
                 page.Sidebar = [];
+            }
+
+            if (detail.Mine?.SteamAppId is not null)
+            {
+                try
+                {
+                    page.Achievements = await Api.SteamAchievementsAsync(UserId, id);
+                }
+                catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
+                {
+                    page.Achievements = null;   // no achievements, or Steam can't be reached: the page goes without
+                }
             }
 
             return View("Index", page);
@@ -175,6 +194,15 @@ public sealed class GameController(LudexClient apiClient) : WebsiteBaseControlle
     public async Task<IActionResult> SetStatus(int id, [FromBody] GameStatusForm form) =>
         Json(await CallAsync(() => Api.LibraryStatusAsync(new LibraryStatusRequest { UserId = UserId, GameId = id, Status = form.Status })));
 
+    /// <summary>Sets the price under which a wishlisted game raises an alert.</summary>
+    /// <param name="id">The game.</param>
+    /// <param name="form">The price (null: no alert).</param>
+    /// <returns>The price now, or the errors.</returns>
+    [HttpPost("/games/{id:int}/price-target")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> PriceTarget(int id, [FromBody] PriceTargetForm form) =>
+        Json(await CallAsync(() => Api.LibraryPriceTargetAsync(new PriceTargetRequest { UserId = UserId, GameId = id, Target = form.Target })));
+
     /// <summary>Takes the game out of the library.</summary>
     /// <param name="id">The game.</param>
     /// <returns>Back to the library.</returns>
@@ -206,6 +234,13 @@ public sealed class GameSaveForm
 
     /// <summary>Gets or sets the notes.</summary>
     public string? Notes { get; set; }
+}
+
+/// <summary>A price target from the game page.</summary>
+public sealed class PriceTargetForm
+{
+    /// <summary>Gets or sets the price (null: no alert).</summary>
+    public decimal? Target { get; set; }
 }
 
 /// <summary>A status from a button.</summary>

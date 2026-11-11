@@ -2,11 +2,14 @@ using Ludex.Library.Enums;
 using Ludex.Library.Services;
 using Ludex.WebApi.Extensions.Globalization;
 using Ludex.WebApi.Features.Catalog;
+using Ludex.WebApi.Features.Collections.Repositories;
+using Ludex.WebApi.Features.Collections.Services;
 using Ludex.WebApi.Features.Friends.Repositories;
 using Ludex.WebApi.Features.Games.Models.DTOs;
 using Ludex.WebApi.Features.Games.Models.Entities;
 using Ludex.WebApi.Features.Games.Repositories;
 using Ludex.WebApi.Features.Library.Repositories;
+using Ludex.WebApi.Features.Library.Services;
 using Ludex.WebApi.Features.Profile.Repositories;
 
 namespace Ludex.WebApi.Features.Games.Services;
@@ -51,6 +54,7 @@ internal sealed class GameService(
     ILibraryRepository libraryRepository,
     IFriendRepository friendRepository,
     IProfileRepository profileRepository,
+    ICollectionRepository collectionRepository,
     IGlobalizationHelper globalizationHelper,
     TimeProvider timeProvider,
     ILogger<GameService> logger) : IGameService
@@ -129,6 +133,7 @@ internal sealed class GameService(
         var mine = await libraryRepository.GetAsync(user, gameId);
         var friends = await friendRepository.GameAsync(user, gameId);
         var favorite = mine is null ? null : (await profileRepository.GetAsync(user))?.FavoriteGameID;
+        var collections = CollectionService.ToDtos(await collectionRepository.ListAsync(user));
         var rated = friends.Where(static f => f.Rating is not null).Select(static f => (decimal)f.Rating!.Value).ToList();
 
         return ServiceApiResponse<GameDetailDTO>.Success(new GameDetailDTO
@@ -154,7 +159,14 @@ internal sealed class GameService(
                 UpdatedAt = GameMapper.Utc(mine.UpdatedAt),
                 FinishedAt = mine.FinishedAt is { } finished ? GameMapper.Utc(finished) : null,
                 IsFavorite = favorite == gameId,
+                SteamAppId = mine.SteamAppID,
+                RecentHours = mine.RecentMinutes is > 0 ? Math.Round(mine.RecentMinutes.Value / 60m, 1, MidpointRounding.AwayFromZero) : null,
+                AchievementsUnlocked = mine.AchievementsUnlocked,
+                AchievementsTotal = mine.AchievementsTotal,
+                CollectionIds = [.. collections.Where(c => c.GameIds.Contains(gameId)).Select(static c => c.Id)],
             },
+            Collections = collections,
+            Price = mine is null ? null : LibraryRules.Price(mine),
             Friends = [.. friends.Select(static f => new FriendGameDTO
             {
                 Id = f.UserUniqueID.ToString("N"),

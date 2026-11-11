@@ -45,6 +45,15 @@ internal sealed class CatalogGame
 
     /// <summary>Gets or sets the modes (Single player, Co-operative…).</summary>
     public List<string> Modes { get; set; } = [];
+
+    /// <summary>Gets or sets the critics' rating (0–100).</summary>
+    public int? CriticScore { get; set; }
+
+    /// <summary>Gets or sets the hours to finish the main story.</summary>
+    public decimal? TimeToBeatMain { get; set; }
+
+    /// <summary>Gets or sets the hours to finish everything (100%).</summary>
+    public decimal? TimeToBeatFull { get; set; }
 }
 
 /// <summary>
@@ -98,4 +107,13 @@ internal interface IGameCatalog
     /// <returns>The game of each app the catalog knows (apps it doesn't know are left out), with everything the game page shows.</returns>
     /// <exception cref="CatalogUnavailableException">The catalog can't be reached.</exception>
     Task<Dictionary<int, CatalogGame>> SteamAsync(IReadOnlyCollection<int> appIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Several games at once, with everything the game page shows (the daily refresh).
+    /// </summary>
+    /// <param name="ids">The game ids.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The games the catalog knows.</returns>
+    /// <exception cref="CatalogUnavailableException">The catalog can't be reached.</exception>
+    Task<List<CatalogGame>> GetManyAsync(IReadOnlyCollection<int> ids, CancellationToken cancellationToken = default);
 }

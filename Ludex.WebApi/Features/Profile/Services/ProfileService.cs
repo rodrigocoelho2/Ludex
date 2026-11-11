@@ -271,7 +271,13 @@ internal sealed class ProfileService(
             .ThenByDescending(static r => r.Hours ?? 0m)
             .Take(6)
             .Select(static r => LibraryRules.Entry(r))];
-        page.Recent = [.. rows.OrderByDescending(static r => r.UpdatedAt).Take(5).Select(static r => LibraryRules.Entry(r))];
+        page.Recent = [.. rows
+            .OrderByDescending(static r => r.RecentMinutes ?? 0)
+            .ThenByDescending(static r => r.UpdatedAt)
+            .Take(5)
+            .Select(static r => LibraryRules.Entry(r))];
+        page.RecentHours = Math.Round(rows.Sum(static r => (decimal)(r.RecentMinutes ?? 0)) / 60m, 1, MidpointRounding.AwayFromZero);
+        page.Achievements = rows.Sum(static r => (int)(r.AchievementsUnlocked ?? 0));
         page.Friends = [.. friends.Select(static f => new ProfileFriendDTO
         {
             Id = f.UserUniqueID.ToString("N"),

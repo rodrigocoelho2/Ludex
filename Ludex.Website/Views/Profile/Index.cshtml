@@ -200,7 +200,7 @@
                 {
                     var most = Math.Max(1m, p.Recent.Max(static r => r.Hours ?? 0m));
                     <section class="showcase rise d2">
-                        <div class="showcase-head"><h2>Recent activity</h2></div>
+                        <div class="showcase-head"><h2>Recent activity</h2>@if (p.RecentHours > 0) { <span class="muted">@Fmt.Hours(p.RecentHours) in the last 2 weeks</span> }</div>
                         <ul class="recent-list">
                             @foreach (var entry in p.Recent)
                             {
@@ -216,7 +216,7 @@
                                         </span>
                                         <span class="recent-text">
                                             <b>@entry.Game.Name</b>
-                                            <small>@(entry.Hours is { } rh ? $"{Fmt.Hours(rh)} on record · " : string.Empty)@Fmt.Status(entry.Status)</small>
+                                            <small>@(entry.Hours is { } rh ? $"{Fmt.Hours(rh)} on record · " : string.Empty)@(entry.RecentHours is { } r2 ? $"{Fmt.Hours(r2)} in 2 weeks · " : string.Empty)@Fmt.Status(entry.Status)</small>
                                             <span class="bar"><i style="width:@share%"></i></span>
                                         </span>
                                         <span class="recent-side">
@@ -260,6 +260,10 @@
                     <a class="row-soft" href="@(link ? "/library?status=playing" : null)">Playing <b>@p.Counts.Playing</b></a>
                     <a class="row-soft" href="@(link ? "/library?status=wishlist" : null)">Wishlist <b>@p.Counts.Wishlist</b></a>
                     <a class="row-soft" href="@(link ? "/friends" : "#friends")">Friends <b>@p.Friends.Count</b></a>
+                    @if (p.Achievements > 0)
+                    {
+                        <a class="row-soft">Achievements <b>@Fmt.Count(p.Achievements)</b></a>
+                    }
                 </nav>
 
                 @if (earned.Count > 0)

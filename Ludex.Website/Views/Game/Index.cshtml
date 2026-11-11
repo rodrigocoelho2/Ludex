@@ -10,7 +10,9 @@
     var copyNow = mine?.Store ?? mine?.Format?.ToString();
     var copyChoices = Ludex.Library.Platforms.GameCopies.Choices(mine?.Platform);
     var copyLabel = Ludex.Library.Platforms.GameCopies.UsesStores(mine?.Platform) ? "Bought on" : "Copy";
-    var statuses = new[] { GameStatus.Playing, GameStatus.Finished, GameStatus.Wishlist, GameStatus.Dropped };
+    var statuses = new[] { GameStatus.Playing, GameStatus.Backlog, GameStatus.Finished, GameStatus.Wishlist, GameStatus.Dropped };
+    var achievements = Model.Achievements;
+    var mineCollections = mine?.CollectionIds ?? [];
     var shots = detail.Screenshots;
     var genre = detail.Genres.FirstOrDefault();
     var art = detail.HeroImageId ?? shots.FirstOrDefault();
@@ -27,7 +29,7 @@
 <div class="lib-shell@(hasSide ? string.Empty : " no-side")">
 @if (hasSide)
 {
-    <partial name="_LibrarySidebar" model="new LibrarySidebarView(Model.Sidebar, game.Id)" />
+    <partial name="_LibrarySidebar" model="new LibrarySidebarView(Model.Sidebar, game.Id, Model.SidebarCollections)" />
 }
 <div class="lib-main">
 <article class="game3" data-game-page="@game.Id" style="--tint:@game.Tint">
@@ -133,6 +135,45 @@
             }
 
         <div class="g-text rise d2">
+            @if (achievements is { Total: > 0 })
+            {
+                var percent = Fmt.AchievementPercent(achievements.Unlocked, achievements.Total) ?? 0;
+                <section class="g-block achievements" data-achievements>
+                    <div class="ach-head">
+                        <h2 class="g-h">Achievements</h2>
+                        <span class="ach-count"><b class="num">@achievements.Unlocked</b> / @achievements.Total <span class="muted">(@percent%)</span></span>
+                    </div>
+                    <span class="ach-bar"><i style="width:@percent%"></i></span>
+                    @if (achievements.Private)
+                    {
+                        <p class="muted small-empty">Steam won't show which ones you have: set Game details to Public in Steam's privacy settings.</p>
+                    }
+                    <ul class="ach-grid">
+                        @for (var i = 0; i < achievements.Items.Count; i++)
+                        {
+                            var a = achievements.Items[i];
+                            <li class="ach@(a.Unlocked ? " on" : string.Empty)" hidden="@(i >= 12 ? "hidden" : null)" data-ach-item>
+                                <span class="ach-ico">
+                                    @if (a.IconUrl is { } icon)
+                                    {
+                                        <img src="@icon" alt="" loading="lazy" decoding="async" />
+                                    }
+                                </span>
+                                <span class="ach-text">
+                                    <b>@(a.Hidden && !a.Unlocked ? "Hidden achievement" : a.Name)</b>
+                                    <small>@(a.Description ?? (a.Hidden ? "Unlock it to see what it is." : string.Empty))</small>
+                                    <small class="ach-meta">@(a.UnlockedAt is { } at ? "Unlocked " + Fmt.ShortDate(at) : "Locked")@(a.GlobalPercent is { } gp ? $" · {gp.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)}% of players" : string.Empty)</small>
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                    @if (achievements.Items.Count > 12)
+                    {
+                        <button type="button" class="link-btn" data-ach-more>Show all @achievements.Items.Count</button>
+                    }
+                </section>
+            }
+
             <section class="g-block">
                 <h2 class="g-h">About this game</h2>
                 @if (!string.IsNullOrWhiteSpace(detail.Summary))
@@ -203,6 +244,23 @@
                         }
                     </dl>
                 </div>
+                @if (game.CriticScore is not null || game.TimeToBeatMain is not null || game.TimeToBeatFull is not null)
+                {
+                    <div class="g-numbers">
+                        @if (game.CriticScore is { } critic)
+                        {
+                            <span class="g-num"><b class="critic @(critic >= 75 ? "good" : critic >= 50 ? "mixed" : "bad")">@critic</b><small>Critic score</small></span>
+                        }
+                        @if (game.TimeToBeatMain is { } main)
+                        {
+                            <span class="g-num"><b class="num">@Fmt.Hours(main)</b><small>Main story</small></span>
+                        }
+                        @if (game.TimeToBeatFull is { } full)
+                        {
+                            <span class="g-num"><b class="num">@Fmt.Hours(full)</b><small>100%</small></span>
+                        }
+                    </div>
+                }
                 <div class="g-reception">
                     <span class="side-head">Friends' rating</span>
                     @if (detail.FriendsAverageRating is { } average)
@@ -214,6 +272,26 @@
                         <span class="muted">@(detail.Friends.Count == 0 ? "No friends have it yet" : "Not rated by friends yet")</span>
                     }
                 </div>
+                @if (mine is not null)
+                {
+                    <div class="g-collections" data-collections data-game="@game.Id">
+                        <span class="side-head">Collections</span>
+                        <div class="g-col-chips">
+                            @foreach (var c in detail.Collections.Where(c => mineCollections.Contains(c.Id)))
+                            {
+                                <span class="col-chip" data-col-chip="@c.Id">@c.Name<button type="button" aria-label="Take it out of @c.Name" data-col-out="@c.Id">@Icons.Get("x")</button></span>
+                            }
+                            <select class="col-add" data-col-add aria-label="Add to a collection">
+                                <option value="">+ Add to…</option>
+                                @foreach (var c in detail.Collections.Where(c => !mineCollections.Contains(c.Id)))
+                                {
+                                    <option value="@c.Id">@c.Name</option>
+                                }
+                                <option value="new">New collection…</option>
+                            </select>
+                        </div>
+                    </div>
+                }
                 @if (detail.Genres.Count > 0 || game.Platforms.Count > 0)
                 {
                     <div class="g-tags">
@@ -254,11 +332,60 @@
                 }
             </section>
 
+            @if (mine?.Status == GameStatus.Wishlist)
+            {
+                var price = detail.Price;
+                <section class="side-card price-card" data-price data-game="@game.Id">
+                    <h2 class="side-head">Best PC price</h2>
+                    @if (price?.Amount is { } amount)
+                    {
+                        <div class="price-now">
+                            <b class="num">@Fmt.Money(amount, price.Currency)</b>
+                            @if (price.Cut is > 0)
+                            {
+                                <span class="price-cut">−@price.Cut%</span>
+                            }
+                        </div>
+                        <dl class="mini-facts">
+                            @if (price.Shop is { } shop)
+                            {
+                                <dt>At</dt><dd>@if (price.Url is { } shopUrl) { <a href="@shopUrl" target="_blank" rel="noopener">@shop</a> } else { @shop }</dd>
+                            }
+                            @if (price.Regular is { } regular && regular != amount)
+                            {
+                                <dt>Regular</dt><dd>@Fmt.Money(regular, price.Currency)</dd>
+                            }
+                            @if (price.Low is { } low)
+                            {
+                                <dt>Lowest ever</dt><dd>@Fmt.Money(low, price.Currency)</dd>
+                            }
+                            @if (price.CheckedAt is { } checkedAt)
+                            {
+                                <dt>Checked</dt><dd>@Fmt.Ago(checkedAt)</dd>
+                            }
+                        </dl>
+                    }
+                    else
+                    {
+                        <p class="muted small-empty">@(price?.CheckedAt is null ? "Prices are checked once a day (with an IsThereAnyDeal key in Ludex's .env)." : "Not sold in the PC stores IsThereAnyDeal follows.")</p>
+                    }
+                    <label class="price-target">
+                        <span>Alert me under</span>
+                        <input type="number" inputmode="decimal" min="0" max="1000" step="0.01" value="@(price?.Target?.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))" placeholder="—" data-price-target />
+                        <button type="button" class="btn small soft" data-price-save>Save</button>
+                    </label>
+                </section>
+            }
+
             @if (mine is not null)
             {
                 <section class="side-card">
                     <h2 class="side-head">Your playtime</h2>
                     <div class="playtime"><b class="num">@(mine.Hours is { } ph ? Fmt.Hours(ph).Replace(" h", string.Empty) : "—")</b><span class="muted">hours on record</span></div>
+                    @if (mine.RecentHours is { } recent)
+                    {
+                        <p class="recent-line">@Icons.Get("clock")@Fmt.Hours(recent) in the last 2 weeks</p>
+                    }
                     <dl class="mini-facts">
                         <dt>Added</dt><dd>@Fmt.ShortDate(mine.AddedAt)</dd>
                         @if (mine.FinishedAt is { } finished)

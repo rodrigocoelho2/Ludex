@@ -38,6 +38,24 @@ public sealed class LudexOptions
     /// <summary>Gets or sets the Steam Web API address.</summary>
     public string SteamUrl { get; set; } = "https://api.steampowered.com/";
 
+    /// <summary>
+    /// Gets or sets the IsThereAnyDeal API key (https://isthereanydeal.com/apps/my/), for wishlist prices and alerts.
+    /// Empty: no prices. Never commit a real value.
+    /// </summary>
+    public string ItadApiKey { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the IsThereAnyDeal API address.</summary>
+    public string ItadUrl { get; set; } = "https://api.isthereanydeal.com/";
+
+    /// <summary>Gets or sets the country prices are for (two letters: PT, ES, GB, US…).</summary>
+    public string PriceCountry { get; set; } = "PT";
+
+    /// <summary>Gets a value indicating whether the IsThereAnyDeal key is set.</summary>
+    public bool HasItad => !string.IsNullOrWhiteSpace(ItadApiKey);
+
+    /// <summary>Gets or sets a value indicating whether the background jobs run (daily Steam sync, prices, catalog refresh).</summary>
+    public bool JobsEnabled { get; set; } = true;
+
     /// <summary>Gets a value indicating whether the Steam Web API key is set.</summary>
     public bool HasSteam => !string.IsNullOrWhiteSpace(SteamApiKey);
 

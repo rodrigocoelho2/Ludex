@@ -15,7 +15,11 @@ CREATE PROCEDURE [dbo].[GameUpsert]
     @Publisher        NVARCHAR (200),
     @Genres           NVARCHAR (400),
     @Platforms        NVARCHAR (1000),
-    @Modes            NVARCHAR (400)
+    @Modes            NVARCHAR (400),
+    @CriticScore      TINYINT = NULL,
+    @TimeToBeatMain   DECIMAL (6, 1) = NULL,
+    @TimeToBeatFull   DECIMAL (6, 1) = NULL,
+    @DataVersion      TINYINT = 1
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -37,15 +41,20 @@ BEGIN
                    [Genres] = @Genres,
                    [Platforms] = @Platforms,
                    [Modes] = @Modes,
+                   [CriticScore] = @CriticScore,
+                   [TimeToBeatMain] = @TimeToBeatMain,
+                   [TimeToBeatFull] = @TimeToBeatFull,
+                   [DataVersion] = @DataVersion,
                    [FetchedAt] = SYSUTCDATETIME()
     WHEN NOT MATCHED THEN
         INSERT ([GameID], [Name], [Slug], [Summary], [CoverImageID], [HeroImageID], [Screenshots], [FirstReleaseDate],
-                [Developer], [Publisher], [Genres], [Platforms], [Modes])
+                [Developer], [Publisher], [Genres], [Platforms], [Modes], [CriticScore], [TimeToBeatMain], [TimeToBeatFull], [DataVersion])
         VALUES (@GameID, @Name, @Slug, @Summary, @CoverImageID, @HeroImageID, @Screenshots, @FirstReleaseDate,
-                @Developer, @Publisher, @Genres, @Platforms, @Modes);
+                @Developer, @Publisher, @Genres, @Platforms, @Modes, @CriticScore, @TimeToBeatMain, @TimeToBeatFull, @DataVersion);
 
     SELECT g.[GameID], g.[Name], g.[Slug], g.[Summary], g.[CoverImageID], g.[HeroImageID], g.[Screenshots],
-           g.[FirstReleaseDate], g.[Developer], g.[Publisher], g.[Genres], g.[Platforms], g.[Modes], g.[FetchedAt]
+           g.[FirstReleaseDate], g.[Developer], g.[Publisher], g.[Genres], g.[Platforms], g.[Modes], g.[FetchedAt],
+           g.[CriticScore], g.[TimeToBeatMain], g.[TimeToBeatFull], g.[DataVersion]
     FROM [dbo].[Game] g
     WHERE g.[GameID] = @GameID;
 END

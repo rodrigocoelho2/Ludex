@@ -62,7 +62,7 @@
   Finished or Wishlist in one tap — or open it first.
 - Each result says which of your friends have it.
 
-**A game** (laid out like a Steam store page)
+**A game** (laid out like a game in Steam's library)
 
 - A **screenshot viewer** with arrows, thumbnails, keys and swipe (open them full size), the header art with the cover,
   the summary and the facts: friends' rating ("Very positive · 8.0 from 3 friends"), release date, developer,
@@ -71,15 +71,29 @@
   platform and notes below.
 - **Friends who have it**, with their photo, status, hours and rating, and their average; your playtime and dates.
 
+**Collections, Steam, achievements, prices**
+
+- **Your own collections** ("Favourites", "Souls-like"…) at the top of the sidebar: make one with +, drag games onto
+  it from the grid or the sidebar, filter the library by it; put a game in or out from its page too.
+- **Steam syncs on its own every day**: more hours, the hours of the last two weeks (on the profile and the cards),
+  and games bought since come in as **Backlog** (games left out at the import stay out). "Sync now" on the Steam page.
+- **Steam achievements**: the count on every card and a "% of achievements" sort; on the game page every
+  achievement with its icon, when you unlocked it and how rare it is. Achievements give XP and three badges.
+- **Critic score and time to beat** (IGDB): on the game page, and sorts by critic score and by shortest to beat.
+- **What should I play next?**: say how much time you have and pick from the backlog or the wishlist; three
+  suggestions, the better reviewed and the ones your friends have coming up more often.
+- **Wishlist prices** (IsThereAnyDeal, with a free key): the best PC price of each wishlisted game, checked once a
+  day, with its cut and lowest ever; set "alert me under" on the game page and the **bell** tells you.
+
 **Profiles** (Steam style)
 
 - A **profile photo** (shrunk to 256 px on the device before it's sent), a **bio**, a **location** and a **favourite
   game**, all in **Edit profile**.
 - **Level and XP** from the library: 100 XP per finished game, 20 per rating, 5 per game, 1 per hour. Level L starts
   at 100·(L−1)² XP, and the ring changes colour every ten levels.
-- **19 badges** to earn: First finish, Finisher, Completionist, Hall of fame, 100-hour club, Marathoner, Thousand hours,
+- **22 badges** to earn: First finish, Finisher, Completionist, Hall of fame, 100-hour club, Marathoner, Thousand hours,
   Critic, Perfect ten, Tough crowd, Collector, Curator, Wishful thinking, Platform hopper, Retro soul, Day one, Good
-  company, Year of play, Not for me — with progress on the ones still to get.
+  company, Year of play, Not for me, Platinum, Trophy cabinet, Achievement hunter — with progress on the ones still to get.
 - **Playing now** and **Last seen**; showcases for the favourite game, the numbers, the top rated and recent activity;
   friends with what they're playing. Someone who isn't a friend sees the header and an **Add friend** button only.
 

@@ -22,6 +22,11 @@ internal interface IGameRepository
     /// <param name="take">At most this many.</param>
     /// <returns>The games.</returns>
     Task<List<GameRow>> CoverWallAsync(int take);
+
+    /// <summary>Games in someone's library whose data is older than <see cref="GameRow.CurrentDataVersion"/>.</summary>
+    /// <param name="take">At most this many.</param>
+    /// <returns>Their ids.</returns>
+    Task<List<int>> StaleAsync(int take);
 }
 
 /// <summary>
@@ -50,8 +55,15 @@ internal sealed class GameRepository(ISqlConnectionFactory connectionFactory) : 
             game.Genres,
             game.Platforms,
             game.Modes,
+            game.CriticScore,
+            game.TimeToBeatMain,
+            game.TimeToBeatFull,
+            game.DataVersion,
         }))!;
 
     /// <inheritdoc />
     public Task<List<GameRow>> CoverWallAsync(int take) => QueryAsync<GameRow>("[dbo].[GameCoverWall]", new { Take = take });
+
+    /// <inheritdoc />
+    public Task<List<int>> StaleAsync(int take) => QueryAsync<int>("[dbo].[GameStaleList]", new { DataVersion = GameRow.CurrentDataVersion, Take = take });
 }

@@ -1,8 +1,9 @@
 @model LibrarySidebarView
-@* The library down the side, as on Steam: a filter, then every game by status. Stays put between the library and the
-   game pages (app.js keeps its scroll position). *@
+@* The library down the side, as on Steam: a filter, your collections (drop a game on one to put it there), then
+   every game by status. Stays put between the library and the game pages (app.js keeps its scroll position). *@
 @{
-    var groups = new[] { GameStatus.Playing, GameStatus.Finished, GameStatus.Wishlist, GameStatus.Dropped };
+    var groups = new[] { GameStatus.Playing, GameStatus.Backlog, GameStatus.Finished, GameStatus.Wishlist, GameStatus.Dropped };
+    var byId = Model.Entries.ToDictionary(static e => e.Game.Id);
 }
 <aside class="lib-side" data-lib-side aria-label="Your library">
     <a class="lib-side-home" href="/library" aria-current="@(Model.Current is null ? "page" : null)">
@@ -14,6 +15,32 @@
         <input type="search" placeholder="Search your games" autocomplete="off" data-side-filter />
     </label>
     <nav class="lib-side-groups">
+        <div class="lib-side-head">
+            <span>Collections</span>
+            <button type="button" class="icon-btn mini" data-new-collection aria-label="New collection" title="New collection">@Icons.Get("plus")</button>
+        </div>
+        <form class="lib-new-col" hidden data-new-collection-form autocomplete="off">
+            <input type="text" name="name" maxlength="60" placeholder="Name, then Enter" aria-label="New collection's name" />
+        </form>
+        @if (Model.Collections.Count == 0)
+        {
+            <p class="lib-side-hint" data-collections-hint>Make one with +, then drag games onto it.</p>
+        }
+        @foreach (var collection in Model.Collections)
+        {
+            var games = collection.GameIds.Select(id => byId.GetValueOrDefault(id)).OfType<LibraryEntryDTO>()
+                .OrderBy(static e => e.Game.Name, StringComparer.OrdinalIgnoreCase).ToList();
+            <details class="lib-group lib-col" open data-drop-collection="@collection.Id">
+                <summary><span>@collection.Name</span><small>(<span data-col-count>@games.Count</span>)</small><a class="lib-col-open" href="/library?collection=@collection.Id" aria-label="Show @collection.Name">@Icons.Get("right")</a></summary>
+                <ul>
+                    @foreach (var entry in games)
+                    {
+                        @LibraryHtml.SideItem(entry, Model.Current)
+                    }
+                </ul>
+            </details>
+        }
+
         @foreach (var status in groups)
         {
             var games = Model.Entries.Where(e => e.Status == status).OrderBy(static e => e.Game.Name, StringComparer.OrdinalIgnoreCase).ToList();
@@ -27,18 +54,7 @@
                 <ul>
                     @foreach (var entry in games)
                     {
-                        var game = entry.Game;
-                        <li data-side-name="@game.Name.ToLowerInvariant()">
-                            <a href="/games/@game.Id" aria-current="@(Model.Current == game.Id ? "page" : null)">
-                                <span class="lib-thumb" style="--tint:@game.Tint">
-                                    @if (game.CoverImageId is { } cover)
-                                    {
-                                        <img src="@Igdb.Url(cover, Igdb.CoverSmall)" alt="" loading="lazy" decoding="async" />
-                                    }
-                                </span>
-                                <span class="lib-side-name">@game.Name</span>
-                            </a>
-                        </li>
+                        @LibraryHtml.SideItem(entry, Model.Current)
                     }
                 </ul>
             </details>

@@ -19,6 +19,7 @@ public static class Fmt
         GameStatus.Finished => "Finished",
         GameStatus.Wishlist => "Wishlist",
         GameStatus.Dropped => "Dropped",
+        GameStatus.Backlog => "Backlog",
         _ => status.ToString(),
     };
 
@@ -58,6 +59,35 @@ public static class Fmt
     /// <param name="hours">The hours.</param>
     /// <returns>"38 h", "12.5 h", or "—".</returns>
     public static string Hours(decimal? hours) => hours is { } value ? value.ToString("#,0.#", English) + " h" : "—";
+
+    /// <summary>A price.</summary>
+    /// <param name="amount">The amount.</param>
+    /// <param name="currency">The currency (EUR, USD…).</param>
+    /// <returns>"€19.99", "$5.00", "19.99 PLN", or "—".</returns>
+    public static string Money(decimal? amount, string? currency)
+    {
+        if (amount is not { } value)
+        {
+            return "—";
+        }
+
+        var number = value.ToString("0.00", English);
+        return (currency ?? string.Empty).ToUpperInvariant() switch
+        {
+            "EUR" => "€" + number,
+            "USD" => "$" + number,
+            "GBP" => "£" + number,
+            "" => number,
+            var other => $"{number} {other}",
+        };
+    }
+
+    /// <summary>A share of achievements.</summary>
+    /// <param name="unlocked">Unlocked.</param>
+    /// <param name="total">The game's.</param>
+    /// <returns>The % (0–100), or null when the game has none or they weren't read.</returns>
+    public static int? AchievementPercent(int? unlocked, int? total) =>
+        total is > 0 ? (int)Math.Floor(100.0 * Math.Min(unlocked ?? 0, total.Value) / total.Value) : null;
 
     /// <summary>A number for an input (dot decimals, whatever the culture).</summary>
     /// <param name="value">The number.</param>

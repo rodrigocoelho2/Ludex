@@ -174,6 +174,64 @@ public sealed class LudexClient(HttpClient httpClient)
     /// <returns>How many were added and updated.</returns>
     public Task<SteamImportResultDTO> SteamImportAsync(SteamImportRequest item) => PostAsync<SteamImportResultDTO>("steam/import", item);
 
+    /// <summary>Syncs the library with Steam now.</summary>
+    /// <param name="userId">The account.</param>
+    /// <returns>What changed.</returns>
+    public Task<SteamSyncResultDTO> SteamSyncAsync(string userId) => PostAsync<SteamSyncResultDTO>("steam/sync", new SteamSyncRequest { UserId = userId });
+
+    /// <summary>The account's Steam achievements in a game.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="gameId">The game.</param>
+    /// <returns>The achievements (a <see cref="LudexApiException"/> with 404 when it isn't a Steam game or has none).</returns>
+    public Task<AchievementsDTO> SteamAchievementsAsync(string userId, int gameId) =>
+        GetAsync<AchievementsDTO>($"steam/achievements?userId={Uri.EscapeDataString(userId)}&gameId={gameId}");
+
+    // ----- Collections -----
+
+    /// <summary>The account's collections.</summary>
+    /// <param name="userId">The account.</param>
+    /// <returns>The collections.</returns>
+    public Task<List<CollectionDTO>> CollectionsListAsync(string userId) => GetAsync<List<CollectionDTO>>($"collections?userId={Uri.EscapeDataString(userId)}");
+
+    /// <summary>Creates or renames a collection.</summary>
+    /// <param name="item">The account, the collection and the name.</param>
+    /// <returns>The collections.</returns>
+    public Task<List<CollectionDTO>> CollectionsSaveAsync(CollectionSaveRequest item) => PostAsync<List<CollectionDTO>>("collections/save", item);
+
+    /// <summary>Deletes a collection.</summary>
+    /// <param name="item">The account and the collection.</param>
+    /// <returns>The collections.</returns>
+    public Task<List<CollectionDTO>> CollectionsDeleteAsync(CollectionDeleteRequest item) => PostAsync<List<CollectionDTO>>("collections/delete", item);
+
+    /// <summary>Puts a game in a collection or takes it out.</summary>
+    /// <param name="item">The account, the collection and the game.</param>
+    /// <returns>The collections.</returns>
+    public Task<List<CollectionDTO>> CollectionsGameAsync(CollectionGameRequest item) => PostAsync<List<CollectionDTO>>("collections/game", item);
+
+    // ----- Prices -----
+
+    /// <summary>Sets the price under which a wishlisted game raises an alert.</summary>
+    /// <param name="item">The account, the game and the price.</param>
+    /// <returns>The price now.</returns>
+    public Task<PriceTargetRequest> LibraryPriceTargetAsync(PriceTargetRequest item) => PostAsync<PriceTargetRequest>("library/price-target", item);
+
+    // ----- Notifications -----
+
+    /// <summary>The latest notifications.</summary>
+    /// <param name="userId">The account.</param>
+    /// <returns>The bell.</returns>
+    public Task<NotificationsDTO> NotificationsListAsync(string userId) => GetAsync<NotificationsDTO>($"notifications?userId={Uri.EscapeDataString(userId)}");
+
+    /// <summary>How many notifications are new.</summary>
+    /// <param name="userId">The account.</param>
+    /// <returns>The count.</returns>
+    public Task<int> NotificationsUnreadAsync(string userId) => GetAsync<int>($"notifications/unread?userId={Uri.EscapeDataString(userId)}");
+
+    /// <summary>Marks every notification as seen.</summary>
+    /// <param name="userId">The account.</param>
+    /// <returns>The bell as it was (the new ones still marked new).</returns>
+    public Task<NotificationsDTO> NotificationsReadAsync(string userId) => PostAsync<NotificationsDTO>("notifications/read", new NotificationReadRequest { UserId = userId });
+
     // ----- Health -----
 
     /// <summary>Checks the WebApi and its database.</summary>

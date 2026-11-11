@@ -28,6 +28,9 @@ internal static class GameMapper
         Tint = GameTint.For(row.GameID),
         MyStatus = myStatus,
         FriendNames = friendNames ?? [],
+        CriticScore = row.CriticScore,
+        TimeToBeatMain = row.TimeToBeatMain,
+        TimeToBeatFull = row.TimeToBeatFull,
     };
 
     /// <summary>
@@ -48,6 +51,9 @@ internal static class GameMapper
         Tint = GameTint.For(game.Id),
         MyStatus = myStatus,
         FriendNames = friendNames ?? [],
+        CriticScore = game.CriticScore,
+        TimeToBeatMain = game.TimeToBeatMain,
+        TimeToBeatFull = game.TimeToBeatFull,
     };
 
     /// <summary>
@@ -55,7 +61,7 @@ internal static class GameMapper
     /// </summary>
     /// <param name="value">The stored number.</param>
     /// <returns>The status, or null when the number isn't one.</returns>
-    public static GameStatus? Status(byte? value) => value is >= 1 and <= 4 ? (GameStatus)value.Value : null;
+    public static GameStatus? Status(byte? value) => value is >= 1 and <= 5 ? (GameStatus)value.Value : null;
 
     /// <summary>
     /// A UTC time read from the database.

@@ -30,6 +30,7 @@
                     <input id="top-q" name="q" type="search" placeholder="Search games…" autocomplete="off" />
                 </form>
                 <a class="btn small" href="/discover">@Icons.Get("plus")<span>Add</span></a>
+                <a class="icon-btn top-bell" href="/notifications" aria-label="Notifications" title="Notifications" data-bell>@Icons.Get("bell")<span class="bell-count" hidden data-bell-count></span></a>
                 <a class="icon-btn top-settings" href="/settings" aria-current="@Current(AppSection.Settings)" aria-label="Settings" title="Settings">@Icons.Get("settings")</a>
                 <a class="me" href="/profile" aria-current="@(ownProfile ? "page" : null)" aria-label="Your profile (@Model.UserName)">
                     @Avatars.Get(Model.MyId, Model.UserName, Model.MyAvatarVersion, "ring")

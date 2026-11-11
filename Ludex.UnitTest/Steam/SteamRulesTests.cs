@@ -30,7 +30,7 @@ public sealed class SteamRulesTests
     public void HoursComeFromMinutesToOneDecimal(int minutes, double hours) => Assert.Equal((decimal)hours, SteamRules.Hours(minutes));
 
     [Fact]
-    public void NeverPlayedIsWishlistAndLeftOut() => Assert.Equal((GameStatus.Wishlist, false), SteamRules.Suggest(0, null, Now));
+    public void NeverPlayedIsBacklogAndLeftOut() => Assert.Equal((GameStatus.Backlog, false), SteamRules.Suggest(0, null, Now));
 
     [Fact]
     public void PlayedInTheLast30DaysIsPlaying() => Assert.Equal((GameStatus.Playing, true), SteamRules.Suggest(45, Now.AddDays(-12), Now));

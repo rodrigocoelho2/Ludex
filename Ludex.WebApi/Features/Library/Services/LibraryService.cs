@@ -3,6 +3,8 @@ using Ludex.Library.Platforms;
 using Ludex.Library.Services;
 using Ludex.Library.Validation;
 using Ludex.WebApi.Extensions.Globalization;
+using Ludex.WebApi.Features.Collections.Repositories;
+using Ludex.WebApi.Features.Collections.Services;
 using Ludex.WebApi.Features.Catalog;
 using Ludex.WebApi.Features.Friends.Repositories;
 using Ludex.WebApi.Features.Friends.Services;
@@ -40,6 +42,11 @@ internal interface ILibraryService
     /// <returns>The game id.</returns>
     Task<ServiceApiResponse<int>> DeleteAsync(string userId, int gameId);
 
+    /// <summary>Sets the price under which a wishlisted game raises an alert.</summary>
+    /// <param name="item">The account, the game and the price.</param>
+    /// <returns>The price now, or a problem.</returns>
+    Task<ServiceApiResponse<PriceTargetRequest>> SetPriceTargetAsync(PriceTargetRequest item);
+
     /// <summary>The home page: the game being played, the numbers, the last games added and the friends' activity.</summary>
     /// <param name="userId">The account.</param>
     /// <returns>The home page.</returns>
@@ -50,6 +57,7 @@ internal interface ILibraryService
 /// An account's library and its home page.
 /// </summary>
 /// <param name="libraryRepository">The libraries.</param>
+/// <param name="collectionRepository">Collections.</param>
 /// <param name="friendRepository">Friends.</param>
 /// <param name="gameStore">Games, from the database or the catalog.</param>
 /// <param name="catalog">The catalog (which one is in use).</param>
@@ -57,6 +65,7 @@ internal interface ILibraryService
 /// <param name="timeProvider">The clock (this year's numbers).</param>
 internal sealed class LibraryService(
     ILibraryRepository libraryRepository,
+    ICollectionRepository collectionRepository,
     IFriendRepository friendRepository,
     GameStore gameStore,
     IGameCatalog catalog,
@@ -82,10 +91,13 @@ internal sealed class LibraryService(
 
         var rows = await libraryRepository.ListAsync(user);
         var names = await FriendNamesAsync(user, rows.Select(static r => r.GameID).ToList());
+        var collections = CollectionService.ToDtos(await collectionRepository.ListAsync(user));
+        var inCollections = CollectionService.ByGame(collections);
         return ServiceApiResponse<LibraryDTO>.Success(new LibraryDTO
         {
-            Entries = [.. rows.Select(row => LibraryRules.Entry(row, names.GetValueOrDefault(row.GameID)))],
+            Entries = [.. rows.Select(row => LibraryRules.Entry(row, names.GetValueOrDefault(row.GameID), inCollections.GetValueOrDefault(row.GameID)))],
             Counts = LibraryRules.Counts(rows),
+            Collections = collections,
         });
     }
 
@@ -160,6 +172,25 @@ internal sealed class LibraryService(
         }
 
         return await StoreAsync(user, item.GameId, item.Status, null, null, null, null, null, null, keepDetails: true);
+    }
+
+    /// <inheritdoc />
+    public async Task<ServiceApiResponse<PriceTargetRequest>> SetPriceTargetAsync(PriceTargetRequest item)
+    {
+        if (!Guid.TryParse(item.UserId, out var user))
+        {
+            return await NotFoundAsync<PriceTargetRequest>(item.UserId);
+        }
+
+        if (item.Target is < 0 or > 1000)
+        {
+            var error = await globalizationHelper.ValidationErrorAsync("Target", nameof(TranslationKeys.PriceTargetInvalid));
+            return ServiceApiResponse<PriceTargetRequest>.ValidationProblems(error.Message).AddError("Target", error.Message);
+        }
+
+        var target = item.Target is { } value ? Math.Round(value, 2, MidpointRounding.AwayFromZero) : (decimal?)null;
+        await libraryRepository.SetPriceTargetAsync(user, item.GameId, target);
+        return ServiceApiResponse<PriceTargetRequest>.Success(new PriceTargetRequest { UserId = item.UserId, GameId = item.GameId, Target = target });
     }
 
     /// <inheritdoc />

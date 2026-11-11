@@ -60,6 +60,11 @@ internal sealed class GameStore(
             return false;
         }
 
+        if (row.DataVersion < GameRow.CurrentDataVersion)
+        {
+            return true;
+        }
+
         var fetchedAt = DateTime.SpecifyKind(row.FetchedAt, DateTimeKind.Utc);
         return timeProvider.GetUtcNow().UtcDateTime - fetchedAt > TimeSpan.FromDays(Math.Max(1, options.Value.RefreshDays));
     }

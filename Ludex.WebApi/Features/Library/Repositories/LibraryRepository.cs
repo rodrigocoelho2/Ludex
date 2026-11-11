@@ -54,6 +54,36 @@ internal interface ILibraryRepository
     /// <param name="games">The games (each once; already in dbo.Game).</param>
     /// <returns>How many were added and how many got more hours.</returns>
     Task<LibraryImportCounts> ImportAsync(Guid userId, IReadOnlyCollection<LibraryImportRow> games);
+
+    /// <summary>Sets the price under which a wishlisted game raises an alert.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="gameId">The game.</param>
+    /// <param name="target">The price (null: no alert).</param>
+    /// <returns>A task.</returns>
+    Task SetPriceTargetAsync(Guid userId, int gameId, decimal? target);
+
+    /// <summary>The Steam games whose achievement counts need reading.</summary>
+    /// <param name="userId">The account.</param>
+    /// <returns>Game and Steam app.</returns>
+    Task<List<AchievementTarget>> AchievementTargetsAsync(Guid userId);
+
+    /// <summary>Keeps how many achievements of a game the account has.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="gameId">The game.</param>
+    /// <param name="unlocked">Unlocked.</param>
+    /// <param name="total">The game's achievements.</param>
+    /// <returns>A task.</returns>
+    Task SaveAchievementsAsync(Guid userId, int gameId, int unlocked, int total);
+}
+
+/// <summary>A Steam game whose achievements to read (dbo.AchievementTargets).</summary>
+public sealed class AchievementTarget
+{
+    /// <summary>Gets or sets the game.</summary>
+    public int GameID { get; set; }
+
+    /// <summary>Gets or sets its Steam app.</summary>
+    public int SteamAppID { get; set; }
 }
 
 /// <summary>A game for <see cref="ILibraryRepository.ImportAsync"/> (sent as JSON to dbo.LibraryImport).</summary>
@@ -61,7 +91,9 @@ internal interface ILibraryRepository
 /// <param name="Status">The status for a new entry.</param>
 /// <param name="Hours">The hours played.</param>
 /// <param name="PlayedAt">When it was last played (UTC).</param>
-internal sealed record LibraryImportRow(int GameID, byte Status, decimal? Hours, DateTime? PlayedAt);
+/// <param name="AppID">Its Steam app.</param>
+/// <param name="RecentMinutes">Minutes played on Steam in the last two weeks.</param>
+internal sealed record LibraryImportRow(int GameID, byte Status, decimal? Hours, DateTime? PlayedAt, int? AppID = null, int? RecentMinutes = null);
 
 /// <summary>What dbo.LibraryImport did.</summary>
 public sealed class LibraryImportCounts
@@ -113,4 +145,22 @@ internal sealed class LibraryRepository(ISqlConnectionFactory connectionFactory)
         games.Count == 0
             ? new LibraryImportCounts()
             : await QuerySingleOrDefaultAsync<LibraryImportCounts>("[dbo].[LibraryImport]", new { UserUniqueID = userId, Games = Json(games) }) ?? new LibraryImportCounts();
+
+    /// <inheritdoc />
+    public Task SetPriceTargetAsync(Guid userId, int gameId, decimal? target) =>
+        ExecuteAsync("[dbo].[PriceTargetSet]", new { UserUniqueID = userId, GameID = gameId, Target = target });
+
+    /// <inheritdoc />
+    public Task<List<AchievementTarget>> AchievementTargetsAsync(Guid userId) =>
+        QueryAsync<AchievementTarget>("[dbo].[AchievementTargets]", new { UserUniqueID = userId });
+
+    /// <inheritdoc />
+    public Task SaveAchievementsAsync(Guid userId, int gameId, int unlocked, int total) =>
+        ExecuteAsync("[dbo].[AchievementSave]", new
+        {
+            UserUniqueID = userId,
+            GameID = gameId,
+            Unlocked = (short)Math.Clamp(unlocked, 0, short.MaxValue),
+            Total = (short)Math.Clamp(total, 0, short.MaxValue),
+        });
 }

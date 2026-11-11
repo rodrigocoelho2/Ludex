@@ -9,6 +9,7 @@
     {
         (null, "All games", counts.All),
         (GameStatus.Playing, "Playing", counts.Playing),
+        (GameStatus.Backlog, "Backlog", counts.Backlog),
         (GameStatus.Finished, "Finished", counts.Finished),
         (GameStatus.Wishlist, "Wishlist", counts.Wishlist),
         (GameStatus.Dropped, "Dropped", counts.Dropped),
@@ -18,15 +19,21 @@
         ("played", "Last played"),
         ("name", "Alphabetical"),
         ("friends", "Friends who have it"),
+        ("achievements", "% of achievements"),
         ("rating", "Your rating"),
+        ("critic", "Critic score"),
         ("hours", "Hours played"),
+        ("recent", "Hours in the last 2 weeks"),
+        ("shortest", "Shortest to beat"),
         ("release", "Release date"),
         ("added", "Date added to library"),
     };
+    var collections = Model.Library.Collections;
+    var byGame = collections.SelectMany(static c => c.GameIds.Select(g => (Game: g, c.Id))).ToLookup(static x => x.Game, static x => x.Id);
 }
 
 <div class="lib-shell">
-    <partial name="_LibrarySidebar" model="new LibrarySidebarView(entries, null)" />
+    <partial name="_LibrarySidebar" model="new LibrarySidebarView(entries, null, collections)" />
 
     <section class="lib-main">
         @if (entries.Count == 0)
@@ -76,6 +83,23 @@
                         }
                     </select>
                 </label>
+                @if (collections.Count > 0)
+                {
+                    <label class="lib-filter">
+                        <span class="sr-only">Collection</span>
+                        <select data-collection-filter>
+                            <option value="">All collections</option>
+                            @foreach (var c in collections)
+                            {
+                                <option value="@c.Id" selected="@(Model.Collection == c.Id ? "selected" : null)">@c.Name (@c.GameIds.Count)</option>
+                            }
+                        </select>
+                    </label>
+                    <span class="lib-col-acts" data-col-acts hidden>
+                        <button type="button" class="link-btn" data-col-rename>Rename</button>
+                        <button type="button" class="link-btn danger" data-col-delete>Delete</button>
+                    </span>
+                }
                 @if (Model.Copies.Any())
                 {
                     <label class="lib-filter">
@@ -91,6 +115,7 @@
                 }
                 <label class="check lib-friends"><input type="checkbox" data-friends-filter /><span>Friends have it</span></label>
                 <span class="lib-bar-push"></span>
+                <button type="button" class="btn soft small" data-next-open>@Icons.Get("sparkle")What should I play?</button>
                 <span class="in compact lib-find">@Icons.Get("search")<input type="search" placeholder="Filter" aria-label="Filter the library" autocomplete="off" data-text-filter /></span>
             </div>
             <p class="lib-count muted" data-shown-label>@Fmt.Plural(entries.Count, "game", "games")</p>
@@ -100,7 +125,11 @@
                 {
                     var game = entry.Game;
                     var copy = Ludex.Library.Platforms.GameCopies.Label(entry.Store, entry.Format);
-                    <a class="lib-card" href="/games/@game.Id" title="@game.Name" aria-label="@game.Name"
+                    var achievementPercent = Fmt.AchievementPercent(entry.AchievementsUnlocked, entry.AchievementsTotal);
+                    var inCollections = string.Join(",", byGame[game.Id]);
+                    <a class="lib-card" href="/games/@game.Id" title="@game.Name" aria-label="@game.Name" draggable="true" data-drag-game="@game.Id"
+                       data-collections=",@inCollections," data-achievements="@(achievementPercent ?? -1)" data-critic="@(game.CriticScore ?? 0)"
+                       data-ttb="@Fmt.Input(game.TimeToBeatMain ?? 0)" data-recent="@Fmt.Input(entry.RecentHours ?? 0)" data-cover="@(game.CoverImageId is { } dc ? Igdb.Url(dc, Igdb.CoverBig) : string.Empty)" data-tint="@game.Tint"
                        data-name="@game.Name.ToLowerInvariant()" data-status="@entry.Status" data-family="@entry.PlatformFamily"
                        data-platform="@(entry.Platform ?? string.Empty)" data-format="@(entry.Format?.ToString() ?? string.Empty)" data-store="@(entry.Store ?? string.Empty)"
                        data-friends="@game.FriendNames.Count" data-rating="@(entry.Rating ?? 0)" data-hours="@Fmt.Input(entry.Hours ?? 0)"
@@ -119,7 +148,15 @@
                             {
                                 <span class="lib-score">@rating</span>
                             }
+                            @if (entry.Status == GameStatus.Wishlist && entry.Price?.Amount is { } price)
+                            {
+                                <span class="lib-price@(entry.Price.Cut is > 0 ? " sale" : string.Empty)">@(entry.Price.Cut is > 0 ? $"−{entry.Price.Cut}% " : string.Empty)@Fmt.Money(price, entry.Price.Currency)</span>
+                            }
                         </span>
+                        @if (achievementPercent is { } ap)
+                        {
+                            <span class="lib-ach" title="@entry.AchievementsUnlocked of @entry.AchievementsTotal achievements"><i style="width:@ap%"></i></span>
+                        }
                         <span class="lib-meta">
                             <span>@(entry.Hours is { } h && h > 0 ? Fmt.Hours(h) : Fmt.Status(entry.Status))</span>
                             @if (copy is not null || entry.Platform is not null)
@@ -134,3 +171,38 @@
         }
     </section>
 </div>
+
+<dialog class="next-dialog" data-next aria-labelledby="next-title">
+    <form method="dialog" class="next-in">
+        <div class="next-head">
+            <h2 id="next-title">What should I play next?</h2>
+            <button class="icon-btn" value="close" aria-label="Close">@Icons.Get("x")</button>
+        </div>
+        <div class="next-opts">
+            <div class="next-opt">
+                <span class="label">Time you have</span>
+                <div class="yg-status" role="group" aria-label="Time you have">
+                    <button type="button" class="pill-btn" data-next-hours="5" aria-pressed="false">5 h</button>
+                    <button type="button" class="pill-btn" data-next-hours="10" aria-pressed="true">10 h</button>
+                    <button type="button" class="pill-btn" data-next-hours="25" aria-pressed="false">25 h</button>
+                    <button type="button" class="pill-btn" data-next-hours="60" aria-pressed="false">60 h</button>
+                    <button type="button" class="pill-btn" data-next-hours="0" aria-pressed="false">Any</button>
+                </div>
+            </div>
+            <div class="next-opt">
+                <span class="label">From</span>
+                <div class="yg-status" role="group" aria-label="From">
+                    <button type="button" class="pill-btn" data-next-from="Backlog" aria-pressed="true">Backlog</button>
+                    <button type="button" class="pill-btn" data-next-from="Wishlist" aria-pressed="false">Wishlist</button>
+                    <button type="button" class="pill-btn" data-next-from="both" aria-pressed="false">Both</button>
+                </div>
+            </div>
+        </div>
+        <div class="next-picks" data-next-picks></div>
+        <div class="next-foot">
+            <span class="muted" data-next-note></span>
+            <button type="button" class="btn small" data-next-shuffle>@Icons.Get("sparkle")Shuffle</button>
+        </div>
+    </form>
+</dialog>
+

@@ -37,6 +37,24 @@ public sealed class LibraryEntryDTO
 
     /// <summary>Gets or sets when it was first finished.</summary>
     public DateTimeOffset? FinishedAt { get; set; }
+
+    /// <summary>Gets or sets its Steam app (null: not from Steam).</summary>
+    public int? SteamAppId { get; set; }
+
+    /// <summary>Gets or sets the hours played on Steam in the last two weeks.</summary>
+    public decimal? RecentHours { get; set; }
+
+    /// <summary>Gets or sets the Steam achievements unlocked.</summary>
+    public int? AchievementsUnlocked { get; set; }
+
+    /// <summary>Gets or sets the game's Steam achievements (0: none; null: not read).</summary>
+    public int? AchievementsTotal { get; set; }
+
+    /// <summary>Gets or sets the collections it is in.</summary>
+    public List<int> CollectionIds { get; set; } = [];
+
+    /// <summary>Gets or sets its best PC price, for a wishlisted game (null: not checked).</summary>
+    public PriceDTO? Price { get; set; }
 }
 
 /// <summary>How many games there are with each status.</summary>
@@ -56,6 +74,9 @@ public sealed class LibraryCountsDTO
 
     /// <summary>Gets or sets the games dropped.</summary>
     public int Dropped { get; set; }
+
+    /// <summary>Gets or sets the games owned and not started.</summary>
+    public int Backlog { get; set; }
 }
 
 /// <summary>The library.</summary>
@@ -66,6 +87,9 @@ public sealed class LibraryDTO
 
     /// <summary>Gets or sets the counts per status.</summary>
     public LibraryCountsDTO Counts { get; set; } = new();
+
+    /// <summary>Gets or sets the account's collections.</summary>
+    public List<CollectionDTO> Collections { get; set; } = [];
 }
 
 /// <summary>The numbers on the home tiles.</summary>
@@ -163,4 +187,100 @@ public sealed class LibraryStatusRequest
 
     /// <summary>Gets or sets the status.</summary>
     public GameStatus Status { get; set; }
+}
+
+/// <summary>The best current PC price of a game (IsThereAnyDeal) and the alert set on it.</summary>
+public sealed class PriceDTO
+{
+    /// <summary>Gets or sets the price (null: not sold right now).</summary>
+    public decimal? Amount { get; set; }
+
+    /// <summary>Gets or sets the regular price.</summary>
+    public decimal? Regular { get; set; }
+
+    /// <summary>Gets or sets the % off.</summary>
+    public int? Cut { get; set; }
+
+    /// <summary>Gets or sets the currency (EUR…).</summary>
+    public string? Currency { get; set; }
+
+    /// <summary>Gets or sets the shop.</summary>
+    public string? Shop { get; set; }
+
+    /// <summary>Gets or sets the shop's page.</summary>
+    public string? Url { get; set; }
+
+    /// <summary>Gets or sets the lowest price ever.</summary>
+    public decimal? Low { get; set; }
+
+    /// <summary>Gets or sets when it was checked (null: not yet).</summary>
+    public DateTimeOffset? CheckedAt { get; set; }
+
+    /// <summary>Gets or sets the price under which to alert.</summary>
+    public decimal? Target { get; set; }
+}
+
+/// <summary>One of an account's collections.</summary>
+public sealed class CollectionDTO
+{
+    /// <summary>Gets or sets the id.</summary>
+    public int Id { get; set; }
+
+    /// <summary>Gets or sets the name.</summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the games in it (of the library).</summary>
+    public List<int> GameIds { get; set; } = [];
+}
+
+/// <summary>Creates a collection (no id) or renames one.</summary>
+public sealed class CollectionSaveRequest
+{
+    /// <summary>Gets or sets the account.</summary>
+    public string? UserId { get; set; }
+
+    /// <summary>Gets or sets the collection (null: a new one).</summary>
+    public int? Id { get; set; }
+
+    /// <summary>Gets or sets the name.</summary>
+    public string? Name { get; set; }
+}
+
+/// <summary>Deletes a collection.</summary>
+public sealed class CollectionDeleteRequest
+{
+    /// <summary>Gets or sets the account.</summary>
+    public string? UserId { get; set; }
+
+    /// <summary>Gets or sets the collection.</summary>
+    public int Id { get; set; }
+}
+
+/// <summary>Puts a game in a collection or takes it out.</summary>
+public sealed class CollectionGameRequest
+{
+    /// <summary>Gets or sets the account.</summary>
+    public string? UserId { get; set; }
+
+    /// <summary>Gets or sets the collection.</summary>
+    public int CollectionId { get; set; }
+
+    /// <summary>Gets or sets the game.</summary>
+    public int GameId { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether it goes in (true) or out.</summary>
+    public bool In { get; set; } = true;
+}
+
+/// <summary>Sets the price under which a wishlisted game raises an alert.</summary>
+public sealed class PriceTargetRequest
+{
+    /// <summary>Gets or sets the account.</summary>
+    public string? UserId { get; set; }
+
+    /// <summary>Gets or sets the game.</summary>
+    public int GameId { get; set; }
+
+    /// <summary>Gets or sets the price (null: no alert).</summary>
+    public decimal? Target { get; set; }
 }

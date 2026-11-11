@@ -3,7 +3,7 @@
     Layout = "_App";
     ViewData["Title"] = "Import from Steam";
     var preview = Model.Preview;
-    var statuses = new[] { GameStatus.Playing, GameStatus.Finished, GameStatus.Dropped, GameStatus.Wishlist };
+    var statuses = new[] { GameStatus.Playing, GameStatus.Finished, GameStatus.Backlog, GameStatus.Dropped, GameStatus.Wishlist };
     var fresh = Model.New;
     var known = Model.Known;
 }
@@ -40,6 +40,17 @@
             <div class="msg err rise" role="alert">@Icons.Get("info")<p>@problem</p></div>
         }
 
+        @if (preview?.SyncedAt is { } syncedAt)
+        {
+            <section class="panel glass rise d1 steam-sync">
+                <div>
+                    <h2>Synced with Steam</h2>
+                    <p class="muted">Last time @Fmt.Ago(syncedAt). Every day Ludex syncs on its own: more hours, the last two weeks, achievements, and games you buy on Steam come in as Backlog.</p>
+                </div>
+                <button type="button" class="btn" data-steam-sync>@Icons.Get("refresh")<span>Sync now</span></button>
+            </section>
+        }
+
         @if (preview?.SteamId is { } steamId)
         {
             <section class="steam-account panel glass rise d1">
@@ -66,7 +77,7 @@
 
             @if (preview.Games.Count > 0)
             {
-                <p class="muted steam-rule">Suggested: played in the last 30 days → <b>Playing</b>; 2 h or more → <b>Finished</b>; less → <b>Dropped</b>; never played → left out. Change any of them before importing.</p>
+                <p class="muted steam-rule">Suggested: played in the last 30 days → <b>Playing</b>; 2 h or more → <b>Finished</b>; less → <b>Dropped</b>; never played → Backlog, unticked. Change any of them before importing.</p>
 
                 @if (fresh.Count > 0)
                 {
