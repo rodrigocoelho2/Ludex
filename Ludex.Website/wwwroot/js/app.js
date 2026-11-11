@@ -304,7 +304,11 @@
             const go = () => setView(b.dataset.view);
             if (document.startViewTransition && !reduceMotion) document.startViewTransition(go); else go();
         }));
-        const paintHead = () => { if (head) $$('[data-sort-col]', head).forEach(b => b.classList.toggle('on', b.dataset.sortCol === sort?.value)); };
+        // Sorted by critics, the badge on each cover shows the critics' score instead of yours, like Steam.
+        const paintHead = () => {
+            if (head) $$('[data-sort-col]', head).forEach(b => b.classList.toggle('on', b.dataset.sortCol === sort?.value));
+            library.classList.toggle('show-critic', sort?.value === 'critic');
+        };
         head?.addEventListener('click', e => {
             const b = e.target.closest('[data-sort-col]');
             if (!b || !sort) return;

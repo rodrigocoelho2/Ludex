@@ -176,6 +176,10 @@
                             {
                                 <span class="lib-score">@rating</span>
                             }
+                            @if (game.CriticScore is { } critic)
+                            {
+                                <span class="lib-critic @(critic >= 70 ? "good" : "mixed")" title="Critic score">@critic</span>
+                            }
                             @if (entry.Status == GameStatus.Wishlist && entry.Price?.Amount is { } price)
                             {
                                 <span class="lib-price@(entry.Price.Cut is > 0 ? " sale" : string.Empty)">@(entry.Price.Cut is > 0 ? $"−{entry.Price.Cut}% " : string.Empty)@Fmt.Money(price, entry.Price.Currency)</span>
