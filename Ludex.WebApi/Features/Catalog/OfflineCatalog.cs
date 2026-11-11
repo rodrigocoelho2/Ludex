@@ -43,6 +43,10 @@ internal sealed class OfflineCatalog : IGameCatalog
     public Task<CatalogGame?> GetAsync(int id, CancellationToken cancellationToken = default) =>
         Task.FromResult(Games.FirstOrDefault(game => game.Id == id));
 
+    /// <inheritdoc />
+    public Task<List<CatalogGame>> PopularAsync(int take, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Games.Take(Math.Max(1, take)).ToList());
+
     /// <summary>
     /// Lower case without accents or punctuation, for matching ("Pokémon: Z-A" → "pokemon z a").
     /// </summary>

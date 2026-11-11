@@ -41,19 +41,28 @@ internal interface IGameService
 /// <param name="libraryRepository">The libraries.</param>
 /// <param name="friendRepository">Friends.</param>
 /// <param name="globalizationHelper">Messages.</param>
+/// <param name="timeProvider">The clock (how long the wall's games are kept).</param>
+/// <param name="logger">Logger.</param>
 internal sealed class GameService(
     IGameCatalog catalog,
     GameStore gameStore,
     IGameRepository gameRepository,
     ILibraryRepository libraryRepository,
     IFriendRepository friendRepository,
-    IGlobalizationHelper globalizationHelper) : IGameService
+    IGlobalizationHelper globalizationHelper,
+    TimeProvider timeProvider,
+    ILogger<GameService> logger) : IGameService
 {
     /// <summary>Most results a search returns.</summary>
     internal const int SearchLimit = 24;
 
     /// <summary>How many covers the sign-in wall shows.</summary>
-    internal const int WallSize = 30;
+    internal const int WallSize = 42;
+
+    private static readonly TimeSpan WallRefresh = TimeSpan.FromHours(12);
+    private readonly SemaphoreSlim _wallGate = new(1, 1);
+    private List<CatalogGame> _famous = [];
+    private DateTimeOffset _famousAt = DateTimeOffset.MinValue;
 
     /// <inheritdoc />
     public async Task<ServiceApiResponse<SearchResultDTO>> SearchAsync(string userId, string? query)
@@ -155,11 +164,48 @@ internal sealed class GameService(
     }
 
     /// <inheritdoc />
-    public async Task<ServiceApiResponse<CoverWallDTO>> WallAsync() => ServiceApiResponse<CoverWallDTO>.Success(new CoverWallDTO
+    public async Task<ServiceApiResponse<CoverWallDTO>> WallAsync()
     {
-        Games = [.. (await gameRepository.CoverWallAsync(WallSize)).Select(static row => GameMapper.Summary(row))],
-        Source = catalog.Source,
-    });
+        // The games people here have, then (with IGDB) well-known ones to fill the wall; a new order on every visit.
+        var games = (await gameRepository.CoverWallAsync(WallSize)).Select(static row => GameMapper.Summary(row)).ToList();
+        if (games.Count < WallSize && catalog.Source == CatalogSource.Igdb)
+        {
+            var seen = games.Select(static g => g.Id).ToHashSet();
+            games.AddRange((await FamousAsync()).Where(g => seen.Add(g.Id) && g.CoverImageId is not null).Select(static g => GameMapper.Summary(g)));
+        }
+
+        var wall = games.Take(WallSize).ToArray();
+        Random.Shared.Shuffle(wall);
+        return ServiceApiResponse<CoverWallDTO>.Success(new CoverWallDTO { Games = [.. wall], Source = catalog.Source });
+    }
+
+    private async Task<List<CatalogGame>> FamousAsync()
+    {
+        await _wallGate.WaitAsync();
+        try
+        {
+            var now = timeProvider.GetUtcNow();
+            if (now - _famousAt > WallRefresh)
+            {
+                try
+                {
+                    _famous = await catalog.PopularAsync(WallSize);
+                }
+                catch (CatalogUnavailableException exception)
+                {
+                    logger.LogWarning("No famous games for the wall: {Problem}", exception.Message);
+                }
+
+                _famousAt = now;   // tried: don't ask IGDB again on every sign-in page, even after a failure
+            }
+
+            return _famous;
+        }
+        finally
+        {
+            _wallGate.Release();
+        }
+    }
 
     private async Task<Dictionary<int, List<string>>> FriendNamesAsync(Guid user, List<int> gameIds) =>
         GameMapper.NamesByGame((await friendRepository.OwnershipAsync(user, gameIds)).Select(static r => (r.GameID, r.Username)));

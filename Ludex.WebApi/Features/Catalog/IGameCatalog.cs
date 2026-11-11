@@ -80,4 +80,13 @@ internal interface IGameCatalog
     /// <returns>The game, or null when the catalog has no such game.</returns>
     /// <exception cref="CatalogUnavailableException">The catalog can't be reached.</exception>
     Task<CatalogGame?> GetAsync(int id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Well-known games with a cover (the wall behind the sign-in form).
+    /// </summary>
+    /// <param name="take">At most this many.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The games (search fields only).</returns>
+    /// <exception cref="CatalogUnavailableException">The catalog can't be reached.</exception>
+    Task<List<CatalogGame>> PopularAsync(int take, CancellationToken cancellationToken = default);
 }

@@ -60,6 +60,17 @@ internal sealed class IgdbCatalog(
         return games.Count == 0 ? null : Map(games[0]);
     }
 
+    /// <inheritdoc />
+    public async Task<List<CatalogGame>> PopularAsync(int take, CancellationToken cancellationToken = default)
+    {
+        // The most rated games with a cover: the ones anybody recognises on the wall.
+        var body = "fields name,slug,cover.image_id,first_release_date; "
+                   + "where cover != null & version_parent = null & total_rating_count > 400; "
+                   + $"sort total_rating_count desc; limit {Math.Clamp(take, 1, 100)};";
+        var games = await QueryAsync(body, cancellationToken);
+        return [.. games.Select(Map)];
+    }
+
     /// <summary>
     /// Turns IGDB's game into the catalog's.
     /// </summary>
