@@ -100,11 +100,13 @@ PY
 fi
 
 step "stack no Portainer"
+set -o pipefail
 if bash "$APPS_SH" 2>/dev/null | grep -qE '^ludex +sim'; then
-  bash "$APPS_SH" atualizar ludex | sed 's/^/   /'
+  bash "$APPS_SH" atualizar ludex 2>&1 | sed 's/^/   /' || fail "o apps.sh atualizar falhou (vê acima)"
 else
-  bash "$APPS_SH" migrar ludex | sed 's/^/   /'
+  bash "$APPS_SH" migrar ludex 2>&1 | sed 's/^/   /' || fail "o apps.sh migrar falhou (vê acima)"
 fi
+set +o pipefail
 
 step "verificações"
 for i in $(seq 1 60); do
