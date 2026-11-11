@@ -1,0 +1,10 @@
+{
+  "ConnectionStrings": {
+    "Ludex": "Server=127.0.0.1,1437;Database=Ludex;User Id=ludex;Password=<your SQL_APP_PASSWORD>;TrustServerCertificate=True"
+  },
+  "Ludex": {
+    "ApiKey": "devkey",
+    "IgdbClientId": "",
+    "IgdbClientSecret": ""
+  }
+}

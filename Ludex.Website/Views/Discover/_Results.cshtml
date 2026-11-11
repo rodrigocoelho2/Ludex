@@ -1,0 +1,53 @@
+@model DiscoverPageModel
+@* The search results (drawn on the server; the page script swaps this block as you type). *@
+@if (Model.Query.Length < 2)
+{
+    <p class="muted small-empty">Type at least two letters.</p>
+}
+else if (Model.SearchError is { } error)
+{
+    <div class="msg err" role="alert">@Icons.Get("info")<p>@error</p></div>
+}
+else if (Model.Result is { } result)
+{
+    <p class="muted results-count">@Fmt.Plural(result.Results.Count, "result", "results") for “@result.Query”@(result.Source == CatalogSource.Igdb ? " · games and covers from IGDB" : string.Empty)</p>
+    @if (result.Results.Count == 0)
+    {
+        <div class="empty">
+            <span class="empty-ico">@Icons.Get("pad")</span>
+            <h2>Nothing found</h2>
+            <p>Try fewer words, or the game's original name.</p>
+        </div>
+    }
+    <ol class="result-list stagger">
+        @foreach (var game in result.Results)
+        {
+            var meta = new[] { game.Developer, game.Year?.ToString(), game.Platforms.Count > 0 ? string.Join(", ", game.Platforms.Take(4)) : null }
+                .Where(static s => !string.IsNullOrEmpty(s));
+            <li class="result row-hover" data-game="@game.Id">
+                <a class="result-cover" href="/games/@game.Id" tabindex="-1" aria-hidden="true">
+                    <partial name="_Cover" model="new CoverView(game, Model.Transition(game.Id))" />
+                </a>
+                <div class="result-text">
+                    <a class="result-name" href="/games/@game.Id">@game.Name</a>
+                    <small>@string.Join(" · ", meta)</small>
+                    <small class="soft">@(game.FriendNames.Count > 0 ? Fmt.Owners(game.FriendNames) : "No friends have it yet")</small>
+                </div>
+                <div class="result-acts" data-acts>
+                    @if (game.MyStatus is { } mine)
+                    {
+                        <a class="in-lib pop-in" href="/games/@game.Id">@Icons.Get("check")In your library · @Fmt.Status(mine)</a>
+                    }
+                    else
+                    {
+                        <span class="seg" role="group" aria-label="Add @game.Name as">
+                            <button type="button" class="seg-btn primary" data-status="Playing" data-game="@game.Id">@Icons.Get("plus")Playing</button>
+                            <button type="button" class="seg-btn" data-status="Finished" data-game="@game.Id">Finished</button>
+                            <button type="button" class="seg-btn" data-status="Wishlist" data-game="@game.Id">Wishlist</button>
+                        </span>
+                    }
+                </div>
+            </li>
+        }
+    </ol>
+}

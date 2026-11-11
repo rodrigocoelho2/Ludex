@@ -1,0 +1,76 @@
+@model SettingsPageModel
+@{
+    Layout = "_App";
+    ViewData["Title"] = "Settings";
+    var igdb = Model.Health?.Source == CatalogSource.Igdb;
+}
+
+<div class="settings">
+    <h1 class="rise">Settings</h1>
+
+    <section class="panel rise">
+        <div class="me-card">
+            <span class="avatar big" style="--av:@Fmt.AvatarColour(Model.UserName)" aria-hidden="true">@Model.Initials</span>
+            <div>
+                <b>@Model.UserName</b>
+                <small class="muted">@(Model.IsAdmin ? "Admin" : "Member") · friends find you by this name</small>
+            </div>
+            <form method="post" action="/sign-out" class="push">
+                @Html.AntiForgeryToken()
+                <button class="btn ghost small" type="submit">@Icons.Get("logout")Sign out</button>
+            </form>
+        </div>
+    </section>
+
+    <section class="panel rise d1">
+        <h2>Password</h2>
+        <form class="stack" method="post" action="/settings/password" autocomplete="off">
+            @Html.AntiForgeryToken()
+            <label class="field"><span class="label">Current password</span><input name="currentPassword" type="password" autocomplete="current-password" required /></label>
+            <div class="two">
+                <label class="field"><span class="label">New password</span><input name="newPassword" type="password" autocomplete="new-password" minlength="8" required /></label>
+                <label class="field"><span class="label">New password again</span><input name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required /></label>
+            </div>
+            <button class="btn" type="submit">Change password</button>
+        </form>
+    </section>
+
+    <section class="panel rise d2">
+        <h2>Game catalog</h2>
+        @if (igdb)
+        {
+            <p class="status-line"><span class="dot on"></span>IGDB: every game, with covers, art and screenshots.</p>
+        }
+        else
+        {
+            <p class="status-line"><span class="dot"></span>The short built-in list (no images).</p>
+            <p class="muted">For the full catalog, create a free application at <a href="https://dev.twitch.tv/console/apps" rel="noopener" target="_blank">dev.twitch.tv</a> (any name, redirect URL <code>http://localhost</code>, category “Application Integration”), then put its Client ID and a new Client Secret in <code>.env</code> as <code>IGDB_CLIENT_ID</code> and <code>IGDB_CLIENT_SECRET</code>, and update Ludex.</p>
+        }
+    </section>
+
+    @if (Model.IsAdmin && Model.Users.Count > 0)
+    {
+        <section class="panel">
+            <h2>Accounts</h2>
+            <ul class="people">
+                @foreach (var user in Model.Users)
+                {
+                    <li class="person">
+                        <span class="avatar" style="--av:@Fmt.AvatarColour(user.UserName)" aria-hidden="true">@Fmt.Initials(user.UserName)</span>
+                        <span class="person-text"><b>@user.UserName</b><small>@(user.Role == UserRole.Admin ? "Admin" : "Member") · @(user.LastSignInAt is { } at ? "last seen " + Fmt.Ago(at) : "never signed in")</small></span>
+                        @if (user.Id != Model.UserId)
+                        {
+                            <form method="post" action="/settings/delete-user" class="person-acts" data-confirm="Delete @user.UserName and their whole library? This can't be undone.">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@user.Id" />
+                                <button class="icon-btn" type="submit" aria-label="Delete @user.UserName" title="Delete">@Icons.Get("trash")</button>
+                            </form>
+                        }
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+
+    <p class="muted version">@AppPageModel.ProductName @AppPageModel.CurrentVersion · <a href="https://github.com/rodrigocoelho2/Ludex" rel="noopener" target="_blank">GitHub</a></p>
+</div>

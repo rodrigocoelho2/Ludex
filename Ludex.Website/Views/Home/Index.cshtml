@@ -1,0 +1,169 @@
+@model HomePageModel
+@{
+    Layout = "_App";
+    ViewData["Title"] = "Home";
+    var home = Model.Home;
+    var hero = home.Hero;
+    var stats = home.Stats;
+}
+
+@if (hero is null)
+{
+    <section class="welcome rise">
+        <div class="welcome-tiles" aria-hidden="true">
+            <span style="--tint:#4A3A1E"></span><span style="--tint:#24405C"></span><span style="--tint:#5A1E2E"></span><span style="--tint:#2F4A22"></span>
+        </div>
+        <div class="welcome-copy">
+            <span class="eyebrow">Hi @Model.UserName</span>
+            <h1>Start your library</h1>
+            <p>Search for a game you're playing, one you finished, or one you want. Add it in one tap and rate it when you're done.</p>
+            <div class="actions">
+                <a class="btn" href="/discover">@Icons.Get("search")Find a game</a>
+                <a class="btn ghost" href="/friends">@Icons.Get("user-plus")Add friends</a>
+            </div>
+        </div>
+    </section>
+}
+else
+{
+    var heroGame = hero.Game;
+    <section class="hero-row">
+        <article class="hero rise" style="--tint:@heroGame.Tint">
+            <div class="hero-art" aria-hidden="true">
+                @if (home.HeroImageId is { } art)
+                {
+                    <img class="art-lq" src="@Igdb.Url(art, Igdb.ScreenshotMed)" alt="" decoding="async" />
+                    <img class="art-img drift" src="@Igdb.Url(art, Igdb.Full)" alt="" decoding="async" fetchpriority="high" />
+                }
+                else if (heroGame.CoverImageId is { } cover)
+                {
+                    <img class="art-img art-from-cover drift" src="@Igdb.Url(cover, Igdb.CoverBig)" alt="" decoding="async" />
+                }
+                else
+                {
+                    <span class="hero-ghost drift">@heroGame.Name</span>
+                }
+                @if (home.HeroImageId is not null || heroGame.CoverImageId is not null)
+                {
+                    <span class="credit">Game art · IGDB</span>
+                }
+            </div>
+            <div class="hero-body">
+                <a class="hero-cover" href="/games/@heroGame.Id" tabindex="-1" aria-hidden="true">
+                    <partial name="_Cover" model="new CoverView(heroGame, Model.Transition(heroGame.Id))" />
+                </a>
+                <div class="hero-text">
+                    <div class="hero-tag">
+                        <partial name="_StatusChip" model="hero.Status" />
+                        <span>@(hero.Status == GameStatus.Playing ? "Pick up where you left off" : "Last in your library")</span>
+                    </div>
+                    <h1>@heroGame.Name</h1>
+                    <p class="meta">
+                        @if (heroGame.Developer is { } dev) { <span>@dev</span> }
+                        @if (heroGame.Year is { } year) { <span>@year</span> }
+                        @if (heroGame.Platforms.Count > 0) { <span>@string.Join(" · ", heroGame.Platforms.Take(4))</span> }
+                    </p>
+                    <div class="hero-foot">
+                        <div class="hero-facts">
+                            <div class="fact"><span class="label">Your rating</span><b class="num gold">@Fmt.Rating(hero.Rating)<small>/10</small></b></div>
+                            <div class="fact"><span class="label">Hours</span><b class="num">@(hero.Hours is { } h ? Fmt.Hours(h).Replace(" h", string.Empty) : "—")</b></div>
+                            @if (heroGame.FriendNames.Count > 0)
+                            {
+                                <div class="fact friends-fact">
+                                    <span class="stack" aria-hidden="true">
+                                        @foreach (var name in heroGame.FriendNames.Take(3))
+                                        {
+                                            <span class="avatar" style="--av:@Fmt.AvatarColour(name)">@Fmt.Initials(name)</span>
+                                        }
+                                    </span>
+                                    <span>@Fmt.Owners(heroGame.FriendNames) too</span>
+                                </div>
+                            }
+                        </div>
+                        <div class="actions">
+                            <a class="btn" href="/games/@heroGame.Id">View game</a>
+                            @if (hero.Status == GameStatus.Playing)
+                            {
+                                <button class="btn ghost" type="button" data-status="Finished" data-game="@heroGame.Id">@Icons.Get("check")Finished it</button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <aside class="also">
+            <h2 class="eyebrow">Also playing</h2>
+            @if (home.AlsoPlaying.Count == 0)
+            {
+                <a class="also-empty row-link" href="/discover">@Icons.Get("plus")<span>Playing something else? Add it.</span></a>
+            }
+            <div class="stagger also-list">
+                @foreach (var entry in home.AlsoPlaying)
+                {
+                    <a class="also-card row-link" href="/games/@entry.Game.Id">
+                        <partial name="_Cover" model="new CoverView(entry.Game, Model.Transition(entry.Game.Id))" />
+                        <span class="also-text">
+                            <b>@entry.Game.Name</b>
+                            <small>@(string.Join(" · ", new[] { entry.Game.Developer, entry.Game.Year?.ToString() }.Where(static s => !string.IsNullOrEmpty(s))))</small>
+                            <small class="soft">@Fmt.Hours(entry.Hours) · @(entry.Rating is { } r ? $"rated {r}" : "not rated")</small>
+                        </span>
+                    </a>
+                }
+            </div>
+        </aside>
+    </section>
+}
+
+<section class="tiles stagger" aria-label="Your numbers">
+    <div class="tile accent"><b class="num" data-count="@stats.GameCount">@stats.GameCount</b><span>Games in your library</span></div>
+    <div class="tile"><b class="num" data-count="@stats.FinishedThisYear">@stats.FinishedThisYear</b><span>Finished in @stats.Year</span></div>
+    <div class="tile"><b class="num gold" data-count="@(stats.AverageRating?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty)" data-decimals="1">@Fmt.Average(stats.AverageRating)</b><span>Average rating</span></div>
+    <div class="tile"><b class="num" data-count="@stats.WishlistCount">@stats.WishlistCount</b><span>On the wishlist</span></div>
+</section>
+
+<section class="split">
+    <div class="split-main">
+        <div class="section-head">
+            <h2>Added lately</h2>
+            <a href="/library">See your library @Icons.Get("right")</a>
+        </div>
+        @if (home.Recent.Count == 0)
+        {
+            <p class="muted small-empty">Games you add show up here.</p>
+        }
+        else
+        {
+            <div class="grid covers stagger">
+                @foreach (var entry in home.Recent)
+                {
+                    <a class="card" href="/games/@entry.Game.Id">
+                        <span class="card-cover">
+                            <partial name="_Cover" model="new CoverView(entry.Game, Model.Transition(entry.Game.Id))" />
+                            <span class="badge-rating">@Fmt.Rating(entry.Rating)</span>
+                        </span>
+                        <span class="card-name">@entry.Game.Name</span>
+                        <span class="card-sub">@Fmt.Status(entry.Status)</span>
+                    </a>
+                }
+            </div>
+        }
+
+        @if (home.Popular.Count > 0)
+        {
+            <div class="section-head spaced">
+                <h2>Your friends love these</h2>
+                <a href="/discover">Discover @Icons.Get("right")</a>
+            </div>
+            <partial name="_Popular" model="home.Popular" />
+        }
+    </div>
+
+    <aside class="split-side" id="friends">
+        <div class="section-head">
+            <h2>Friends</h2>
+            <a href="/friends">@(home.FriendCount == 0 ? "Add friends" : Fmt.Plural(home.FriendCount, "friend", "friends")) @Icons.Get("right")</a>
+        </div>
+        <partial name="_Feed" model="home.Feed" />
+    </aside>
+</section>

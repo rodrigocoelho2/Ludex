@@ -1,0 +1,193 @@
+@model GamePageModel
+@{
+    Layout = "_App";
+    var detail = Model.Detail;
+    var game = detail.Game;
+    var mine = detail.Mine;
+    ViewData["Title"] = game.Name;
+    var statuses = new[] { GameStatus.Playing, GameStatus.Finished, GameStatus.Wishlist, GameStatus.Dropped };
+    var facts = new List<(string Label, string Value)>();
+    if (game.Developer is { } developer) { facts.Add(("Developer", developer)); }
+    if (detail.Publisher is { } publisher && publisher != game.Developer) { facts.Add(("Publisher", publisher)); }
+    if (detail.ReleaseDate is { } released) { facts.Add(("Released", Fmt.LongDate(released))); }
+    if (detail.Modes.Count > 0) { facts.Add(("Modes", string.Join(", ", detail.Modes))); }
+    if (game.Platforms.Count > 0) { facts.Add(("Platforms", string.Join(", ", game.Platforms))); }
+}
+
+<article class="game" data-game-page="@game.Id">
+    <section class="banner" style="--tint:@game.Tint" aria-hidden="true">
+        @if (detail.HeroImageId is { } art)
+        {
+            <img class="art-lq" src="@Igdb.Url(art, Igdb.ScreenshotMed)" alt="" decoding="async" />
+            <img class="art-img drift" src="@Igdb.Url(art, Igdb.Full)" alt="" decoding="async" fetchpriority="high" />
+            <span class="credit">Game art · IGDB</span>
+        }
+        else
+        {
+            <span class="banner-ghost drift">@game.Name</span>
+        }
+    </section>
+
+    <header class="game-head">
+        <div class="game-cover rise-blur">
+            <partial name="_Cover" model="new CoverView(game, Model.Transition(game.Id), Large: true)" />
+        </div>
+        <div class="game-title rise d1">
+            <a class="back" href="/library">@Icons.Get("left")Library</a>
+            <h1>@game.Name</h1>
+            <p class="meta">
+                @if (game.Developer is { } dev) { <span>@dev</span> }
+                @if (game.Year is { } year) { <span>@year</span> }
+                @if (mine is not null) { <partial name="_StatusChip" model="mine.Status" /> }
+            </p>
+            @if (detail.Genres.Count > 0)
+            {
+                <ul class="tags">
+                    @foreach (var genre in detail.Genres) { <li>@genre</li> }
+                </ul>
+            }
+        </div>
+    </header>
+
+    <div class="game-body">
+        <div class="game-main">
+            @if (detail.Screenshots.Count > 0)
+            {
+                <section class="block">
+                    <h2>Screenshots</h2>
+                    <div class="shots stagger">
+                        @foreach (var shot in detail.Screenshots)
+                        {
+                            <button type="button" class="shot" data-full="@Igdb.Url(shot, Igdb.Full)" aria-label="Open screenshot" style="--tint:@game.Tint">
+                                <img class="cover-img" src="@Igdb.Url(shot, Igdb.ScreenshotMed)" alt="" loading="lazy" decoding="async" />
+                            </button>
+                        }
+                    </div>
+                </section>
+            }
+
+            <section class="block">
+                <h2>About the game</h2>
+                @if (!string.IsNullOrWhiteSpace(detail.Summary))
+                {
+                    <p class="summary">@detail.Summary</p>
+                }
+                else
+                {
+                    <p class="muted">No summary in the catalog for this one.</p>
+                }
+                @if (facts.Count > 0)
+                {
+                    <dl class="facts">
+                        @foreach (var (label, value) in facts)
+                        {
+                            <div><dt>@label</dt><dd>@value</dd></div>
+                        }
+                    </dl>
+                }
+            </section>
+
+            <section class="block">
+                <div class="section-head">
+                    <h2>Friends who have it</h2>
+                    @if (detail.FriendsAverageRating is { } average)
+                    {
+                        <span class="muted">Friends' average <b class="gold">@Fmt.Average(average)</b></span>
+                    }
+                </div>
+                @if (detail.Friends.Count == 0)
+                {
+                    <p class="muted small-empty">None of your friends have it yet.</p>
+                }
+                else
+                {
+                    <ul class="friend-rows stagger">
+                        @foreach (var friend in detail.Friends)
+                        {
+                            <li class="friend-row">
+                                <span class="avatar" style="--av:@Fmt.AvatarColour(friend.UserName)" aria-hidden="true">@Fmt.Initials(friend.UserName)</span>
+                                <span class="friend-text">
+                                    <b>@friend.UserName</b>
+                                    <small>@Fmt.Status(friend.Status)@(friend.Hours is { } h ? $" · {Fmt.Hours(h)}" : string.Empty)@(friend.Platform is { } p ? $" · {p}" : string.Empty)</small>
+                                </span>
+                                <b class="num gold">@Fmt.Rating(friend.Rating)</b>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+        </div>
+
+        <aside class="game-side rise d2">
+            <form class="mine" data-game-form data-game="@game.Id" data-in-library="@(mine is null ? "false" : "true")" autocomplete="off">
+                <h2 class="eyebrow">@(mine is null ? "Not in your library yet" : "In your library")</h2>
+
+                <fieldset class="mine-group">
+                    <legend class="label">Status</legend>
+                    <div class="status-grid">
+                        @foreach (var status in statuses)
+                        {
+                            var on = mine?.Status == status;
+                            <button type="button" class="seg-btn status-btn" data-set-status="@status" aria-pressed="@(on ? "true" : "false")">@Fmt.Status(status)</button>
+                        }
+                    </div>
+                </fieldset>
+
+                <fieldset class="mine-group">
+                    <div class="rating-head">
+                        <legend class="label">Your rating</legend>
+                        <b class="num gold big-rating"><span data-rating-value>@Fmt.Rating(mine?.Rating)</span><small>/10</small></b>
+                    </div>
+                    <div class="rating" role="group" aria-label="Rating from 1 to 10">
+                        @for (var n = 1; n <= 10; n++)
+                        {
+                            <button type="button" class="rate" data-set-rating="@n" aria-pressed="@(mine?.Rating == n ? "true" : "false")" aria-label="Rate @n out of 10" style="--i:@n">@n</button>
+                        }
+                    </div>
+                    <button type="button" class="link-btn" data-clear-rating hidden="@(mine?.Rating is null ? "hidden" : null)">Clear rating</button>
+                </fieldset>
+
+                <div class="two">
+                    <label class="field">
+                        <span class="label">Hours</span>
+                        <input name="hours" type="number" inputmode="decimal" min="0" max="99999" step="0.5" value="@Fmt.Input(mine?.Hours)" placeholder="—" />
+                    </label>
+                    <label class="field">
+                        <span class="label">Played on</span>
+                        <select name="platform">
+                            <option value="">—</option>
+                            @foreach (var platform in Model.PlatformChoices)
+                            {
+                                <option value="@platform" selected="@(string.Equals(mine?.Platform, platform, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@platform</option>
+                            }
+                            <option value="Other" selected="@(mine?.Platform == "Other" ? "selected" : null)">Other</option>
+                        </select>
+                    </label>
+                </div>
+
+                <label class="field">
+                    <span class="label">Notes</span>
+                    <textarea name="notes" rows="3" maxlength="2000" placeholder="What did you think?">@(mine?.Notes)</textarea>
+                </label>
+
+                <button class="btn wide" type="submit">@Icons.Get("check")Save</button>
+                @if (mine is not null)
+                {
+                    <p class="mine-dates muted">Added @Fmt.ShortDate(mine.AddedAt)@(mine.FinishedAt is { } fin ? $" · finished {Fmt.ShortDate(fin)}" : string.Empty)</p>
+                }
+            </form>
+            @if (mine is not null)
+            {
+                <form method="post" action="/games/@game.Id/remove" class="remove" data-confirm="Take @game.Name out of your library? Its rating, hours and notes go too.">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="link-btn danger">@Icons.Get("trash")Remove from library</button>
+                </form>
+            }
+        </aside>
+    </div>
+</article>
+
+<dialog class="lightbox" data-lightbox aria-label="Screenshot">
+    <form method="dialog"><button class="icon-btn close" aria-label="Close">@Icons.Get("x")</button></form>
+    <img alt="" />
+</dialog>

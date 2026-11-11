@@ -1,0 +1,75 @@
+@model AccountPageModel
+@{
+    ViewData["Title"] = Model.IsFirstAccount ? "Set up Ludex" : "Create account";
+    ViewData["Tab"] = "create";
+}
+
+<div class="au">
+    <partial name="_AccountSide" model="Model" />
+
+    <main class="au-main">
+        <form class="au-form rise d1" method="post" action="/create-account" autocomplete="on">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+
+            <partial name="_AccountCard" model="Model" />
+
+            <div class="au-head">
+                <h1>@(Model.IsFirstAccount ? "Set up Ludex" : "Join in")</h1>
+                <p class="muted">@(Model.IsFirstAccount ? "The first account is the admin." : "One account each: your own library, your own ratings.")</p>
+            </div>
+
+            @if (Model.NeedsSetupKey)
+            {
+                <label class="field">
+                    <span class="label">Setup key</span>
+                    <span class="in">
+                        @Icons.Get("key")
+                        <input name="setupKey" type="password" autocomplete="off" required />
+                    </span>
+                    <small class="hint">LUDEX_SETUP_KEY, in the .env file next to docker-compose.yml.</small>
+                </label>
+            }
+
+            <label class="field">
+                <span class="label">User name</span>
+                <span class="in">
+                    @Icons.Get("user")
+                    <input name="userName" type="text" value="@Model.UserName" autocomplete="username" autocapitalize="none" spellcheck="false" pattern="[A-Za-z0-9._\-]{3,32}" required autofocus />
+                </span>
+                <small class="hint">3–32 letters, numbers, dots, dashes or underscores. Friends find you by it.</small>
+            </label>
+
+            <label class="field">
+                <span class="label">Password</span>
+                <span class="in">
+                    @Icons.Get("lock")
+                    <input id="password" name="password" type="password" autocomplete="new-password" minlength="@Model.MinPasswordLength" required />
+                    <button type="button" class="password-toggle" data-for="password" aria-pressed="false" aria-label="Show password">@Icons.Get("eye")</button>
+                </span>
+            </label>
+
+            <label class="field">
+                <span class="label">Password again</span>
+                <span class="in">
+                    @Icons.Get("lock")
+                    <input name="confirmPassword" type="password" autocomplete="new-password" minlength="@Model.MinPasswordLength" required />
+                </span>
+            </label>
+
+            <label class="check">
+                <input type="checkbox" name="remember" value="true" checked="@(Model.Remember ? "checked" : null)" />
+                <span>Keep me signed in <small class="muted">(@Model.RememberDays days)</small></span>
+            </label>
+
+            <button class="btn wide" type="submit">@(Model.IsFirstAccount ? "Set up Ludex" : "Create account")</button>
+
+            @if (!Model.IsFirstAccount)
+            {
+                <p class="au-fine">Already have one? <a href="/sign-in">Sign in</a></p>
+            }
+        </form>
+    </main>
+</div>
+
+<partial name="_PasswordToggle" />

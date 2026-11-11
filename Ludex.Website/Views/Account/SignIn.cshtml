@@ -1,0 +1,58 @@
+@model AccountPageModel
+@{
+    ViewData["Title"] = "Sign in";
+    ViewData["Tab"] = "sign-in";
+}
+
+<div class="au">
+    <partial name="_AccountSide" model="Model" />
+
+    <main class="au-main">
+        <form class="au-form rise d1" method="post" action="/sign-in" autocomplete="on">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+
+            <partial name="_AccountCard" model="Model" />
+
+            <div class="au-head">
+                <h1>Welcome back</h1>
+                <p class="muted">Sign in to carry on with your library.</p>
+            </div>
+
+            <label class="field">
+                <span class="label">User name</span>
+                <span class="in">
+                    @Icons.Get("user")
+                    <input name="userName" type="text" value="@Model.UserName" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus />
+                </span>
+            </label>
+
+            <label class="field">
+                <span class="label">Password</span>
+                <span class="in">
+                    @Icons.Get("lock")
+                    <input id="password" name="password" type="password" autocomplete="current-password" required />
+                    <button type="button" class="password-toggle" data-for="password" aria-pressed="false" aria-label="Show password">@Icons.Get("eye")</button>
+                </span>
+            </label>
+
+            <label class="check">
+                <input type="checkbox" name="remember" value="true" checked="@(Model.Remember ? "checked" : null)" />
+                <span>Keep me signed in <small class="muted">(@Model.RememberDays days)</small></span>
+            </label>
+
+            <button class="btn wide" type="submit">Sign in</button>
+
+            @if (Model.CanCreateAccount)
+            {
+                <p class="au-fine">No account yet? <a href="/create-account">Create one</a></p>
+            }
+            else
+            {
+                <p class="au-fine">No account yet? Ask whoever runs this Ludex to open sign-ups.</p>
+            }
+        </form>
+    </main>
+</div>
+
+<partial name="_PasswordToggle" />

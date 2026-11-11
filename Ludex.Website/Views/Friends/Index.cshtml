@@ -1,0 +1,98 @@
+@model FriendsPageModel
+@{
+    Layout = "_App";
+    ViewData["Title"] = "Friends";
+    var data = Model.Friends;
+}
+
+<div class="friends-page">
+    <section class="friends-main">
+        <h1 class="rise">Friends</h1>
+
+        <form class="add-friend rise d1" method="post" action="/friends/request" autocomplete="off">
+            @Html.AntiForgeryToken()
+            <label class="sr-only" for="friend-name">User name</label>
+            <span class="in">@Icons.Get("user-plus")<input id="friend-name" name="userName" type="text" placeholder="Their user name on this Ludex" autocapitalize="none" spellcheck="false" required maxlength="32" /></span>
+            <button class="btn" type="submit">Send request</button>
+        </form>
+        <p class="muted hint-line">Friends see each other's libraries: what you play, how you rated it, and the games you share.</p>
+
+        @if (data.Incoming.Count > 0)
+        {
+            <section class="block">
+                <h2 class="eyebrow">Waiting for you</h2>
+                <ul class="people stagger">
+                    @foreach (var person in data.Incoming)
+                    {
+                        <li class="person highlight">
+                            <span class="avatar" style="--av:@Fmt.AvatarColour(person.UserName)" aria-hidden="true">@Fmt.Initials(person.UserName)</span>
+                            <span class="person-text"><b>@person.UserName</b><small>Wants to be friends · @Fmt.Ago(person.Since) · @Fmt.Plural(person.GameCount, "game", "games")</small></span>
+                            <span class="person-acts">
+                                <form method="post" action="/friends/accept">@Html.AntiForgeryToken()<input type="hidden" name="friendId" value="@person.Id" /><input type="hidden" name="name" value="@person.UserName" /><button class="btn small" type="submit">@Icons.Get("check")Accept</button></form>
+                                <form method="post" action="/friends/remove">@Html.AntiForgeryToken()<input type="hidden" name="friendId" value="@person.Id" /><button class="btn small ghost" type="submit">Decline</button></form>
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
+
+        <section class="block">
+            <h2 class="eyebrow">@(data.Friends.Count == 0 ? "No friends yet" : Fmt.Plural(data.Friends.Count, "friend", "friends"))</h2>
+            @if (data.Friends.Count == 0)
+            {
+                <div class="empty compact">
+                    <span class="empty-ico">@Icons.Get("friends")</span>
+                    <p>Ask the people you play with for their user name on this Ludex and send them a request.</p>
+                </div>
+            }
+            else
+            {
+                <ul class="people stagger">
+                    @foreach (var person in data.Friends)
+                    {
+                        <li class="person row-hover">
+                            <span class="avatar" style="--av:@Fmt.AvatarColour(person.UserName)" aria-hidden="true">@Fmt.Initials(person.UserName)</span>
+                            <span class="person-text"><b>@person.UserName</b><small>@Fmt.Plural(person.GameCount, "game", "games") · friends since @Fmt.ShortDate(person.Since)</small></span>
+                            <form method="post" action="/friends/remove" class="person-acts" data-confirm="Stop being friends with @person.UserName?">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="friendId" value="@person.Id" />
+                                <button class="icon-btn" type="submit" aria-label="Remove @person.UserName" title="Remove">@Icons.Get("x")</button>
+                            </form>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+
+        @if (data.Outgoing.Count > 0)
+        {
+            <section class="block">
+                <h2 class="eyebrow">Sent</h2>
+                <ul class="people stagger">
+                    @foreach (var person in data.Outgoing)
+                    {
+                        <li class="person">
+                            <span class="avatar" style="--av:@Fmt.AvatarColour(person.UserName)" aria-hidden="true">@Fmt.Initials(person.UserName)</span>
+                            <span class="person-text"><b>@person.UserName</b><small>Request sent @Fmt.Ago(person.Since)</small></span>
+                            <form method="post" action="/friends/remove" class="person-acts">@Html.AntiForgeryToken()<input type="hidden" name="friendId" value="@person.Id" /><button class="btn small ghost" type="submit">Cancel</button></form>
+                        </li>
+                    }
+                </ul>
+            </section>
+        }
+
+        @if (data.Popular.Count > 0)
+        {
+            <section class="block">
+                <h2 class="eyebrow">Your friends love these</h2>
+                <partial name="_Popular" model="data.Popular" />
+            </section>
+        }
+    </section>
+
+    <aside class="friends-side">
+        <h2 class="eyebrow">Lately</h2>
+        <partial name="_Feed" model="data.Feed" />
+    </aside>
+</div>

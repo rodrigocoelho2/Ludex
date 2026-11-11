@@ -1,0 +1,23 @@
+@model List<PopularGameDTO>
+@* Games the friends have and the signed-in account doesn't, with a one-click add. *@
+<ol class="popular stagger">
+    @foreach (var item in Model)
+    {
+        var game = item.Game;
+        <li class="pop" data-game="@game.Id">
+            <a class="pop-cover" href="/games/@game.Id" aria-label="@game.Name">
+                <span class="feed-thumb tall" style="--tint:@game.Tint">
+                    @if (game.CoverImageId is { } image)
+                    {
+                        <img src="@Igdb.Url(image, Igdb.CoverSmall)" alt="" loading="lazy" decoding="async" />
+                    }
+                </span>
+            </a>
+            <span class="pop-text">
+                <a href="/games/@game.Id"><b>@game.Name</b></a>
+                <small>@Fmt.Owners(game.FriendNames)@(item.AverageRating is { } avg ? $" · avg {Fmt.Average(avg)}" : string.Empty)</small>
+            </span>
+            <button class="icon-btn" type="button" data-status="Wishlist" data-game="@game.Id" aria-label="Put @game.Name on your wishlist" title="Wishlist">@Icons.Get("heart")</button>
+        </li>
+    }
+</ol>

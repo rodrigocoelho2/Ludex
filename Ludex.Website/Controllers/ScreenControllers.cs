@@ -1,0 +1,295 @@
+using Ludex.Library.Enums;
+using Ludex.Sdk;
+using Ludex.Sdk.Models;
+using Ludex.Website.Model;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Ludex.Website.Controllers;
+
+/// <summary>
+/// Home: the game being played, the numbers, the last games and what the friends are up to.
+/// </summary>
+/// <param name="apiClient">The API client.</param>
+public sealed class HomeController(LudexClient apiClient) : WebsiteBaseController(apiClient)
+{
+    /// <summary>Signed in: home. Signed out: the sign-in page (with its wall of covers).</summary>
+    /// <returns>The view or a redirect.</returns>
+    [HttpGet("/")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Index()
+    {
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return LocalRedirect("/sign-in");
+        }
+
+        return await ScreenAsync("Index", Shell(new HomePageModel(), AppSection.Home), async page => page.Home = await Api.LibraryHomeAsync(UserId));
+    }
+}
+
+/// <summary>
+/// The library: every game, filtered by status (server) and by text, platform and friends (in the page).
+/// </summary>
+/// <param name="apiClient">The API client.</param>
+public sealed class LibraryController(LudexClient apiClient) : WebsiteBaseController(apiClient)
+{
+    /// <summary>The library.</summary>
+    /// <param name="status">playing, finished, wishlist or dropped (empty: all).</param>
+    /// <returns>The view.</returns>
+    [HttpGet("/library")]
+    public async Task<IActionResult> Index(string? status = null)
+    {
+        var page = Shell(new LibraryPageModel { Status = Enum.TryParse<GameStatus>(status, true, out var only) && Enum.IsDefined(only) ? only : null }, AppSection.Library);
+        return await ScreenAsync("Index", page, async p => p.Library = await Api.LibraryListAsync(UserId));
+    }
+}
+
+/// <summary>
+/// Discover: search the catalog and add games in one click.
+/// </summary>
+/// <param name="apiClient">The API client.</param>
+public sealed class DiscoverController(LudexClient apiClient) : WebsiteBaseController(apiClient)
+{
+    /// <summary>The page (results drawn on the server when a query comes in the address).</summary>
+    /// <param name="q">The text searched.</param>
+    /// <returns>The view.</returns>
+    [HttpGet("/discover")]
+    public async Task<IActionResult> Index(string? q = null)
+    {
+        var page = Shell(new DiscoverPageModel { Query = (q ?? string.Empty).Trim() }, AppSection.Discover);
+        return await ScreenAsync("Index", page, async p =>
+        {
+            var friends = await Api.FriendsListAsync(UserId);
+            p.Popular = friends.Popular;
+            var health = await Api.HealthGetAsync();
+            p.Source = health.Source;
+            if (p.Query.Length >= 2)
+            {
+                await SearchIntoAsync(p);
+            }
+        });
+    }
+
+    /// <summary>Only the results, for the page script (it shows skeletons meanwhile).</summary>
+    /// <param name="q">The text searched.</param>
+    /// <returns>The results partial.</returns>
+    [HttpGet("/discover/results")]
+    public async Task<IActionResult> Results(string? q = null)
+    {
+        var page = Shell(new DiscoverPageModel { Query = (q ?? string.Empty).Trim() }, AppSection.Discover);
+        if (page.Query.Length >= 2)
+        {
+            try
+            {
+                await SearchIntoAsync(page);
+            }
+            catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
+            {
+                page.SearchError = exception is LudexApiException api ? api.Message : ApiUnavailableMessage;
+            }
+        }
+
+        return PartialView("_Results", page);
+    }
+
+    private async Task SearchIntoAsync(DiscoverPageModel page)
+    {
+        try
+        {
+            page.Result = await Api.GamesSearchAsync(UserId, page.Query);
+            page.Source = page.Result.Source;
+        }
+        catch (LudexApiException exception) when (exception.StatusCode == System.Net.HttpStatusCode.BadRequest)
+        {
+            page.SearchError = exception.Message;
+        }
+    }
+}
+
+/// <summary>
+/// A game's page, and the page scripts that save its status, rating, hours, platform and notes.
+/// </summary>
+/// <param name="apiClient">The API client.</param>
+public sealed class GameController(LudexClient apiClient) : WebsiteBaseController(apiClient)
+{
+    /// <summary>The game page.</summary>
+    /// <param name="id">The game.</param>
+    /// <returns>The view.</returns>
+    [HttpGet("/games/{id:int}")]
+    public async Task<IActionResult> Index(int id)
+    {
+        try
+        {
+            var detail = await Api.GamesDetailAsync(UserId, id);
+            var page = Shell(new GamePageModel { Detail = detail }, AppSection.Library);
+            return View("Index", page);
+        }
+        catch (LudexApiException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            Response.StatusCode = StatusCodes.Status404NotFound;
+            return View("~/Views/Shared/Unavailable.cshtml", Shell(new AppPageModel { Unavailable = "That game isn't in the catalog." }, AppSection.Discover));
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
+        {
+            var message = exception is LudexApiException { StatusCode: System.Net.HttpStatusCode.BadRequest } api ? api.Message : ApiUnavailableMessage;
+            return View("~/Views/Shared/Unavailable.cshtml", Shell(new AppPageModel { Unavailable = message }, AppSection.Library));
+        }
+    }
+
+    /// <summary>Saves the game page's values (adding the game when it isn't in the library).</summary>
+    /// <param name="id">The game.</param>
+    /// <param name="form">Status, rating, hours, platform and notes.</param>
+    /// <returns>The entry, or the errors.</returns>
+    [HttpPost("/games/{id:int}/save")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Save(int id, [FromBody] GameSaveForm form) => Json(await CallAsync(() => Api.LibrarySaveAsync(new LibrarySaveRequest
+    {
+        UserId = UserId,
+        GameId = id,
+        Status = form.Status,
+        Rating = form.Rating,
+        Hours = form.Hours,
+        Platform = form.Platform,
+        Notes = form.Notes,
+    })));
+
+    /// <summary>Sets only the status (the search page's and the cards' buttons).</summary>
+    /// <param name="id">The game.</param>
+    /// <param name="form">The status.</param>
+    /// <returns>The entry, or the errors.</returns>
+    [HttpPost("/games/{id:int}/status")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetStatus(int id, [FromBody] GameStatusForm form) =>
+        Json(await CallAsync(() => Api.LibraryStatusAsync(new LibraryStatusRequest { UserId = UserId, GameId = id, Status = form.Status })));
+
+    /// <summary>Takes the game out of the library.</summary>
+    /// <param name="id">The game.</param>
+    /// <returns>Back to the library.</returns>
+    [HttpPost("/games/{id:int}/remove")]
+    [ValidateAntiForgeryToken]
+    public Task<IActionResult> Remove(int id) => FormAsync(() => Api.LibraryDeleteAsync(UserId, id), "Taken out of your library.", "/library");
+}
+
+/// <summary>The game page's values.</summary>
+public sealed class GameSaveForm
+{
+    /// <summary>Gets or sets the status.</summary>
+    public GameStatus Status { get; set; } = GameStatus.Playing;
+
+    /// <summary>Gets or sets the rating (1–10).</summary>
+    public int? Rating { get; set; }
+
+    /// <summary>Gets or sets the hours.</summary>
+    public decimal? Hours { get; set; }
+
+    /// <summary>Gets or sets the platform.</summary>
+    public string? Platform { get; set; }
+
+    /// <summary>Gets or sets the notes.</summary>
+    public string? Notes { get; set; }
+}
+
+/// <summary>A status from a button.</summary>
+public sealed class GameStatusForm
+{
+    /// <summary>Gets or sets the status.</summary>
+    public GameStatus Status { get; set; } = GameStatus.Playing;
+}
+
+/// <summary>
+/// Friends: requests, the list, and what they're playing.
+/// </summary>
+/// <param name="apiClient">The API client.</param>
+public sealed class FriendsController(LudexClient apiClient) : WebsiteBaseController(apiClient)
+{
+    /// <summary>The friends page.</summary>
+    /// <returns>The view.</returns>
+    [HttpGet("/friends")]
+    public async Task<IActionResult> Index() =>
+        await ScreenAsync("Index", Shell(new FriendsPageModel(), AppSection.Friends), async page => page.Friends = await Api.FriendsListAsync(UserId));
+
+    /// <summary>Asks someone to be friends.</summary>
+    /// <param name="userName">Their user name.</param>
+    /// <returns>Back to the friends page.</returns>
+    [HttpPost("/friends/request")]
+    [ValidateAntiForgeryToken]
+    public Task<IActionResult> SendRequest([FromForm] string? userName) =>
+        FormAsync(() => Api.FriendsRequestAsync(new FriendRequestRequest { UserId = UserId, UserName = userName }), $"Request sent to {userName?.Trim()}.", "/friends");
+
+    /// <summary>Accepts a request.</summary>
+    /// <param name="friendId">The account that asked.</param>
+    /// <param name="name">Its user name (for the message).</param>
+    /// <returns>Back to the friends page.</returns>
+    [HttpPost("/friends/accept")]
+    [ValidateAntiForgeryToken]
+    public Task<IActionResult> Accept([FromForm] string? friendId, [FromForm] string? name) =>
+        FormAsync(() => Api.FriendsAcceptAsync(new FriendActionRequest { UserId = UserId, FriendId = friendId }), $"You and {name} are friends now.", "/friends");
+
+    /// <summary>Declines or cancels a request, or ends a friendship.</summary>
+    /// <param name="friendId">The other account.</param>
+    /// <returns>Back to the friends page.</returns>
+    [HttpPost("/friends/remove")]
+    [ValidateAntiForgeryToken]
+    public Task<IActionResult> Remove([FromForm] string? friendId) =>
+        FormAsync(() => Api.FriendsRemoveAsync(new FriendActionRequest { UserId = UserId, FriendId = friendId }), null, "/friends");
+}
+
+/// <summary>
+/// Settings: the account, the password, and (admins) the other accounts.
+/// </summary>
+/// <param name="apiClient">The API client.</param>
+public sealed class SettingsController(LudexClient apiClient) : WebsiteBaseController(apiClient)
+{
+    /// <summary>The settings page.</summary>
+    /// <returns>The view.</returns>
+    [HttpGet("/settings")]
+    public async Task<IActionResult> Index()
+    {
+        var page = Shell(new SettingsPageModel { UserId = UserId }, AppSection.Settings);
+        return await ScreenAsync("Index", page, async p =>
+        {
+            p.Health = await Api.HealthGetAsync();
+            if (p.IsAdmin)
+            {
+                p.Users = await Api.UserListAsync();
+            }
+        });
+    }
+
+    /// <summary>Changes the password (the other devices are signed out).</summary>
+    /// <param name="currentPassword">The current password.</param>
+    /// <param name="newPassword">The new one.</param>
+    /// <param name="confirmPassword">The new one again.</param>
+    /// <returns>Back to the settings, signed in again.</returns>
+    [HttpPost("/settings/password")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Password([FromForm] string? currentPassword, [FromForm] string? newPassword, [FromForm] string? confirmPassword)
+    {
+        if (!string.Equals(newPassword, confirmPassword, StringComparison.Ordinal))
+        {
+            TempData["problem"] = "The two new passwords are different.";
+            return LocalRedirect("/settings");
+        }
+
+        return await FormAsync(
+            async () =>
+            {
+                var user = await Api.UserPasswordAsync(new UserPasswordRequest { Id = UserId, CurrentPassword = currentPassword, NewPassword = newPassword });
+                await Security.LudexAuthentication.SignInAsync(HttpContext, user, remember: true, rememberDays: 30);
+            },
+            "Password changed. Your other devices are signed out.",
+            "/settings");
+    }
+
+    /// <summary>Deletes another account (admins only).</summary>
+    /// <param name="id">The account.</param>
+    /// <returns>Back to the settings.</returns>
+    [HttpPost("/settings/delete-user")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Admin")]
+    public Task<IActionResult> DeleteUser([FromForm] string? id) =>
+        id == UserId
+            ? Task.FromResult<IActionResult>(LocalRedirect("/settings"))
+            : FormAsync(() => Api.UserDeleteAsync(id ?? string.Empty), "Account deleted.", "/settings");
+}

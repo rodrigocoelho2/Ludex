@@ -1,0 +1,33 @@
+@model List<ActivityDTO>
+@* What friends did lately: one line each, newest first. *@
+@if (Model.Count == 0)
+{
+    <p class="muted small-empty">Nothing from your friends yet. When they add, finish or rate a game, it shows up here.</p>
+}
+else
+{
+    <ol class="feed stagger">
+        @foreach (var line in Model)
+        {
+            var sub = new List<string>();
+            if (line.Kind == ActivityKind.Rated && line.Rating is { } rating) { sub.Add($"Gave it {rating}/10"); }
+            if (line.Game.MyStatus is { } mine) { sub.Add($"You have it too · {Fmt.Status(mine)}"); }
+            sub.Add(Fmt.Ago(line.At));
+            <li>
+                <a class="feed-line row-link" href="/games/@line.Game.Id">
+                    <span class="avatar" style="--av:@Fmt.AvatarColour(line.UserName)" aria-hidden="true">@Fmt.Initials(line.UserName)</span>
+                    <span class="feed-text">
+                        <span><b>@line.UserName</b> @Fmt.Did(line.Kind) <b>@line.Game.Name</b></span>
+                        <small>@string.Join(" · ", sub)</small>
+                    </span>
+                    <span class="feed-thumb" style="--tint:@line.Game.Tint">
+                        @if (line.Game.CoverImageId is { } image)
+                        {
+                            <img src="@Igdb.Url(image, Igdb.CoverSmall)" alt="" loading="lazy" decoding="async" />
+                        }
+                    </span>
+                </a>
+            </li>
+        }
+    </ol>
+}

@@ -1,0 +1,29 @@
+@model AccountPageModel
+@{
+    var active = (string)ViewData["Tab"]!;
+    var query = Model.ReturnUrl == "/" ? string.Empty : $"?returnUrl={Uri.EscapeDataString(Model.ReturnUrl)}";
+}
+@* Inside the form: the Sign in / Create account tabs (when anyone may create an account) and the messages. *@
+@if (Model.CanCreateAccount && !Model.IsFirstAccount)
+{
+    <nav class="tabs" aria-label="Account">
+        <a href="/sign-in@(query)" aria-current="@(active == "sign-in" ? "page" : null)">Sign in</a>
+        <a href="/create-account@(query)" aria-current="@(active == "create" ? "page" : null)">Create account</a>
+    </nav>
+}
+@if (Model.Errors.Count > 0)
+{
+    <div class="msg err" role="alert">
+        @Icons.Get("info")
+        <div>
+            @foreach (var error in Model.Errors)
+            {
+                <p>@error</p>
+            }
+        </div>
+    </div>
+}
+else if (Model.Unavailable is not null)
+{
+    <div class="msg err" role="alert">@Icons.Get("info")<p>@Model.Unavailable</p></div>
+}

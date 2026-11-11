@@ -1,0 +1,95 @@
+@model LibraryPageModel
+@{
+    Layout = "_App";
+    ViewData["Title"] = "Library";
+    var counts = Model.Library.Counts;
+    var filters = new (GameStatus? Status, string Label, int Count)[]
+    {
+        (null, "All games", counts.All),
+        (GameStatus.Playing, "Playing", counts.Playing),
+        (GameStatus.Finished, "Finished", counts.Finished),
+        (GameStatus.Wishlist, "Wishlist", counts.Wishlist),
+        (GameStatus.Dropped, "Dropped", counts.Dropped),
+    };
+    var shown = Model.Shown.ToList();
+}
+
+<div class="with-side">
+    <aside class="side rise">
+        <nav class="side-group" aria-label="By status">
+            <h2 class="eyebrow">Collection</h2>
+            @foreach (var (status, label, count) in filters)
+            {
+                var href = status is { } s ? $"/library?status={s.ToString().ToLowerInvariant()}" : "/library";
+                <a class="side-link" href="@href" aria-current="@(Model.Status == status ? "page" : null)"><span>@label</span><b>@count</b></a>
+            }
+        </nav>
+        @if (Model.Families.Count() > 1)
+        {
+            <fieldset class="side-group">
+                <legend class="eyebrow">Platform</legend>
+                @foreach (var family in Model.Families)
+                {
+                    <label class="check"><input type="checkbox" data-family-filter value="@family" checked /><span>@family</span></label>
+                }
+            </fieldset>
+        }
+        <fieldset class="side-group">
+            <legend class="eyebrow">Friends</legend>
+            <label class="check"><input type="checkbox" data-friends-filter /><span>Only games friends have</span></label>
+        </fieldset>
+    </aside>
+
+    <section class="side-main">
+        <div class="page-head">
+            <div>
+                <h1 class="rise">Your library</h1>
+                <p class="muted" data-shown-label>@Fmt.Plural(shown.Count, "game", "games")</p>
+            </div>
+            <div class="toolbar">
+                <label class="sr-only" for="lib-q">Filter the library</label>
+                <span class="in compact">@Icons.Get("search")<input id="lib-q" type="search" placeholder="Filter…" autocomplete="off" data-text-filter /></span>
+                <label class="sr-only" for="lib-sort">Sort</label>
+                <select id="lib-sort" data-sort>
+                    <option value="updated">Recently changed</option>
+                    <option value="added">Recently added</option>
+                    <option value="rating">Rating</option>
+                    <option value="name">Name A–Z</option>
+                    <option value="hours">Hours played</option>
+                </select>
+            </div>
+        </div>
+
+        @if (shown.Count == 0)
+        {
+            <div class="empty rise">
+                <span class="empty-ico">@Icons.Get("library")</span>
+                <h2>@(Model.Status is { } st ? $"Nothing under {Fmt.Status(st)} yet" : "Your library is empty")</h2>
+                <p>Find a game and add it: it lands here with its cover.</p>
+                <a class="btn" href="/discover">@Icons.Get("search")Find a game</a>
+            </div>
+        }
+        else
+        {
+            <div class="grid covers lib stagger" data-library>
+                @foreach (var entry in shown)
+                {
+                    var game = entry.Game;
+                    <a class="card" href="/games/@game.Id"
+                       data-name="@game.Name.ToLowerInvariant()" data-family="@entry.PlatformFamily" data-friends="@game.FriendNames.Count"
+                       data-rating="@(entry.Rating ?? 0)" data-hours="@Fmt.Input(entry.Hours ?? 0)"
+                       data-added="@entry.AddedAt.ToUnixTimeSeconds()" data-updated="@entry.UpdatedAt.ToUnixTimeSeconds()">
+                        <span class="card-cover">
+                            <partial name="_Cover" model="new CoverView(game, Model.Transition(game.Id))" />
+                            <span class="badge-status"><partial name="_StatusChip" model="entry.Status" /></span>
+                            <span class="badge-rating">@Fmt.Rating(entry.Rating)</span>
+                        </span>
+                        <span class="card-name">@game.Name</span>
+                        <span class="card-sub">@(game.FriendNames.Count == 0 ? (entry.Platform ?? game.Platforms.FirstOrDefault() ?? " ") : Fmt.Plural(game.FriendNames.Count, "friend has it", "friends have it"))</span>
+                    </a>
+                }
+            </div>
+            <p class="muted small-empty" data-none hidden>No game matches these filters.</p>
+        }
+    </section>
+</div>

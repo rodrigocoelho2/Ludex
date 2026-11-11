@@ -1,0 +1,80 @@
+@model AppPageModel
+@{
+    Layout = "_Layout";
+    ViewData["App"] = true;
+    var current = Model.Section;
+    string? Current(AppSection s) => s == current ? "page" : null;
+    var tabs = new[]
+    {
+        (AppSection.Home, "/", "home", "Home"),
+        (AppSection.Library, "/library", "library", "Library"),
+        (AppSection.Discover, "/discover", "discover", "Discover"),
+        (AppSection.Friends, "/friends", "friends", "Friends"),
+    };
+}
+<div class="app">
+    <header class="topbar">
+        <div class="topbar-in">
+            <a class="brand" href="/">@Icons.Logo(26)<span>LUDEX</span></a>
+            <nav class="nav" aria-label="Ludex">
+                @foreach (var (s, href, _, name) in tabs)
+                {
+                    <a href="@href" aria-current="@Current(s)">@name</a>
+                }
+            </nav>
+            <div class="top-acts">
+                <form class="top-search" action="/discover" method="get" role="search">
+                    <label class="sr-only" for="top-q">Search games</label>
+                    @Icons.Get("search")
+                    <input id="top-q" name="q" type="search" placeholder="Search games…" autocomplete="off" />
+                </form>
+                <a class="btn small" href="/discover">@Icons.Get("plus")<span>Add</span></a>
+                <a class="me" href="/settings" aria-current="@Current(AppSection.Settings)" aria-label="Settings (@Model.UserName)">
+                    <span class="avatar" style="--av:@Fmt.AvatarColour(Model.UserName)">@Model.Initials</span>
+                    <span class="me-name">@Model.UserName</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="page" id="main">
+        @if (Model.Notice is { } notice)
+        {
+            <div class="msg ok rise" role="status">@Icons.Get("check")<p>@notice</p></div>
+        }
+        @if (Model.Problem is { } problem)
+        {
+            <div class="msg err rise" role="alert">@Icons.Get("info")<p>@problem</p></div>
+        }
+        @if (Model.Unavailable is { } unavailable)
+        {
+            <section class="empty rise">
+                <span class="empty-ico">@Icons.Get("server")</span>
+                <h1>Ludex's engine isn't answering</h1>
+                <p>@unavailable</p>
+                <a class="btn ghost" href="">Try again</a>
+            </section>
+            IgnoreBody();
+        }
+        else
+        {
+            @RenderBody()
+        }
+    </main>
+
+    <nav class="dock" aria-label="Ludex">
+        @foreach (var (s, href, icon, name) in tabs)
+        {
+            <a href="@href" aria-current="@Current(s)">@Icons.Get(icon)<span>@name</span></a>
+        }
+        <a href="/settings" aria-current="@Current(AppSection.Settings)">@Icons.Get("user")<span>You</span></a>
+    </nav>
+
+    <div class="toast" role="status" aria-live="polite" hidden></div>
+</div>
+@section Head {
+    @await RenderSectionAsync("Head", required: false)
+}
+@section Scripts {
+    @await RenderSectionAsync("Scripts", required: false)
+}

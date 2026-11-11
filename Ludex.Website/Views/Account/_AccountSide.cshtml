@@ -1,0 +1,58 @@
+@model AccountPageModel
+@{
+    var active = (string)ViewData["Tab"]!;
+    var first = Model.IsFirstAccount && active == "create";
+    // The wall: covers of the games people here added, topped up with coloured tiles so it's never empty.
+    var builtIn = new (string Name, string Tint)[]
+    {
+        ("Elden Ring", "#4A3A1E"), ("Hades II", "#5A1E2E"), ("Baldur's Gate 3", "#2E2445"), ("Silksong", "#1F3B3A"), ("Pokémon Z-A", "#24405C"),
+        ("Cyberpunk 2077", "#5C4A10"), ("Red Dead 2", "#5A2A18"), ("The Witcher 3", "#22332A"), ("Celeste", "#3D2357"), ("Stardew Valley", "#2F4A22"),
+        ("Balatro", "#3A1F4A"), ("Expedition 33", "#2B3550"), ("Dune Imperium", "#5A3A14"), ("Hollow Knight", "#1E2B3E"), ("Persona 5", "#5C1A1A"),
+        ("Outer Wilds", "#1F3550"), ("Disco Elysium", "#3B2E28"), ("Portal 2", "#2A3540"), ("Sekiro", "#4A2020"), ("Hi-Fi Rush", "#3A2A55"),
+        ("Astro Bot", "#24405C"), ("Split Fiction", "#2B3550"), ("Minecraft", "#2F4A22"), ("Mario Kart World", "#5A1E2E"), ("Catan", "#5C4A10"),
+    };
+    var tiles = Model.Wall.Take(25).Select(g => (g.Name, g.Tint, g.CoverImageId)).ToList();
+    foreach (var (name, tint) in builtIn)
+    {
+        if (tiles.Count >= 25) { break; }
+        if (!tiles.Any(t => t.Name.Contains(name, StringComparison.OrdinalIgnoreCase))) { tiles.Add((name, tint, null)); }
+    }
+}
+<aside class="au-side">
+    <div class="wall" aria-hidden="true">
+        @foreach (var (name, tint, image) in tiles)
+        {
+            <div class="wall-tile" style="--tint:@tint">
+                @if (image is not null)
+                {
+                    <img src="@Igdb.Url(image, Igdb.CoverBig)" alt="" loading="lazy" decoding="async" />
+                }
+                else
+                {
+                    <span>@name</span>
+                }
+            </div>
+        }
+    </div>
+    <div class="au-veil"></div>
+    <div class="au-copy">
+        <a class="brand big" href="/sign-in">@Icons.Logo(40)<span>LUDEX</span></a>
+        <div class="au-pitch">
+            @if (first)
+            {
+                <h2 class="rise">Set up your Ludex.</h2>
+                <p class="rise d1">Create the first account. It becomes the admin; everyone else in the house can make their own.</p>
+            }
+            else
+            {
+                <h2 class="rise">Every game you've played. In one place.</h2>
+            }
+            <ul class="au-points stagger">
+                <li>Your library, with where you are and a rating for each game</li>
+                <li>See which of your friends have the same games</li>
+                <li>Covers, screenshots and the full sheet of every game</li>
+            </ul>
+        </div>
+        <p class="au-foot">Self-hosted · .NET 10 · SQL Server · Docker</p>
+    </div>
+</aside>

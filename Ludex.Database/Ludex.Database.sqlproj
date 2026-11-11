@@ -1,0 +1,78 @@
+<Project Sdk="Microsoft.Build.Sql/2.1.0">
+
+  <!-- SQL Server database of Ludex: the tables and the stored procedures the WebApi calls. Builds to Ludex.Database.dacpac,
+       which the db-deploy container publishes on every deploy (creates the database or brings it up to date) and which
+       also creates the app's own login (AppUser / AppPassword), so the WebApi never connects as sa.
+       Every script is listed below (no wildcards), so Visual Studio shows them with either SSDT flavour;
+       adding a script through Solution Explorer adds its line here. -->
+  <PropertyGroup>
+    <Name>Ludex.Database</Name>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql160DatabaseSchemaProvider</DSP>
+    <ModelCollation>1033, CI</ModelCollation>
+    <DefaultCollation>SQL_Latin1_General_CP1_CI_AS</DefaultCollation>
+    <TargetDatabaseSet>True</TargetDatabaseSet>
+    <EnableDefaultSqlItems>false</EnableDefaultSqlItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Tables\" />
+    <Folder Include="StoredProcedures\" />
+    <Folder Include="StoredProcedures\Activity\" />
+    <Folder Include="StoredProcedures\Friends\" />
+    <Folder Include="StoredProcedures\Games\" />
+    <Folder Include="StoredProcedures\Library\" />
+    <Folder Include="StoredProcedures\Users\" />
+    <Folder Include="Scripts\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Build Include="Tables\dbo.Activity.sql" />
+    <Build Include="Tables\dbo.Friendship.sql" />
+    <Build Include="Tables\dbo.Game.sql" />
+    <Build Include="Tables\dbo.LibraryEntry.sql" />
+    <Build Include="Tables\dbo.User.sql" />
+    <Build Include="StoredProcedures\Activity\dbo.ActivityAdd.sql" />
+    <Build Include="StoredProcedures\Activity\dbo.ActivityFeed.sql" />
+    <Build Include="StoredProcedures\Friends\dbo.FriendAccept.sql" />
+    <Build Include="StoredProcedures\Friends\dbo.FriendGameList.sql" />
+    <Build Include="StoredProcedures\Friends\dbo.FriendList.sql" />
+    <Build Include="StoredProcedures\Friends\dbo.FriendOwnership.sql" />
+    <Build Include="StoredProcedures\Friends\dbo.FriendPopular.sql" />
+    <Build Include="StoredProcedures\Friends\dbo.FriendRemove.sql" />
+    <Build Include="StoredProcedures\Friends\dbo.FriendRequest.sql" />
+    <Build Include="StoredProcedures\Games\dbo.GameCoverWall.sql" />
+    <Build Include="StoredProcedures\Games\dbo.GameGet.sql" />
+    <Build Include="StoredProcedures\Games\dbo.GameUpsert.sql" />
+    <Build Include="StoredProcedures\Library\dbo.LibraryDelete.sql" />
+    <Build Include="StoredProcedures\Library\dbo.LibraryGet.sql" />
+    <Build Include="StoredProcedures\Library\dbo.LibraryList.sql" />
+    <Build Include="StoredProcedures\Library\dbo.LibrarySave.sql" />
+    <Build Include="StoredProcedures\Users\dbo.UserCount.sql" />
+    <Build Include="StoredProcedures\Users\dbo.UserCreate.sql" />
+    <Build Include="StoredProcedures\Users\dbo.UserDelete.sql" />
+    <Build Include="StoredProcedures\Users\dbo.UserGet.sql" />
+    <Build Include="StoredProcedures\Users\dbo.UserGetByName.sql" />
+    <Build Include="StoredProcedures\Users\dbo.UserList.sql" />
+    <Build Include="StoredProcedures\Users\dbo.UserSetPassword.sql" />
+    <Build Include="StoredProcedures\Users\dbo.UserTouchLogin.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PostDeploy Include="Scripts\Script.PostDeployment.sql" />
+    <None Include="Scripts\deploy.sh" />
+    <None Include="Dockerfile" />
+  </ItemGroup>
+
+  <!-- The login the WebApi connects with. deploy.sh passes both (/v:AppUser=… /v:AppPassword=…); an empty password skips it. -->
+  <ItemGroup>
+    <SqlCmdVariable Include="AppUser">
+      <DefaultValue>ludex</DefaultValue>
+      <Value>$(SqlCmdVar__1)</Value>
+    </SqlCmdVariable>
+    <SqlCmdVariable Include="AppPassword">
+      <DefaultValue></DefaultValue>
+      <Value>$(SqlCmdVar__2)</Value>
+    </SqlCmdVariable>
+  </ItemGroup>
+
+</Project>

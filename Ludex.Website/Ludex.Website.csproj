@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- Ludex, the app (MVC): sign-in, home, library, discover, a game's page, friends and settings, for the phone and the
+       computer. Talks to Ludex.WebApi only through Ludex.Sdk. -->
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <UserSecretsId>ludex-website-4d81a6e2</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ludex.Sdk\Ludex.Sdk.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ludex.UnitTest" />
+  </ItemGroup>
+
+</Project>

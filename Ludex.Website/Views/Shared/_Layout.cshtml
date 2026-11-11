@@ -1,0 +1,44 @@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@{
+    var antiforgeryToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+    var title = ViewData["Title"] as string;
+}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="request-verification-token" content="@antiforgeryToken" />
+    <meta name="color-scheme" content="dark" />
+    <title>@(string.IsNullOrEmpty(title) || title == "Ludex" ? "Ludex" : $"{title} · Ludex")</title>
+    <meta name="description" content="Ludex keeps every game you've played: your library, your ratings and which of your friends play the same games. Self-hosted, on your phone and your computer." />
+    <meta name="theme-color" content="#0A0F15" />
+    <meta name="application-name" content="Ludex" />
+    <meta name="apple-mobile-web-app-title" content="Ludex" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="icon" href="~/img/ludex.svg" type="image/svg+xml" />
+    <link rel="icon" href="~/img/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="~/img/apple-touch-icon.png" />
+    <link rel="manifest" href="~/manifest.webmanifest" />
+    <link rel="preconnect" href="https://images.igdb.com" crossorigin />
+    <link rel="preload" href="~/fonts/barlow-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="~/fonts/barlow-condensed-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+    <noscript><style>.cover-img, .art-img { opacity: 1 !important; filter: none !important; }</style></noscript>
+    @if (ViewData["App"] is true)
+    {
+        @* Pages are fetched as soon as a finger lands on a link, so they open at once (and the cover can fly across). *@
+        <script type="speculationrules">
+            { "prefetch": [ { "where": { "and": [ { "href_matches": "/*" }, { "not": { "href_matches": "/sign-*" } }, { "not": { "selector_matches": "[data-no-prefetch]" } } ] }, "eagerness": "moderate" } ] }
+        </script>
+    }
+    @await RenderSectionAsync("Head", required: false)
+</head>
+<body>
+    @RenderBody()
+    <script src="~/js/app.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

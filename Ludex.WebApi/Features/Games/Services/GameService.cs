@@ -1,0 +1,166 @@
+using Ludex.Library.Enums;
+using Ludex.Library.Services;
+using Ludex.WebApi.Extensions.Globalization;
+using Ludex.WebApi.Features.Catalog;
+using Ludex.WebApi.Features.Friends.Repositories;
+using Ludex.WebApi.Features.Games.Models.DTOs;
+using Ludex.WebApi.Features.Games.Models.Entities;
+using Ludex.WebApi.Features.Games.Repositories;
+using Ludex.WebApi.Features.Library.Repositories;
+
+namespace Ludex.WebApi.Features.Games.Services;
+
+/// <summary>
+/// Searching the catalog, a game's page and the covers behind the sign-in form.
+/// </summary>
+internal interface IGameService
+{
+    /// <summary>Searches the catalog, marking the games the account and its friends have.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="query">The text typed.</param>
+    /// <returns>The games, or a problem (too short, catalog unreachable).</returns>
+    Task<ServiceApiResponse<SearchResultDTO>> SearchAsync(string userId, string? query);
+
+    /// <summary>Everything the game page shows.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="gameId">The game.</param>
+    /// <returns>The game, or not found.</returns>
+    Task<ServiceApiResponse<GameDetailDTO>> DetailAsync(string userId, int gameId);
+
+    /// <summary>Covers for the sign-in page.</summary>
+    /// <returns>The covers.</returns>
+    Task<ServiceApiResponse<CoverWallDTO>> WallAsync();
+}
+
+/// <summary>
+/// Searching the catalog, a game's page and the covers behind the sign-in form.
+/// </summary>
+/// <param name="catalog">IGDB, or the built-in list.</param>
+/// <param name="gameStore">Saved games, refreshed from the catalog.</param>
+/// <param name="gameRepository">Saved games.</param>
+/// <param name="libraryRepository">The libraries.</param>
+/// <param name="friendRepository">Friends.</param>
+/// <param name="globalizationHelper">Messages.</param>
+internal sealed class GameService(
+    IGameCatalog catalog,
+    GameStore gameStore,
+    IGameRepository gameRepository,
+    ILibraryRepository libraryRepository,
+    IFriendRepository friendRepository,
+    IGlobalizationHelper globalizationHelper) : IGameService
+{
+    /// <summary>Most results a search returns.</summary>
+    internal const int SearchLimit = 24;
+
+    /// <summary>How many covers the sign-in wall shows.</summary>
+    internal const int WallSize = 30;
+
+    /// <inheritdoc />
+    public async Task<ServiceApiResponse<SearchResultDTO>> SearchAsync(string userId, string? query)
+    {
+        if (!Guid.TryParse(userId, out var user))
+        {
+            return ServiceApiResponse<SearchResultDTO>.NotFound(await globalizationHelper.TranslateAsync(nameof(TranslationKeys.NoRecordsFound), userId ?? string.Empty));
+        }
+
+        var text = (query ?? string.Empty).Trim();
+        var result = new SearchResultDTO { Query = text, Source = catalog.Source };
+        if (text.Length < 2)
+        {
+            return ServiceApiResponse<SearchResultDTO>.Success(result);
+        }
+
+        List<CatalogGame> games;
+        try
+        {
+            games = await catalog.SearchAsync(text, SearchLimit);
+        }
+        catch (CatalogUnavailableException exception)
+        {
+            var message = await globalizationHelper.TranslateAsync(nameof(TranslationKeys.CatalogUnreachable), exception.Message);
+            return ServiceApiResponse<SearchResultDTO>.ValidationProblems(message).AddError("Query", message);
+        }
+
+        var mine = (await libraryRepository.ListAsync(user)).ToDictionary(static row => row.GameID, static row => GameMapper.Status(row.Status));
+        var friends = await FriendNamesAsync(user, games.Select(static g => g.Id).ToList());
+        result.Results = [.. games.Select(game => GameMapper.Summary(
+            game,
+            mine.TryGetValue(game.Id, out var status) ? status : null,
+            friends.TryGetValue(game.Id, out var names) ? names : null))];
+        return ServiceApiResponse<SearchResultDTO>.Success(result);
+    }
+
+    /// <inheritdoc />
+    public async Task<ServiceApiResponse<GameDetailDTO>> DetailAsync(string userId, int gameId)
+    {
+        if (!Guid.TryParse(userId, out var user))
+        {
+            return ServiceApiResponse<GameDetailDTO>.NotFound(await globalizationHelper.TranslateAsync(nameof(TranslationKeys.NoRecordsFound), userId ?? string.Empty));
+        }
+
+        GameRow? game;
+        try
+        {
+            game = await gameStore.GetAsync(gameId);
+        }
+        catch (CatalogUnavailableException exception)
+        {
+            var message = await globalizationHelper.TranslateAsync(nameof(TranslationKeys.CatalogUnreachable), exception.Message);
+            return ServiceApiResponse<GameDetailDTO>.ValidationProblems(message).AddError("GameId", message);
+        }
+
+        if (game is null)
+        {
+            return ServiceApiResponse<GameDetailDTO>.NotFound(await globalizationHelper.TranslateAsync(nameof(TranslationKeys.GameNotFound)));
+        }
+
+        var mine = await libraryRepository.GetAsync(user, gameId);
+        var friends = await friendRepository.GameAsync(user, gameId);
+        var rated = friends.Where(static f => f.Rating is not null).Select(static f => (decimal)f.Rating!.Value).ToList();
+
+        return ServiceApiResponse<GameDetailDTO>.Success(new GameDetailDTO
+        {
+            Game = GameMapper.Summary(game, mine is null ? null : GameMapper.Status(mine.Status), [.. friends.Select(static f => f.Username)]),
+            Summary = game.Summary,
+            HeroImageId = game.HeroImageID,
+            Screenshots = GameRow.Split(game.Screenshots, ','),
+            ReleaseDate = game.FirstReleaseDate is { } date ? DateOnly.FromDateTime(date) : null,
+            Publisher = game.Publisher,
+            Genres = GameRow.Split(game.Genres),
+            Modes = GameRow.Split(game.Modes),
+            Mine = mine is null ? null : new MyGameDTO
+            {
+                Status = GameMapper.Status(mine.Status) ?? GameStatus.Playing,
+                Rating = mine.Rating,
+                Hours = mine.Hours,
+                Platform = mine.Platform,
+                Notes = mine.Notes,
+                AddedAt = GameMapper.Utc(mine.AddedAt),
+                UpdatedAt = GameMapper.Utc(mine.UpdatedAt),
+                FinishedAt = mine.FinishedAt is { } finished ? GameMapper.Utc(finished) : null,
+            },
+            Friends = [.. friends.Select(static f => new FriendGameDTO
+            {
+                Id = f.UserUniqueID.ToString("N"),
+                UserName = f.Username,
+                Status = GameMapper.Status(f.Status) ?? GameStatus.Playing,
+                Rating = f.Rating,
+                Hours = f.Hours,
+                Platform = f.Platform,
+                UpdatedAt = GameMapper.Utc(f.UpdatedAt),
+            })],
+            FriendsAverageRating = rated.Count == 0 ? null : Math.Round(rated.Average(), 1),
+            Source = catalog.Source,
+        });
+    }
+
+    /// <inheritdoc />
+    public async Task<ServiceApiResponse<CoverWallDTO>> WallAsync() => ServiceApiResponse<CoverWallDTO>.Success(new CoverWallDTO
+    {
+        Games = [.. (await gameRepository.CoverWallAsync(WallSize)).Select(static row => GameMapper.Summary(row))],
+        Source = catalog.Source,
+    });
+
+    private async Task<Dictionary<int, List<string>>> FriendNamesAsync(Guid user, List<int> gameIds) =>
+        GameMapper.NamesByGame((await friendRepository.OwnershipAsync(user, gameIds)).Select(static r => (r.GameID, r.Username)));
+}

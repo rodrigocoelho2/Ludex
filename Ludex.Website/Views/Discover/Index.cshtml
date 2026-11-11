@@ -1,0 +1,43 @@
+@model DiscoverPageModel
+@{
+    Layout = "_App";
+    ViewData["Title"] = "Discover";
+}
+
+<div class="discover">
+    <section class="discover-main">
+        <h1 class="rise">Add a game</h1>
+        <form class="search-big rise d1" action="/discover" method="get" role="search" data-search>
+            <label class="sr-only" for="q">Search games</label>
+            <span class="in big">@Icons.Get("search")<input id="q" name="q" type="search" value="@Model.Query" placeholder="Zelda, Elden Ring, Balatro…" autocomplete="off" autofocus /></span>
+            <button class="btn big" type="submit">Search</button>
+        </form>
+        @if (Model.Source == CatalogSource.Offline)
+        {
+            <p class="msg info rise d2">@Icons.Get("info")<span>Ludex is using its short built-in list of games. Add a Twitch Client ID and Secret (IGDB_CLIENT_ID / IGDB_CLIENT_SECRET in .env) to search every game, with covers and screenshots.</span></p>
+        }
+        <div class="results" data-results aria-live="polite">
+            <partial name="_Results" model="Model" />
+        </div>
+    </section>
+
+    <aside class="discover-side">
+        <h2 class="eyebrow">Popular with your friends</h2>
+        @if (Model.Popular.Count == 0)
+        {
+            <p class="muted small-empty">When your friends add games you don't have, the favourites show up here. <a href="/friends">Add friends</a></p>
+        }
+        else
+        {
+            <partial name="_Popular" model="Model.Popular" />
+        }
+    </aside>
+</div>
+
+<template id="skeleton">
+    <div class="result skel-row" aria-hidden="true">
+        <span class="skel cover-skel"></span>
+        <span class="skel-lines"><span class="skel" style="width:62%"></span><span class="skel" style="width:38%"></span><span class="skel" style="width:28%"></span></span>
+        <span class="skel btn-skel"></span>
+    </div>
+</template>

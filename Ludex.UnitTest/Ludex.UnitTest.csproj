@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Unit tests: the library rules (feed lines, home numbers), the catalogs (the built-in list, the IGDB mapping),
+       platform names, passwords and the SDK contract. No database, no network. -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ludex.Library\Ludex.Library.csproj" />
+    <ProjectReference Include="..\Ludex.Sdk\Ludex.Sdk.csproj" />
+    <ProjectReference Include="..\Ludex.WebApi\Ludex.WebApi.csproj" />
+  </ItemGroup>
+
+</Project>
