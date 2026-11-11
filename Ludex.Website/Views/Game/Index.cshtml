@@ -5,8 +5,8 @@
     var game = detail.Game;
     var mine = detail.Mine;
     ViewData["Title"] = game.Name;
+    ViewData["Wide"] = true;
     var hasSide = Model.Sidebar.Count > 0;
-    ViewData["Wide"] = hasSide;
     var copyNow = mine?.Store ?? mine?.Format?.ToString();
     var copyChoices = Ludex.Library.Platforms.GameCopies.Choices(mine?.Platform);
     var copyLabel = Ludex.Library.Platforms.GameCopies.UsesStores(mine?.Platform) ? "Bought on" : "Copy";
@@ -18,140 +18,59 @@
     var yourLine = new List<string>();
     if (mine?.Hours is { } myHours) { yourLine.Add($"{Fmt.Hours(myHours)} on record"); }
     if (mine is not null) { yourLine.Add($"added {Fmt.ShortDate(mine.AddedAt)}"); }
+    var heroMeta = new List<string>();
+    if (game.Developer is { } heroDev) { heroMeta.Add(heroDev); }
+    if (game.Year is { } heroYear) { heroMeta.Add(heroYear.ToString(System.Globalization.CultureInfo.InvariantCulture)); }
+    heroMeta.AddRange(detail.Genres.Take(2));
 }
 
-<div class="@(hasSide ? "lib-shell" : "game-solo")">
+<div class="lib-shell@(hasSide ? string.Empty : " no-side")">
 @if (hasSide)
 {
     <partial name="_LibrarySidebar" model="new LibrarySidebarView(Model.Sidebar, game.Id)" />
 }
-<div class="@(hasSide ? "lib-main" : "game-solo-main")">
-<article class="game2" data-game-page="@game.Id" style="--tint:@game.Tint">
-    <div class="game-glow" aria-hidden="true">
-        @if (art is not null)
-        {
-            <img class="art-img" src="@Igdb.Url(art, Igdb.ScreenshotMed)" alt="" decoding="async" />
-        }
-        else if (game.CoverImageId is { } glowCover)
-        {
-            <img class="art-img art-from-cover" src="@Igdb.Url(glowCover, Igdb.CoverBig)" alt="" decoding="async" />
-        }
-    </div>
-
-    <header class="g-head rise">
-        <nav class="crumbs" aria-label="Breadcrumb">
-            <a href="/library">Library</a>
-            @if (genre is not null) { <span aria-hidden="true">›</span><a href="/discover?q=@Uri.EscapeDataString(genre)">@genre</a> }
-            <span aria-hidden="true">›</span><span aria-current="page">@game.Name</span>
-        </nav>
-        <div class="g-title-row">
-            <h1>@game.Name</h1>
-            <span class="lib-pill@(mine is null ? " out" : string.Empty)" data-lib-pill>
-                @Icons.Get(mine is null ? "plus" : "check")<span data-lib-pill-text>@(mine is null ? "Not in your library" : $"In your library · {Fmt.Status(mine.Status)}")</span>
-            </span>
-        </div>
-    </header>
-
-    <section class="g-top glass rise d1">
-        <div class="g-media">
-            @if (shots.Count > 0)
+<div class="lib-main">
+<article class="game3" data-game-page="@game.Id" style="--tint:@game.Tint">
+    @* The hero: the game's wide art from edge to edge, the title over it — like Steam's library page. *@
+    <header class="g-hero">
+        <div class="g-hero-art" aria-hidden="true">
+            @if (art is not null)
             {
-                <div class="viewer" data-viewer>
-                    @for (var i = 0; i < shots.Count; i++)
-                    {
-                        <button type="button" class="viewer-shot@(i == 0 ? " on" : string.Empty)" data-full="@Igdb.Url(shots[i], Igdb.Full)" aria-label="Open screenshot @(i + 1) full size" tabindex="@(i == 0 ? "0" : "-1")">
-                            <img class="cover-img" src="@Igdb.Url(shots[i], i == 0 ? Igdb.Full : Igdb.ScreenshotMed)" data-big="@Igdb.Url(shots[i], Igdb.Full)" alt="" decoding="async" loading="@(i == 0 ? "eager" : "lazy")" />
-                        </button>
-                    }
-                    <span class="viewer-tag">Screenshot · IGDB</span>
-                    @if (shots.Count > 1)
-                    {
-                        <button type="button" class="viewer-nav prev" data-viewer-step="-1" aria-label="Previous screenshot">@Icons.Get("left")</button>
-                        <button type="button" class="viewer-nav next" data-viewer-step="1" aria-label="Next screenshot">@Icons.Get("right")</button>
-                        <span class="viewer-count" data-viewer-count>1 / @shots.Count</span>
-                    }
-                </div>
-                @if (shots.Count > 1)
-                {
-                    <div class="thumbs" role="group" aria-label="Screenshots">
-                        @for (var i = 0; i < shots.Count; i++)
-                        {
-                            <button type="button" class="thumb@(i == 0 ? " on" : string.Empty)" data-viewer-pick="@i" aria-label="Screenshot @(i + 1)" aria-pressed="@(i == 0 ? "true" : "false")">
-                                <img src="@Igdb.Url(shots[i], Igdb.ScreenshotMed)" alt="" loading="lazy" decoding="async" />
-                            </button>
-                        }
-                    </div>
-                }
+                <img class="art-lq" src="@Igdb.Url(art, Igdb.ScreenshotMed)" alt="" decoding="async" />
+                <img class="art-img drift" src="@Igdb.Url(art, Igdb.Full)" alt="" decoding="async" fetchpriority="high" />
+            }
+            else if (game.CoverImageId is { } heroCover)
+            {
+                <img class="art-img art-from-cover" src="@Igdb.Url(heroCover, Igdb.CoverBig)" alt="" decoding="async" />
             }
             else
             {
-                <div class="viewer empty-viewer" style="--tint:@game.Tint">
-                    @if (detail.HeroImageId is { } hero)
-                    {
-                        <img class="art-img" src="@Igdb.Url(hero, Igdb.Full)" alt="" decoding="async" />
-                    }
-                    else
-                    {
-                        <span class="viewer-ghost">@game.Name</span>
-                    }
-                </div>
+                <span class="banner-ghost">@game.Name</span>
             }
         </div>
-
-        <aside class="g-info">
-            <div class="capsule" style="--tint:@game.Tint">
-                @if (art is not null)
-                {
-                    <img class="art-img" src="@Igdb.Url(art, Igdb.ScreenshotMed)" alt="" decoding="async" />
-                }
-                else if (game.CoverImageId is { } capCover)
-                {
-                    <img class="art-img art-from-cover" src="@Igdb.Url(capCover, Igdb.CoverBig)" alt="" decoding="async" />
-                }
-                <span class="capsule-cover"><partial name="_Cover" model="new CoverView(game, Model.Transition(game.Id), Large: true)" /></span>
+        @if (art is not null)
+        {
+            <span class="credit">Game art · IGDB</span>
+        }
+        <div class="g-hero-in rise">
+            <nav class="crumbs" aria-label="Breadcrumb">
+                <a href="/library">Library</a>
+                @if (genre is not null) { <span aria-hidden="true">›</span><a href="/discover?q=@Uri.EscapeDataString(genre)">@genre</a> }
+            </nav>
+            <h1>@game.Name</h1>
+            <div class="g-hero-meta">
+                @if (heroMeta.Count > 0) { <span>@string.Join(" · ", heroMeta)</span> }
+                <span class="lib-pill@(mine is null ? " out" : string.Empty)" data-lib-pill>
+                    @Icons.Get(mine is null ? "plus" : "check")<span data-lib-pill-text>@(mine is null ? "Not in your library" : $"In your library · {Fmt.Status(mine.Status)}")</span>
+                </span>
             </div>
-            @if (!string.IsNullOrWhiteSpace(detail.Summary))
-            {
-                <p class="g-summary">@detail.Summary</p>
-            }
-            <dl class="g-facts">
-                <dt>Friends' rating</dt>
-                <dd>
-                    @if (detail.FriendsAverageRating is { } average)
-                    {
-                        <span class="reception @Fmt.ReceptionCss(average)">@Fmt.Reception(average)</span> <span class="muted">· @Fmt.Average(average) from @Fmt.Plural(ratedBy, "friend", "friends")</span>
-                    }
-                    else
-                    {
-                        <span class="muted">@(detail.Friends.Count == 0 ? "No friends have it yet" : "Not rated by friends yet")</span>
-                    }
-                </dd>
-                @if (detail.ReleaseDate is { } released)
-                {
-                    <dt>Release date</dt><dd>@Fmt.LongDate(released)</dd>
-                }
-                @if (game.Developer is { } developer)
-                {
-                    <dt>Developer</dt><dd><a href="/discover?q=@Uri.EscapeDataString(developer)">@developer</a></dd>
-                }
-                @if (detail.Publisher is { } publisher && publisher != game.Developer)
-                {
-                    <dt>Publisher</dt><dd><a href="/discover?q=@Uri.EscapeDataString(publisher)">@publisher</a></dd>
-                }
-            </dl>
-            @if (detail.Genres.Count > 0 || game.Platforms.Count > 0)
-            {
-                <div class="g-tags">
-                    @foreach (var g in detail.Genres) { <span class="tag accent">@g</span> }
-                    @foreach (var platform in game.Platforms) { <span class="tag">@platform</span> }
-                </div>
-            }
-        </aside>
-    </section>
+        </div>
+    </header>
 
-    <form id="game-form" class="your-game rise d2" data-game-form data-game="@game.Id" data-in-library="@(mine is null ? "false" : "true")" autocomplete="off">
+    @* Your game: status, rating and favourite save as you tap (Steam's Play bar). *@
+    <form id="game-form" class="your-game rise d1" data-game-form data-game="@game.Id" data-in-library="@(mine is null ? "false" : "true")" autocomplete="off">
         <div class="yg-title">
-            <b>Your game</b>
+            <span class="eyebrow">Your game</span>
             <span class="muted" data-your-line>@(yourLine.Count == 0 ? "Not in your library yet: pick a status or a rating" : string.Join(" · ", yourLine))</span>
         </div>
         <div class="yg-status" role="group" aria-label="Status">
@@ -178,8 +97,40 @@
         </div>
     </form>
 
-    <div class="g-body">
+    <div class="g-cols">
         <div class="g-main rise d2">
+            @if (shots.Count > 0)
+            {
+                <section class="g-block">
+                    <div class="viewer" data-viewer>
+                        @for (var i = 0; i < shots.Count; i++)
+                        {
+                            <button type="button" class="viewer-shot@(i == 0 ? " on" : string.Empty)" data-full="@Igdb.Url(shots[i], Igdb.Full)" aria-label="Open screenshot @(i + 1) full size" tabindex="@(i == 0 ? "0" : "-1")">
+                                <img class="cover-img" src="@Igdb.Url(shots[i], i == 0 ? Igdb.Full : Igdb.ScreenshotMed)" data-big="@Igdb.Url(shots[i], Igdb.Full)" alt="" decoding="async" loading="@(i == 0 ? "eager" : "lazy")" />
+                            </button>
+                        }
+                        <span class="viewer-tag">Screenshot · IGDB</span>
+                        @if (shots.Count > 1)
+                        {
+                            <button type="button" class="viewer-nav prev" data-viewer-step="-1" aria-label="Previous screenshot">@Icons.Get("left")</button>
+                            <button type="button" class="viewer-nav next" data-viewer-step="1" aria-label="Next screenshot">@Icons.Get("right")</button>
+                            <span class="viewer-count" data-viewer-count>1 / @shots.Count</span>
+                        }
+                    </div>
+                    @if (shots.Count > 1)
+                    {
+                        <div class="thumbs" role="group" aria-label="Screenshots" style="--n:@shots.Count">
+                            @for (var i = 0; i < shots.Count; i++)
+                            {
+                                <button type="button" class="thumb@(i == 0 ? " on" : string.Empty)" data-viewer-pick="@i" aria-label="Screenshot @(i + 1)" aria-pressed="@(i == 0 ? "true" : "false")">
+                                    <img src="@Igdb.Url(shots[i], Igdb.ScreenshotMed)" alt="" loading="lazy" decoding="async" />
+                                </button>
+                            }
+                        </div>
+                    }
+                </section>
+            }
+
             <section class="g-block">
                 <h2 class="g-h">About this game</h2>
                 @if (!string.IsNullOrWhiteSpace(detail.Summary))
@@ -232,6 +183,44 @@
         </div>
 
         <aside class="g-side rise d2">
+            <section class="side-card g-details">
+                <div class="g-details-top">
+                    <span class="g-details-cover"><partial name="_Cover" model="new CoverView(game, Model.Transition(game.Id), Large: true)" /></span>
+                    <dl class="g-facts">
+                        @if (detail.ReleaseDate is { } released)
+                        {
+                            <dt>Released</dt><dd>@Fmt.LongDate(released)</dd>
+                        }
+                        @if (game.Developer is { } developer)
+                        {
+                            <dt>Developer</dt><dd><a href="/discover?q=@Uri.EscapeDataString(developer)">@developer</a></dd>
+                        }
+                        @if (detail.Publisher is { } publisher && publisher != game.Developer)
+                        {
+                            <dt>Publisher</dt><dd><a href="/discover?q=@Uri.EscapeDataString(publisher)">@publisher</a></dd>
+                        }
+                    </dl>
+                </div>
+                <div class="g-reception">
+                    <span class="side-head">Friends' rating</span>
+                    @if (detail.FriendsAverageRating is { } average)
+                    {
+                        <span><span class="reception @Fmt.ReceptionCss(average)">@Fmt.Reception(average)</span> <span class="muted">· @Fmt.Average(average) from @Fmt.Plural(ratedBy, "friend", "friends")</span></span>
+                    }
+                    else
+                    {
+                        <span class="muted">@(detail.Friends.Count == 0 ? "No friends have it yet" : "Not rated by friends yet")</span>
+                    }
+                </div>
+                @if (detail.Genres.Count > 0 || game.Platforms.Count > 0)
+                {
+                    <div class="g-tags">
+                        @foreach (var g in detail.Genres) { <span class="tag accent">@g</span> }
+                        @foreach (var platform in game.Platforms) { <span class="tag">@platform</span> }
+                    </div>
+                }
+            </section>
+
             <section class="side-card">
                 <h2 class="side-head">Friends who have it</h2>
                 @if (detail.Friends.Count == 0)
