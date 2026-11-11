@@ -97,11 +97,12 @@
         </div>
     </form>
 
-    <div class="g-cols">
-        <div class="g-main rise d2">
+    @* Two columns on a usual screen (media and text, details beside); on a wide or ultrawide one the screenshots,
+       the text and the details sit side by side, and the screenshots never get taller than the screen allows. *@
+    <div class="g-cols@(shots.Count == 0 ? " no-media" : string.Empty)">
             @if (shots.Count > 0)
             {
-                <section class="g-block">
+                <section class="g-block g-media-block rise d2">
                     <div class="viewer" data-viewer>
                         @for (var i = 0; i < shots.Count; i++)
                         {
@@ -131,6 +132,7 @@
                 </section>
             }
 
+        <div class="g-text rise d2">
             <section class="g-block">
                 <h2 class="g-h">About this game</h2>
                 @if (!string.IsNullOrWhiteSpace(detail.Summary))

@@ -664,7 +664,7 @@ a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 25
 .lib-main { --pad: clamp(16px, 2.4vw, 32px); min-width: 0; padding: 24px var(--pad) 64px; }
 
 /* A game, inside the library shell: Steam's library page (hero art, a bar to play with, then the details). */
-.game3 { --tint: #2B3550; display: flex; flex-direction: column; }
+.game3 { --tint: #2B3550; display: flex; flex-direction: column; container: game / inline-size; }
 .g-hero { position: relative; margin: -24px calc(var(--pad) * -1) 0; min-height: clamp(280px, 30vw, 430px); display: flex; align-items: flex-end; overflow: hidden; background: var(--tint); }
 .g-hero-art { position: absolute; inset: 0; overflow: hidden; }
 .g-hero-art .art-lq, .g-hero-art .art-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
@@ -679,8 +679,26 @@ a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 25
 .g-hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; font-size: 15px; color: rgba(255, 255, 255, .82); }
 .game3 .your-game { position: relative; z-index: 2; margin-top: -32px; background: linear-gradient(90deg, rgba(36, 72, 98, .92), rgba(20, 34, 48, .92) 60%, rgba(18, 28, 40, .92)); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 14px 34px rgba(0, 0, 0, .4); }
 .game3 .yg-title .eyebrow { font-size: 12px; }
-.g-cols { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 26px; margin-top: 26px; max-width: 1440px; }
-.game3 .g-main { gap: 28px; }
+.g-cols { display: grid; gap: 26px; margin-top: 26px; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto 1fr; grid-template-areas: "media side" "text side"; }
+.g-cols.no-media { grid-template-rows: auto; grid-template-areas: "text side"; }
+.g-media-block { grid-area: media; min-width: 0; }
+.g-text { grid-area: text; min-width: 0; display: flex; flex-direction: column; gap: 28px; }
+.game3 .g-side { grid-area: side; }
+.game3 .yg-title { flex: 0 1 auto; margin-right: 8px; }
+/* Wide and ultrawide: screenshots (sized by the screen's height), text and details side by side. */
+@container game (min-width: 1880px) {
+    .g-cols { grid-template-columns: minmax(0, calc(56vh * 16 / 9)) minmax(380px, 1fr) 400px; grid-template-rows: auto; grid-template-areas: "media text side"; }
+    .g-cols.no-media { grid-template-columns: minmax(0, 1fr) 400px; grid-template-areas: "text side"; }
+    .g-text .summary { max-width: 80ch; }
+}
+@container game (min-width: 2800px) {
+    .g-cols { grid-template-columns: minmax(0, calc(60vh * 16 / 9)) minmax(420px, 1fr) 440px; }
+}
+/* Narrow (a small window, or the sidebar taking room): one column. */
+@container game (max-width: 900px) {
+    .g-cols, .g-cols.no-media { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; grid-template-areas: "media" "text" "side"; }
+    .g-cols.no-media { grid-template-areas: "text" "side"; }
+}
 .game3 .viewer { border-radius: var(--r); }
 .game3 .thumbs { display: grid; grid-template-columns: repeat(var(--n, 6), minmax(0, 1fr)); gap: 8px; overflow: visible; padding: 0; }
 .game3 .thumb { flex: none; min-width: 0; width: auto; }
@@ -912,7 +930,6 @@ a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 25
     .lib-main { --pad: 16px; }
     .g-hero { min-height: 240px; }
     .g-hero-in { padding-bottom: 40px; }
-    .g-cols { grid-template-columns: minmax(0, 1fr); }
     .game3 .your-game { margin-top: -20px; }
     .game3 .thumbs { display: flex; overflow-x: auto; scrollbar-width: none; }
     .game3 .thumb { flex: 0 0 30%; }
