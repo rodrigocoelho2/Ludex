@@ -110,8 +110,9 @@
 </tr>
 </table>
 
-The screenshots come from CI, on the built-in list of games (so the covers are drawn in colour); with IGDB they're the
-real covers and art.
+The pictures show the built-in list of games, which has no images, so every cover is drawn in the game's colour with
+its name; with IGDB they're the real covers, art and screenshots. CI takes them again, on a computer and a phone, on
+every push (the `ci-output-compose` branch).
 
 ## Deploying on the NAS
 
