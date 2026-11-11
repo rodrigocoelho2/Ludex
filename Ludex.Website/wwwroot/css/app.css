@@ -118,6 +118,23 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); box-sha
 .check input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
 select { appearance: none; padding-right: 36px; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
 fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+/* The list a dropdown opens: the app's own panel where the browser allows it (customizable select), dark options elsewhere. */
+option, optgroup { background-color: #16202C; color: var(--text); }
+@supports (appearance: base-select) {
+    select, select::picker(select) { appearance: base-select; }
+    select { display: inline-flex; align-items: center; gap: 8px; letter-spacing: normal; text-transform: none; cursor: pointer; }
+    select::picker-icon { display: none; }
+    select::picker(select) { margin-top: 6px; padding: 5px; min-width: anchor-size(width); max-height: min(420px, 70vh); overflow-y: auto; border: 1px solid var(--line); border-radius: var(--r); background: #16202C; color: var(--text); box-shadow: 0 22px 50px rgba(0, 0, 0, .6); scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, .18) transparent; opacity: 0; translate: 0 -4px; transition: opacity .14s ease, translate .18s var(--ease), overlay .18s allow-discrete, display .18s allow-discrete; }
+    select:open::picker(select) { opacity: 1; translate: 0 0; }
+    @starting-style { select:open::picker(select) { opacity: 0; translate: 0 -4px; } }
+    select option { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 12px 0 10px; border-radius: var(--r-sm); background: transparent; color: var(--soft); font-size: 14.5px; font-weight: 500; letter-spacing: 0; text-transform: none; white-space: nowrap; cursor: pointer; }
+    select option:hover, select option:focus-visible { background: rgba(255, 255, 255, .08); color: var(--text); outline: none; }
+    select option:checked { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--text); font-weight: 600; }
+    select option::checkmark { order: 1; margin-left: auto; color: var(--accent); }
+    select option:disabled { color: var(--faint); cursor: default; }
+    select optgroup { padding: 4px 0; }
+    select optgroup::before, select legend { padding: 6px 10px 4px; font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+}
 
 .msg { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; background: var(--panel); border-radius: var(--r-sm); border-left: 3px solid var(--accent); font-size: 15px; color: var(--soft); margin-bottom: 20px; }
 .msg.err { border-left-color: var(--danger); }

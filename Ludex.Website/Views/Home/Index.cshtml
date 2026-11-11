@@ -1,5 +1,5 @@
 @model HomePageModel
-@* Home, like Steam's library home: the library down the side, the game you're on across the top, then shelves you
+@* Home, like Steam's library home: the game you're on across the top, then shelves you
    scroll sideways (recent games, continue playing, what to play next from the backlog, wishlist deals) and what your
    friends are up to. *@
 @{
@@ -17,8 +17,7 @@
     var playingCount = playing.Count + (hero is { Status: GameStatus.Playing } ? 1 : 0);
 }
 
-<div class="lib-shell">
-    <partial name="_LibrarySidebar" model="new LibrarySidebarView(entries, null, Model.Library.Collections, true)" />
+<div class="lib-shell no-side">
 
     <section class="lib-main home3">
         @if (entries.Count == 0)
