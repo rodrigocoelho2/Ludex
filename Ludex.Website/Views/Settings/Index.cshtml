@@ -50,7 +50,7 @@
     @if (Model.DiscordEnabled)
     {
         <section class="panel rise d1 discord-card" id="discord">
-            <span class="empty-ico" aria-hidden="true">@Icons.Get("chat")</span>
+            <span class="empty-ico" aria-hidden="true"><span class="discord-mark" aria-hidden="true"></span></span>
             <div>
                 <h2>Discord</h2>
                 @if (Model.DiscordLinked)
@@ -88,7 +88,7 @@
             {
                 <form method="post" action="/settings/discord">
                     @Html.AntiForgeryToken()
-                    <button class="btn discord-btn" type="submit">@Icons.Get("chat")Link Discord</button>
+                    <button class="btn discord-btn" type="submit"><span class="discord-mark" aria-hidden="true"></span>Link Discord</button>
                 </form>
             }
         </section>

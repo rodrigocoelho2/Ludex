@@ -46,7 +46,7 @@
             @if (Model.DiscordEnabled)
             {
                 <div class="au-or" aria-hidden="true"><span>or</span></div>
-                <a class="btn wide discord-btn" href="/sign-in/discord?returnUrl=@Uri.EscapeDataString(Model.ReturnUrl)">@Icons.Get("chat")Sign in with Discord</a>
+                <a class="btn wide discord-btn" href="/sign-in/discord?returnUrl=@Uri.EscapeDataString(Model.ReturnUrl)"><span class="discord-mark" aria-hidden="true"></span>Sign in with Discord</a>
             }
 
             @if (Model.CanCreateAccount)

@@ -1226,6 +1226,9 @@ body.has-sel-bar .toast { bottom: 96px; }
 .au-or { display: flex; align-items: center; gap: 12px; color: var(--faint); font-size: 13px; }
 .au-or::before, .au-or::after { content: ""; flex: 1; height: 1px; background: var(--line-soft); }
 .discord-card .empty-ico { color: #8C96F8; }
+/* Discord's mark (Simple Icons, CC0; a trademark of Discord), drawn in the text colour. */
+.discord-mark { display: inline-block; flex: none; width: 20px; height: 20px; background: currentColor; -webkit-mask: url("/img/discord.svg") center / contain no-repeat; mask: url("/img/discord.svg") center / contain no-repeat; }
+.empty-ico .discord-mark { width: 24px; height: 24px; }
 .note { margin: 10px 0 0; font-size: 14px; color: var(--soft); }
 .note.ok { color: var(--ok); }
 .note.err { color: var(--danger); }
