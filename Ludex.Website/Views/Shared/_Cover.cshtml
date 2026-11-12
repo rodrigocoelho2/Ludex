@@ -3,8 +3,10 @@
     var game = Model.Game;
 }
 @* The tint and the name are always there underneath: they show while the image loads and stay when there's none.
-   The tiny cover is drawn blurred first and the sharp one fades in over it (app.js marks it loaded). *@
-<div class="cover@(Model.Large ? " large" : string.Empty)" style="--tint:@game.Tint;view-transition-name:@Model.Transition">
+   The tiny cover is drawn blurred first and the sharp one fades in over it (app.js marks it loaded). data-vt is the
+   cover's view-transition name: app.js gives it only to the covers that move (the one clicked, the ones on screen when
+   the library re-sorts), because naming every cover on the page makes each click snapshot hundreds of them. *@
+<div class="cover@(Model.Large ? " large" : string.Empty)" style="--tint:@game.Tint" data-vt="@(Model.Transition == "none" ? null : Model.Transition)">
     <span class="cover-title" aria-hidden="true">@game.Name</span>
     @if (game.CoverImageId is { Length: > 0 } image)
     {

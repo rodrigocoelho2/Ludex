@@ -262,8 +262,25 @@
             if (acts) acts.hidden = !col;
             afterApply();
         };
-        // Cards carry their cover's view-transition name, so a filter or a new order animates every card into place.
-        const animate = () => (document.startViewTransition && !reduceMotion) ? document.startViewTransition(apply) : apply();
+        // A filter or a new order animates the cards on screen into place: only those get a view-transition name (naming
+        // all of them makes the browser snapshot hundreds of covers, which is what made it stutter).
+        const nameOnScreen = on => cards.forEach(c => {
+            const cover = $('.cover[data-vt]', c);
+            if (!cover) return;
+            let name = '';
+            if (on && !c.classList.contains('is-hidden')) {
+                const r = c.getBoundingClientRect();
+                if (r.bottom > -80 && r.top < window.innerHeight + 80) name = cover.dataset.vt;
+            }
+            cover.style.viewTransitionName = name;
+        });
+        const transition = change => {
+            if (!document.startViewTransition || reduceMotion) { change(); return; }
+            nameOnScreen(true);
+            const t = document.startViewTransition(() => { change(); nameOnScreen(true); });
+            t.finished.finally(() => nameOnScreen(false));
+        };
+        const animate = () => transition(apply);
         let textTimer;
         text?.addEventListener('input', () => { clearTimeout(textTimer); textTimer = setTimeout(animate, 140); });
         [status, platform, copy, collection, friendsOnly].forEach(el => el?.addEventListener('change', animate));
@@ -301,8 +318,7 @@
         setView(store.get('ludex.view') === 'list' ? 'list' : 'grid');
         viewButtons.forEach(b => b.addEventListener('click', () => {
             store.set('ludex.view', b.dataset.view);
-            const go = () => setView(b.dataset.view);
-            if (document.startViewTransition && !reduceMotion) document.startViewTransition(go); else go();
+            transition(() => setView(b.dataset.view));
         }));
         // Sorted by critics, the badge on each cover shows the critics' score instead of yours, like Steam.
         const paintHead = () => {

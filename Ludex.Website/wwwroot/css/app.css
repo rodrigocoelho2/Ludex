@@ -14,7 +14,7 @@
     --bg-deep: #0A1118;
     --panel: rgba(20, 30, 43, .82);
     --panel-2: rgba(33, 47, 66, .9);
-    --glass: rgba(9, 15, 22, .5);
+    --glass: rgba(9, 15, 22, .72);
     --line: rgba(255, 255, 255, .12);
     --line-soft: rgba(255, 255, 255, .07);
     --r: 6px;
@@ -166,8 +166,9 @@ option, optgroup { background-color: #16202C; color: var(--text); }
 .cover-title { position: absolute; inset: auto 0 0 0; padding: 12px; font-family: var(--display); font-weight: 800; font-size: clamp(15px, 1.5vw, 21px); line-height: 1; text-transform: uppercase; color: rgba(255, 255, 255, .92); overflow-wrap: break-word; hyphens: auto; }
 .cover-lq, .cover-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .cover-lq { filter: blur(14px) saturate(1.1); transform: scale(1.12); }
-.cover-img { opacity: 0; filter: blur(12px); transform: scale(1.03); transition: opacity .55s var(--ease), filter .7s var(--ease), transform .7s var(--ease); }
-.cover-img.is-loaded { opacity: 1; filter: none; transform: none; }
+.cover-img { opacity: 0; transition: opacity .35s ease; }
+.cover-img.is-loaded { opacity: 1; }
+.cover:has(> .cover-img.is-loaded) > .cover-lq { visibility: hidden; }
 .cover.large .cover-title { font-size: clamp(20px, 2.4vw, 34px); padding: clamp(12px, 1.4vw, 18px); }
 
 .card { display: flex; flex-direction: column; gap: 8px; color: var(--text); text-decoration: none; min-width: 0; }
@@ -185,7 +186,7 @@ option, optgroup { background-color: #16202C; color: var(--text); }
 
 /* ---------- Shell ---------- */
 .app { min-height: 100vh; display: flex; flex-direction: column; overflow-x: clip; }
-.topbar { position: sticky; top: 0; z-index: 20; background: rgba(9, 14, 20, .86); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line-soft); view-transition-name: topbar; }
+.topbar { position: sticky; top: 0; z-index: 20; background: rgb(10, 15, 21); border-bottom: 1px solid var(--line-soft); view-transition-name: topbar; }
 /* The top bar spans the whole window on every page (the library, a game, Friends, Discover…), like Steam's. */
 .topbar-in { max-width: none; margin: 0 auto; padding: 0 var(--gutter) 0 24px; min-height: 64px; display: flex; align-items: center; gap: 12px 36px; }
 .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--text); font-family: var(--display); font-weight: 800; font-size: 26px; letter-spacing: .06em; }
@@ -262,7 +263,7 @@ option, optgroup { background-color: #16202C; color: var(--text); }
 .hero-art, .banner { position: absolute; inset: 0; overflow: hidden; }
 .art-lq, .art-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .art-lq { filter: blur(18px); transform: scale(1.1); }
-.art-img { opacity: 0; filter: blur(14px); transition: opacity .7s var(--ease), filter .9s var(--ease); }
+.art-img { opacity: 0; transition: opacity .5s ease; }
 .art-img.is-loaded { opacity: 1; filter: none; }
 .art-from-cover.is-loaded { filter: blur(26px) saturate(1.2); opacity: .7; transform: scale(1.2); }
 .hero-ghost, .banner-ghost { position: absolute; right: -20px; top: 10px; max-width: 120%; font-family: var(--display); font-weight: 800; font-size: clamp(120px, 16vw, 230px); line-height: .82; text-transform: uppercase; color: rgba(255, 255, 255, .06); text-align: right; }
@@ -469,7 +470,7 @@ form.stack .btn { align-self: flex-start; }
 .version { font-size: 14px; }
 
 /* ---------- Shared v2 pieces: glass panels, quiet rows, side cards, bars ---------- */
-.glass { background: var(--glass); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, .05); border-radius: 8px; }
+.glass { background: var(--glass); border: 1px solid rgba(255, 255, 255, .05); border-radius: 8px; }
 .row-soft { display: flex; align-items: center; gap: 10px; border-radius: var(--r-sm); color: var(--text); transition: background-color .18s ease; }
 a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 255, .05); color: var(--text); }
 .side-card { background: rgba(0, 0, 0, .25); border-radius: var(--r); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
@@ -516,7 +517,7 @@ a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 25
 .profile-playing .ic { width: 18px; height: 18px; }
 .profile-seen { margin-top: 6px; font-size: 14px; color: var(--muted); }
 .profile-seen.on { color: #8EDB97; }
-.level-card { flex: 0 1 260px; min-width: 230px; display: flex; flex-direction: column; gap: 14px; background: rgba(0, 0, 0, .32); border-radius: var(--r); padding: 16px; backdrop-filter: blur(6px); }
+.level-card { flex: 0 1 260px; min-width: 230px; display: flex; flex-direction: column; gap: 14px; background: rgba(0, 0, 0, .32); border-radius: var(--r); padding: 16px; }
 .level-row { display: flex; align-items: center; gap: 14px; }
 .level-ring { position: relative; flex: none; width: 74px; height: 74px; display: grid; place-items: center; }
 .level-ring svg { position: absolute; inset: 0; }
@@ -714,7 +715,7 @@ a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 25
 .g-hero-in .crumbs a:hover { color: #fff; }
 .g-hero-in h1 { font-size: clamp(34px, 4.2vw, 58px); line-height: 1.04; letter-spacing: -.015em; text-shadow: 0 2px 24px rgba(0, 0, 0, .55); overflow-wrap: anywhere; max-width: 1100px; }
 .g-hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; font-size: 15px; color: rgba(255, 255, 255, .82); }
-.game3 .your-game { position: relative; z-index: 2; margin-top: -32px; background: linear-gradient(90deg, rgba(36, 72, 98, .92), rgba(20, 34, 48, .92) 60%, rgba(18, 28, 40, .92)); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 14px 34px rgba(0, 0, 0, .4); }
+.game3 .your-game { position: relative; z-index: 2; margin-top: -32px; background: linear-gradient(90deg, rgba(36, 72, 98, .92), rgba(20, 34, 48, .92) 60%, rgba(18, 28, 40, .92)); box-shadow: 0 14px 34px rgba(0, 0, 0, .4); }
 .game3 .yg-title .eyebrow { font-size: 12px; }
 .g-cols { display: grid; gap: 26px; margin-top: 26px; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto 1fr; grid-template-areas: "media side" "text side"; }
 .g-cols.no-media { grid-template-rows: auto; grid-template-areas: "text side"; }
@@ -779,6 +780,7 @@ a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 25
 .lib-find { width: 200px; max-width: 100%; }
 .lib-find input { min-height: 34px; font-size: 14px; }
 .lib-count { margin: 12px 2px; font-size: 14px; }
+.lib-card { content-visibility: auto; contain-intrinsic-size: auto calc(var(--card-min, 176px) * 1.5 + 48px); }
 .lib-grid { --card-min: 176px; display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr)); gap: 26px 20px; }
 .lib-card { display: flex; flex-direction: column; gap: 10px; color: var(--text); min-width: 0; }
 .lib-card:hover { color: var(--text); }
@@ -933,7 +935,7 @@ a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 25
 .steam-status { width: auto; min-height: 38px; font-size: 14px; flex: none; }
 .steam-state { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
 .steam-state small { font-size: 12.5px; white-space: nowrap; }
-.steam-bar { position: sticky; bottom: 16px; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 12px 12px 18px; border-radius: var(--r); background: rgba(14, 22, 32, .92); backdrop-filter: blur(10px); border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); box-shadow: 0 16px 40px rgba(0, 0, 0, .45); font-size: 15px; color: var(--soft); }
+.steam-bar { position: sticky; bottom: 16px; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 12px 12px 18px; border-radius: var(--r); background: rgba(14, 22, 32, .92); border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); box-shadow: 0 16px 40px rgba(0, 0, 0, .45); font-size: 15px; color: var(--soft); }
 .steam-bar b { color: var(--text); font-family: var(--display); font-size: 22px; }
 .steam-unmatched { background: var(--panel); border-radius: var(--r-sm); padding: 12px 16px; font-size: 14px; }
 .steam-unmatched summary { cursor: pointer; color: var(--soft); }
@@ -942,7 +944,7 @@ a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 25
 
 /* ---------- Motion: things arrive, covers fly between pages, nothing moves for people who'd rather it didn't ---------- */
 @keyframes rise { from { opacity: 0; translate: 0 18px; } to { opacity: 1; translate: 0 0; } }
-@keyframes rise-blur { from { opacity: 0; translate: 0 18px; filter: blur(10px); } to { opacity: 1; translate: 0 0; filter: none; } }
+@keyframes rise-blur { from { opacity: 0; translate: 0 18px; } to { opacity: 1; translate: 0 0; } }
 @keyframes pop { from { opacity: 0; scale: .92; } to { opacity: 1; scale: 1; } }
 @keyframes drift { from { transform: scale(1.02) translateX(0); } to { transform: scale(1.1) translateX(-28px); } }
 @keyframes wall-up { from { transform: translateY(0); } to { transform: translateY(-50%); } }
@@ -968,12 +970,12 @@ a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 25
 .stagger > :nth-child(12) { animation-delay: .44s; }
 .stagger > :nth-child(n+13) { animation-delay: .48s; }
 .pop-in { animation: pop .3s var(--pop) both; }
-.drift.is-loaded, span.drift { animation: drift 18s ease-in-out infinite alternate; }
+.art-img.drift.is-loaded:not(.art-from-cover) { animation: drift 24s ease-in-out infinite alternate; will-change: transform; }
 
 /* Cross-page view transitions: the page fades, the top bar stays put, and a cover flies to the same game's cover. */
 @view-transition { navigation: auto; }
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .22s; }
-::view-transition-group(*) { animation-duration: .5s; animation-timing-function: var(--ease); }
+::view-transition-group(*) { animation-duration: .32s; animation-timing-function: var(--ease); }
 ::view-transition-group(topbar) { animation: none; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1092,7 +1094,7 @@ a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 25
 .lib-grid.is-list .lib-card.is-selected { background: color-mix(in srgb, var(--accent) 16%, transparent); }
 .lib-grid.is-list .lib-card.is-selected .lib-cover::after { display: none; }
 .lib-grid.is-list .lib-card.is-selected .cover { box-shadow: 0 0 0 2px var(--accent); }
-.sel-bar { position: fixed; left: 50%; bottom: 20px; z-index: 40; transform: translateX(-50%); width: min(980px, calc(100vw - 32px)); display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 10px 10px 10px 18px; border-radius: var(--r); background: rgba(14, 22, 32, .94); backdrop-filter: blur(12px); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); box-shadow: 0 18px 44px rgba(0, 0, 0, .55); animation: sel-up .3s var(--pop) both; }
+.sel-bar { position: fixed; left: 50%; bottom: 20px; z-index: 40; transform: translateX(-50%); width: min(980px, calc(100vw - 32px)); display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 10px 10px 10px 18px; border-radius: var(--r); background: rgb(16, 24, 34); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); box-shadow: 0 18px 44px rgba(0, 0, 0, .55); animation: sel-up .3s var(--pop) both; }
 .sel-bar[hidden], .sel-bar [hidden] { display: none; }
 .sel-bar.is-busy { opacity: .7; pointer-events: none; }
 .sel-count { font-size: 15px; white-space: nowrap; }
@@ -1130,7 +1132,7 @@ body.has-sel-bar .toast { bottom: 96px; }
     .nav, .top-search, .top-acts .btn, .me-name { display: none; }
     .topbar-in { min-height: 58px; padding-left: var(--gutter); }
     .page { padding: 20px 16px calc(96px + env(safe-area-inset-bottom)); }
-    .dock { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: rgba(10, 15, 21, .96); backdrop-filter: blur(12px); border-top: 1px solid var(--line-soft); padding-bottom: env(safe-area-inset-bottom); view-transition-name: dock; }
+    .dock { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: rgb(10, 15, 21); border-top: 1px solid var(--line-soft); padding-bottom: env(safe-area-inset-bottom); view-transition-name: dock; }
     .dock a { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 0 8px; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; position: relative; }
     .dock a::before { content: ""; position: absolute; top: 0; left: 30%; right: 30%; height: 3px; background: var(--accent); transform: scaleX(0); transition: transform .3s var(--ease); }
     .dock a[aria-current=page] { color: var(--text); }
