@@ -32,8 +32,9 @@ public sealed class AccountController(
     /// <summary>The sign-in form (the create-account form on the very first visit).</summary>
     /// <param name="returnUrl">Where to go after signing in.</param>
     /// <returns>The view or a redirect.</returns>
+    /// <param name="discord">What went wrong with Discord, for a note (not-linked, failed).</param>
     [HttpGet("/sign-in")]
-    public async Task<IActionResult> SignIn(string? returnUrl = null)
+    public async Task<IActionResult> SignIn(string? returnUrl = null, string? discord = null)
     {
         if (User.Identity?.IsAuthenticated == true)
         {
@@ -41,6 +42,15 @@ public sealed class AccountController(
         }
 
         var model = await PageModelAsync(returnUrl);
+        if (discord == "not-linked")
+        {
+            model.Errors = ["No account here is linked to that Discord account yet. Sign in with your password, then link Discord in Settings."];
+        }
+        else if (discord == "failed")
+        {
+            model.Errors = ["Signing in with Discord didn't finish. Try again, or use your password."];
+        }
+
         if (model.IsFirstAccount)
         {
             return RedirectToAction(nameof(CreateAccount), new { returnUrl = model.ReturnUrl });
@@ -91,6 +101,85 @@ public sealed class AccountController(
             model.Errors = [Unreachable];
             Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
             return View("SignIn", model);
+        }
+    }
+
+    /// <summary>Sends the browser to Discord to sign in (to the account that Discord account is linked to).</summary>
+    /// <param name="returnUrl">Where to go after signing in.</param>
+    /// <returns>A redirect to Discord.</returns>
+    [HttpGet("/sign-in/discord")]
+    public IActionResult DiscordSignIn(string? returnUrl = null)
+    {
+        if (!options.Value.DiscordEnabled)
+        {
+            return NotFound();
+        }
+
+        var properties = new AuthenticationProperties { RedirectUri = $"/sign-in/discord/done?returnUrl={Uri.EscapeDataString(SafeReturnUrl(returnUrl))}" };
+        properties.Items[DiscordAuthentication.ModeKey] = "signin";
+        return Challenge(properties, DiscordAuthentication.Scheme);
+    }
+
+    /// <summary>
+    /// Back from Discord: signs in to the account the Discord account is linked to, or (from Settings) links it to the
+    /// signed-in account. A Discord account that isn't linked never gets in, and never creates an account.
+    /// </summary>
+    /// <param name="returnUrl">Where to go after signing in.</param>
+    /// <returns>A redirect.</returns>
+    [HttpGet("/sign-in/discord/done")]
+    public async Task<IActionResult> DiscordDone(string? returnUrl = null)
+    {
+        if (!options.Value.DiscordEnabled)
+        {
+            return NotFound();
+        }
+
+        var discord = await DiscordAuthentication.TakeAsync(HttpContext);
+        if (discord is not { } account)
+        {
+            return Redirect($"{LudexAuthentication.SignInPath}?discord=failed");
+        }
+
+        if (account.Mode == "link")
+        {
+            var me = LudexAuthentication.UserId(User);
+            if (User.Identity?.IsAuthenticated != true || me.Length == 0)
+            {
+                return Redirect(LudexAuthentication.SignInPath);
+            }
+
+            try
+            {
+                var linked = await apiClient.UserDiscordLinkAsync(new UserDiscordLinkRequest { Id = me, DiscordId = account.Id, DiscordName = account.Name });
+                await LudexAuthentication.RefreshAsync(HttpContext, linked);
+                return Redirect("/settings?discord=linked#discord");
+            }
+            catch (LudexApiException exception) when (exception.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                return Redirect("/settings?discord=taken#discord");
+            }
+            catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
+            {
+                return Redirect("/settings?discord=failed#discord");
+            }
+        }
+
+        try
+        {
+            var user = await apiClient.UserDiscordSignInAsync(new UserDiscordSignInRequest { DiscordId = account.Id });
+            await LudexAuthentication.SignInAsync(HttpContext, user, true, options.Value.RememberDays);
+            return LocalRedirect(SafeReturnUrl(returnUrl));
+        }
+        catch (LudexApiException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            if (logger.IsEnabled(LogLevel.Warning))
+                logger.LogWarning("Discord sign-in with an unlinked Discord account from {Address}", Address);
+
+            return Redirect($"{LudexAuthentication.SignInPath}?discord=not-linked");
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
+        {
+            return Redirect($"{LudexAuthentication.SignInPath}?discord=failed");
         }
     }
 
@@ -205,7 +294,7 @@ public sealed class AccountController(
     private async Task<AccountPageModel> PageModelAsync(string? returnUrl)
     {
         var settings = options.Value;
-        var model = new AccountPageModel { ReturnUrl = SafeReturnUrl(returnUrl), RememberDays = settings.RememberDays };
+        var model = new AccountPageModel { ReturnUrl = SafeReturnUrl(returnUrl), RememberDays = settings.RememberDays, DiscordEnabled = settings.DiscordEnabled };
         try
         {
             var status = await apiClient.UserStatusAsync();

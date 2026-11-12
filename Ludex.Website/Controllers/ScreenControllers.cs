@@ -2,8 +2,11 @@ using Ludex.Library.Enums;
 using Ludex.Sdk;
 using Ludex.Sdk.Models;
 using Ludex.Website.Model;
+using Ludex.Website.Security;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace Ludex.Website.Controllers;
 
@@ -314,22 +317,64 @@ public sealed class FriendsController(LudexClient apiClient) : WebsiteBaseContro
 /// Settings: the account, the password, and (admins) the other accounts.
 /// </summary>
 /// <param name="apiClient">The API client.</param>
-public sealed class SettingsController(LudexClient apiClient) : WebsiteBaseController(apiClient)
+public sealed class SettingsController(LudexClient apiClient, IOptions<WebsiteOptions> options) : WebsiteBaseController(apiClient)
 {
     /// <summary>The settings page.</summary>
+    /// <param name="discord">What just happened with Discord (linked, unlinked, taken, failed), for a note.</param>
     /// <returns>The view.</returns>
     [HttpGet("/settings")]
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string? discord = null)
     {
-        var page = Shell(new SettingsPageModel { UserId = UserId }, AppSection.Settings);
+        var page = Shell(new SettingsPageModel { UserId = UserId, DiscordEnabled = options.Value.DiscordEnabled, DiscordNote = discord }, AppSection.Settings);
         return await ScreenAsync("Index", page, async p =>
         {
+            if (p.DiscordEnabled)
+            {
+                var me = await Api.UserGetAsync(UserId);
+                p.DiscordLinked = me.DiscordLinked;
+                p.DiscordName = me.DiscordName;
+            }
+
             p.Health = await Api.HealthGetAsync();
             if (p.IsAdmin)
             {
                 p.Users = await Api.UserListAsync();
             }
         });
+    }
+
+    /// <summary>Sends the browser to Discord to link a Discord account to this account.</summary>
+    /// <returns>A redirect to Discord.</returns>
+    [HttpPost("/settings/discord")]
+    [ValidateAntiForgeryToken]
+    public IActionResult DiscordLink()
+    {
+        if (!options.Value.DiscordEnabled)
+        {
+            return NotFound();
+        }
+
+        var properties = new AuthenticationProperties { RedirectUri = "/sign-in/discord/done" };
+        properties.Items[DiscordAuthentication.ModeKey] = "link";
+        return Challenge(properties, DiscordAuthentication.Scheme);
+    }
+
+    /// <summary>Unlinks the Discord account (the password still signs in).</summary>
+    /// <returns>Back to Settings with a note.</returns>
+    [HttpPost("/settings/discord/unlink")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DiscordUnlink()
+    {
+        try
+        {
+            await Api.UserDiscordLinkAsync(new UserDiscordLinkRequest { Id = UserId });
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
+        {
+            return Redirect("/settings?discord=failed#discord");
+        }
+
+        return Redirect("/settings?discord=unlinked#discord");
     }
 
     /// <summary>Changes the colour theme (the page reloads with it).</summary>

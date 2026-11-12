@@ -248,6 +248,18 @@ public sealed class SettingsPageModel : AppPageModel
 
     /// <summary>Gets or sets the signed-in account id.</summary>
     public string UserId { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets a value indicating whether Discord sign-in is set up on this Ludex.</summary>
+    public bool DiscordEnabled { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether this account has a Discord account linked.</summary>
+    public bool DiscordLinked { get; set; }
+
+    /// <summary>Gets or sets the linked Discord account's name.</summary>
+    public string? DiscordName { get; set; }
+
+    /// <summary>Gets or sets what just happened with Discord (linked, unlinked, taken, failed), for a note.</summary>
+    public string? DiscordNote { get; set; }
 }
 
 /// <summary>A profile.</summary>

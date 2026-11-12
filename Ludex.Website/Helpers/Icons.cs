@@ -23,6 +23,7 @@ public static class Icons
         ["left"] = "<path d=\"M15 5l-7 7 7 7\"/>",
         ["right"] = "<path d=\"M9 5l7 7-7 7\"/>",
         ["arrow"] = "<path d=\"M5 12h14M13 6l6 6-6 6\"/>",
+        ["chat"] = "<path d=\"M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5h-7l-4.5 3.5v-3.5H5A1.5 1.5 0 0 1 3.5 15V7A1.5 1.5 0 0 1 5 5.5z\"/><path d=\"M9 11h.01M12 11h.01M15 11h.01\"/>",
         ["filter"] = "<path d=\"M4 6.5h16M7 12h10M10 17.5h4\"/>",
         ["play"] = "<path d=\"M8 5.5v13l10.5-6.5z\" fill=\"currentColor\" stroke=\"none\"/>",
         ["star"] = "<path d=\"M12 3.8l2.5 5.2 5.7.8-4.1 4 1 5.6L12 16.7l-5.1 2.7 1-5.6-4.1-4 5.7-.8z\"/>",

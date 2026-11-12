@@ -23,6 +23,7 @@
   <a href="#deploying-on-the-nas">Deploying on the NAS</a> ·
   <a href="#the-game-catalog-igdb">IGDB</a> ·
   <a href="#steam-and-prices">Steam & prices</a> ·
+  <a href="#sign-in-with-discord">Discord</a> ·
   <a href="#development">Development</a>
 </p>
 
@@ -128,6 +129,7 @@
 - **No SQL Server of its own**: it uses the **shared SQL Server** already on the NAS (`shared-sql`, network `sql-net`)
   with **its own login** (`ludex`) that can only open the Ludex database. The one-shot **database deploy** creates the
   database and that login as sa, and brings both up to date on every update.
+- **Sign in with Discord** once you link it in Settings (the password keeps working).
 - **Accounts for the house**: everyone has their own library; the first account (protected by a setup key) is the
   admin and can remove accounts. Sign-ups can be closed.
 - **Phone and computer**: the same pages, a dock on the phone and a top bar on the computer; adds to the Home Screen
@@ -240,6 +242,20 @@ Server, set `SQL_SERVER` in `.env` to its container name (on `sql-net`) and run
   on the Steam page.
 - **Wishlist prices**: a free [IsThereAnyDeal](https://isthereanydeal.com/apps/my/) key in `.env` as `ITAD_API_KEY`
   (and `LUDEX_PRICE_COUNTRY`, `PT` by default). Prices show on wishlisted games and on Home's deals.
+
+## Sign in with Discord
+
+Optional, and it never replaces the password:
+
+1. At [discord.com/developers/applications](https://discord.com/developers/applications) make an application (one is
+   enough for all your apps). In **OAuth2**, copy the **Client ID**, **Reset Secret** and copy the **Client Secret**,
+   and under **Redirects** add `https://<where you open Ludex>/signin-discord` (one per address).
+2. Put them in `.env` as `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET`, and update Ludex.
+3. Sign in with your password, open **Settings → Discord → Link Discord**. From then on **Sign in with Discord**
+   opens that same account, with everything in it.
+
+Ludex only asks Discord who you are (the `identify` scope). A Discord account that isn't linked to an account can't
+sign in and doesn't create one.
 
 ## The game catalog (IGDB)
 

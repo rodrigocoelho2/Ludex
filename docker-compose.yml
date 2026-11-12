@@ -86,6 +86,8 @@ services:
       Website__SetupKey: ${LUDEX_SETUP_KEY:?Set LUDEX_SETUP_KEY in .env}
       # false = only the first account can be created from the sign-in page.
       Website__AllowRegistration: ${LUDEX_ALLOW_REGISTRATION:-true}
+      Website__DiscordClientId: ${DISCORD_CLIENT_ID:-}
+      Website__DiscordClientSecret: ${DISCORD_CLIENT_SECRET:-}
       Website__TimeZone: ${TIME_ZONE:-Europe/Lisbon}
       DOTNET_gcServer: "0"
       TZ: ${TIME_ZONE:-Europe/Lisbon}

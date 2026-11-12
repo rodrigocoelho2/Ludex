@@ -73,4 +73,13 @@ public enum TranslationKeys
 
     /// <summary>A colour theme that isn't one of the themes.</summary>
     AccentUnknown,
+
+    /// <summary>No account is linked to that Discord account.</summary>
+    DiscordNotLinked,
+
+    /// <summary>That Discord account is linked to another account.</summary>
+    DiscordTaken,
+
+    /// <summary>A Discord id that isn't one.</summary>
+    DiscordInvalid,
 }

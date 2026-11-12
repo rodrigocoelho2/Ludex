@@ -37,4 +37,10 @@ public sealed class UserAccount
 
     /// <summary>Gets or sets the colour theme (null: the default; dbo.Profile).</summary>
     public string? Accent { get; set; }
+
+    /// <summary>Gets or sets the linked Discord account's id (null: none).</summary>
+    public string? DiscordID { get; set; }
+
+    /// <summary>Gets or sets the linked Discord account's name when it was linked.</summary>
+    public string? DiscordName { get; set; }
 }

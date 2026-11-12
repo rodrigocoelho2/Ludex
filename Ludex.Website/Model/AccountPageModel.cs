@@ -37,6 +37,9 @@ public sealed class AccountPageModel
     /// <summary>Gets or sets a message shown when the WebApi cannot be reached.</summary>
     public string? Unavailable { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether "Sign in with Discord" is shown.</summary>
+    public bool DiscordEnabled { get; set; }
+
     /// <summary>Gets or sets the covers of the wall (games people added; empty on a new install).</summary>
     public List<GameSummaryDTO> Wall { get; set; } = [];
 }

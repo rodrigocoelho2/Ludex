@@ -47,6 +47,53 @@
         <a class="btn" href="/steam">@Icons.Get("arrow")Import from Steam</a>
     </section>
 
+    @if (Model.DiscordEnabled)
+    {
+        <section class="panel rise d1 discord-card" id="discord">
+            <span class="empty-ico" aria-hidden="true">@Icons.Get("chat")</span>
+            <div>
+                <h2>Discord</h2>
+                @if (Model.DiscordLinked)
+                {
+                    <p class="muted">Linked to <b>@(Model.DiscordName ?? "your Discord account")</b>. "Sign in with Discord" opens this account; your password still works too.</p>
+                }
+                else
+                {
+                    <p class="muted">Link your Discord account to sign in with it instead of your password. Nothing in your library changes.</p>
+                }
+                @switch (Model.DiscordNote)
+                {
+                    case "linked":
+                        <p class="note ok">Discord is linked. Next time, use "Sign in with Discord".</p>
+                        break;
+                    case "unlinked":
+                        <p class="note">Discord is unlinked. Sign in with your password.</p>
+                        break;
+                    case "taken":
+                        <p class="note err">That Discord account is already linked to another account here.</p>
+                        break;
+                    case "failed":
+                        <p class="note err">Discord didn't finish. Try again.</p>
+                        break;
+                }
+            </div>
+            @if (Model.DiscordLinked)
+            {
+                <form method="post" action="/settings/discord/unlink">
+                    @Html.AntiForgeryToken()
+                    <button class="btn ghost" type="submit">Unlink</button>
+                </form>
+            }
+            else
+            {
+                <form method="post" action="/settings/discord">
+                    @Html.AntiForgeryToken()
+                    <button class="btn discord-btn" type="submit">@Icons.Get("chat")Link Discord</button>
+                </form>
+            }
+        </section>
+    }
+
     <section class="panel rise d1">
         <h2>Password</h2>
         <form class="stack" method="post" action="/settings/password" autocomplete="off">

@@ -903,8 +903,8 @@ a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 25
 .steam-sync > div { flex: 1 1 320px; display: flex; flex-direction: column; gap: 4px; }
 
 /* ---------- Steam import ---------- */
-.steam-card { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 16px 20px; }
-.steam-card > div { flex: 1 1 260px; display: flex; flex-direction: column; gap: 4px; }
+.steam-card, .discord-card { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 16px 20px; }
+.steam-card > div, .discord-card > div { flex: 1 1 260px; display: flex; flex-direction: column; gap: 4px; }
 .steam-page { max-width: 980px; display: flex; flex-direction: column; gap: 18px; padding-bottom: 40px; }
 .steam-form .hint b { color: var(--soft); }
 .steam-wait { display: flex; align-items: center; gap: 8px; font-size: 14.5px; }
@@ -1219,6 +1219,16 @@ body.has-sel-bar .toast { bottom: 96px; }
 
 .showcase-head, .showcase-head h2 { text-transform: none; letter-spacing: .01em; font-family: var(--display); font-weight: 700; font-size: 19px; color: var(--text); }
 .yg-status { flex-wrap: wrap; }
+
+/* Discord: its own blurple for the button, the rest like the Steam card */
+.btn.discord-btn { background: #5865F2; color: #fff; }
+.btn.discord-btn:hover { background: #4752C4; color: #fff; }
+.au-or { display: flex; align-items: center; gap: 12px; color: var(--faint); font-size: 13px; }
+.au-or::before, .au-or::after { content: ""; flex: 1; height: 1px; background: var(--line-soft); }
+.discord-card .empty-ico { color: #8C96F8; }
+.note { margin: 10px 0 0; font-size: 14px; color: var(--soft); }
+.note.ok { color: var(--ok); }
+.note.err { color: var(--danger); }
 
 /* iPhone: keep the bar below the clock and the battery (the app runs edge to edge) */
 .topbar { padding-top: env(safe-area-inset-top); }

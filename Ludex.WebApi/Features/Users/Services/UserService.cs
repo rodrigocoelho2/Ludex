@@ -100,6 +100,46 @@ internal sealed partial class UserService(
     }
 
     /// <inheritdoc />
+    public async Task<ServiceApiResponse<UserDTO>> DiscordSignInAsync(UserDiscordSignInRequest item)
+    {
+        var discordId = (item.DiscordId ?? string.Empty).Trim();
+        var user = UserRules.IsDiscordId(discordId) ? await _userRepository.GetByDiscordAsync(discordId) : null;
+        if (user is null)
+        {
+            return ServiceApiResponse<UserDTO>.NotFound(await _globalizationHelper.TranslateAsync(nameof(TranslationKeys.DiscordNotLinked)));
+        }
+
+        await _userRepository.TouchLoginAsync(user.UserUniqueID);
+        return ServiceApiResponse<UserDTO>.Success(ToDTO((await _userRepository.GetAsync(user.UserUniqueID)) ?? user));
+    }
+
+    /// <inheritdoc />
+    public async Task<ServiceApiResponse<UserDTO>> LinkDiscordAsync(UserDiscordLinkRequest item)
+    {
+        var user = Guid.TryParse(item.Id, out var id) ? await _userRepository.GetAsync(id) : null;
+        if (user is null)
+        {
+            return ServiceApiResponse<UserDTO>.NotFound(await _globalizationHelper.TranslateAsync(nameof(TranslationKeys.NoRecordsFound), item.Id ?? string.Empty));
+        }
+
+        var discordId = string.IsNullOrWhiteSpace(item.DiscordId) ? null : item.DiscordId.Trim();
+        if (discordId is not null && !UserRules.IsDiscordId(discordId))
+        {
+            var error = await _globalizationHelper.ValidationErrorAsync("DiscordId", nameof(TranslationKeys.DiscordInvalid));
+            return ServiceApiResponse<UserDTO>.ValidationProblems(error.Message).AddError("DiscordId", error.Message);
+        }
+
+        var name = UserRules.DiscordName(item.DiscordName);
+        if (!await _userRepository.SetDiscordAsync(user.UserUniqueID, discordId, discordId is null ? null : name))
+        {
+            var message = await _globalizationHelper.TranslateAsync(nameof(TranslationKeys.DiscordTaken));
+            return ServiceApiResponse<UserDTO>.ValidationProblems(message).AddError("DiscordId", message);
+        }
+
+        return ServiceApiResponse<UserDTO>.Success(ToDTO((await _userRepository.GetAsync(user.UserUniqueID))!));
+    }
+
+    /// <inheritdoc />
     public async Task<ServiceApiResponse<UserDTO>> ChangePasswordAsync(UserPasswordRequest item)
     {
         var user = Guid.TryParse(item.Id, out var id) ? await _userRepository.GetAsync(id) : null;
@@ -159,6 +199,8 @@ internal sealed partial class UserService(
         SecurityStamp = user.SecurityStamp,
         AvatarVersion = user.AvatarVersion,
         Accent = Accents.Normalize(user.Accent),
+        DiscordLinked = !string.IsNullOrEmpty(user.DiscordID),
+        DiscordName = string.IsNullOrEmpty(user.DiscordID) ? null : user.DiscordName,
     };
 
     private static string NewStamp() => Convert.ToHexString(RandomNumberGenerator.GetBytes(16));

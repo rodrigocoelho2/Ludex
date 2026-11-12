@@ -31,6 +31,16 @@ internal interface IUserService
     /// <returns>The account, or a validation problem (never says which of the two was wrong).</returns>
     Task<ServiceApiResponse<UserDTO>> SignInAsync(UserSignInRequest item);
 
+    /// <summary>Finds the account a (checked) Discord account is linked to, and records the sign-in.</summary>
+    /// <param name="item">The Discord account's id.</param>
+    /// <returns>The account, or not found.</returns>
+    Task<ServiceApiResponse<UserDTO>> DiscordSignInAsync(UserDiscordSignInRequest item);
+
+    /// <summary>Links a Discord account to an account, or unlinks it.</summary>
+    /// <param name="item">The account and the Discord account (none: unlink).</param>
+    /// <returns>The account.</returns>
+    Task<ServiceApiResponse<UserDTO>> LinkDiscordAsync(UserDiscordLinkRequest item);
+
     /// <summary>Changes a password (and the security stamp, which ends the other sessions).</summary>
     /// <param name="item">The account, current and new password.</param>
     /// <returns>The account, or validation problems.</returns>

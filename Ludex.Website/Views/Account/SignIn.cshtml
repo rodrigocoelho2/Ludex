@@ -43,6 +43,12 @@
 
             <button class="btn wide" type="submit">Sign in</button>
 
+            @if (Model.DiscordEnabled)
+            {
+                <div class="au-or" aria-hidden="true"><span>or</span></div>
+                <a class="btn wide discord-btn" href="/sign-in/discord?returnUrl=@Uri.EscapeDataString(Model.ReturnUrl)">@Icons.Get("chat")Sign in with Discord</a>
+            }
+
             @if (Model.CanCreateAccount)
             {
                 <p class="au-fine">No account yet? <a href="/create-account">Create one</a></p>

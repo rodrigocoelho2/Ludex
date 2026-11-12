@@ -17,6 +17,8 @@ BEGIN
            u.[SecurityStamp],
            u.[CreatedAt],
            u.[LastLoginAt],
+           u.[DiscordID],
+           u.[DiscordName],
            p.[AvatarVersion],
            p.[LastSeenAt],
            p.[Accent]

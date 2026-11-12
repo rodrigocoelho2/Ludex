@@ -60,6 +60,9 @@ internal sealed class GlobalizationHelper : IGlobalizationHelper
         [nameof(TranslationKeys.CollectionNameTaken)] = "You already have a collection called '{0}'.",
         [nameof(TranslationKeys.PriceTargetInvalid)] = "must be a price between 0 and 1,000.",
         [nameof(TranslationKeys.AccentUnknown)] = "isn't one of the colour themes.",
+        [nameof(TranslationKeys.DiscordNotLinked)] = "No account here is linked to that Discord account. Sign in with your password and link it in Settings.",
+        [nameof(TranslationKeys.DiscordTaken)] = "That Discord account is already linked to another account.",
+        [nameof(TranslationKeys.DiscordInvalid)] = "isn't a Discord account.",
 
         ["UserName"] = "User name",
         ["Password"] = "Password",
