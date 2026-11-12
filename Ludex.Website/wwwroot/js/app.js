@@ -9,6 +9,21 @@
     const $ = (selector, root) => (root || document).querySelector(selector);
     const $$ = (selector, root) => Array.from((root || document).querySelectorAll(selector));
 
+    /* ---------- A link to the page you're on does nothing (no reload, no spam): it only scrolls back to the top ---------- */
+    document.addEventListener('click', e => {
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        const a = e.target.closest && e.target.closest('a[href]');
+        if (!a || a.target === '_blank' || a.hasAttribute('download')) return;
+        let to;
+        try { to = new URL(a.href, location.href); } catch { return; }
+        if (to.origin !== location.origin || to.hash) return;
+        const here = location.pathname.replace(/\/+$/, '') || '/';
+        const there = to.pathname.replace(/\/+$/, '') || '/';
+        if (here !== there || to.search !== location.search) return;
+        e.preventDefault();
+        if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+    });
+
     /* ---------- Blur-up: the sharp image fades in over the blurred one once it has loaded ---------- */
     const SHARP = 'img.cover-img, img.art-img';
     const loaded = img => img.classList.add('is-loaded');
@@ -232,6 +247,36 @@
         };
         const saved = store.get('ludex.sort');
         if (sort && saved && keys[saved]) sort.value = saved;
+
+        // Status tabs drive the (hidden) status select.
+        const tabs = $$('[data-status-tab]');
+        const paintTabs = () => tabs.forEach(t => t.setAttribute('aria-selected', t.dataset.statusTab === (status?.value || '') ? 'true' : 'false'));
+        tabs.forEach(t => t.addEventListener('click', () => {
+            if (!status || status.value === t.dataset.statusTab) return;
+            status.value = t.dataset.statusTab;
+            paintTabs();
+            status.dispatchEvent(new Event('change'));
+        }));
+        paintTabs();
+
+        // The other filters sit under a Filters button that counts the ones in use.
+        const filtersBox = $('[data-filters]');
+        const filtersBtn = $('[data-filters-toggle]');
+        const filtersN = $('[data-filters-count]');
+        const activeFilters = () => [platform?.value, copy?.value, collection?.value, friendsOnly?.checked ? 'on' : ''].filter(Boolean).length;
+        const paintFilters = () => {
+            const n = activeFilters();
+            if (filtersN) { filtersN.hidden = n === 0; filtersN.textContent = String(n); }
+        };
+        const openFilters = open => {
+            if (!filtersBox) return;
+            filtersBox.hidden = !open;
+            filtersBtn?.setAttribute('aria-expanded', open ? 'true' : 'false');
+        };
+        filtersBtn?.addEventListener('click', () => openFilters(!!filtersBox?.hidden));
+        [platform, copy, collection, friendsOnly].forEach(el => el?.addEventListener('change', paintFilters));
+        paintFilters();
+        if (activeFilters() > 0) openFilters(true);
         const apply = () => {
             const q = (text?.value || '').trim().toLowerCase();
             const st = status?.value || '';
@@ -324,6 +369,9 @@
         const paintHead = () => {
             if (head) $$('[data-sort-col]', head).forEach(b => b.classList.toggle('on', b.dataset.sortCol === sort?.value));
             library.classList.toggle('show-critic', sort?.value === 'critic');
+            // Covers stay clean: a badge shows only for what you sort by (your rating, critics, achievements).
+            library.classList.toggle('show-rating', sort?.value === 'rating');
+            library.classList.toggle('show-ach', sort?.value === 'achievements');
         };
         head?.addEventListener('click', e => {
             const b = e.target.closest('[data-sort-col]');
@@ -565,15 +613,40 @@
             });
         });
 
+        // Groups start closed (Playing open); the ones you open or close stay that way.
+        const groupKey = g => g.dataset.libGroup ? `s:${g.dataset.libGroup}` : (g.dataset.dropCollection ? `c:${g.dataset.dropCollection}` : null);
+        let filtering = false;
+        try {
+            const keep = JSON.parse(store.get('ludex.side.open') || 'null');
+            if (Array.isArray(keep)) {
+                $$('.lib-group', side).forEach(g => {
+                    const key = groupKey(g);
+                    if (key && !$('[aria-current=page]', g)) g.open = keep.includes(key);
+                });
+            }
+        } catch { /* nothing saved */ }
+        side.addEventListener('toggle', () => {
+            if (filtering) return;
+            store.set('ludex.side.open', JSON.stringify($$('.lib-group', side).filter(g => g.open).map(groupKey).filter(Boolean)));
+        }, true);
+
         const find = $('[data-side-filter]', side);
+        let openBefore = null;
         find?.addEventListener('input', () => {
             const q = find.value.trim().toLowerCase();
+            filtering = true;
+            if (q && !openBefore) openBefore = $$('.lib-group', side).map(g => g.open);
             $$('[data-side-name]', side).forEach(li => { li.hidden = !!q && !li.dataset.sideName.includes(q); });
             $$('.lib-group', side).forEach(g => {
                 const any = $$('[data-side-name]', g).some(li => !li.hidden);
-                g.hidden = !any;
+                g.hidden = !!q && !any;
                 if (q) g.open = true;
             });
+            if (!q && openBefore) {
+                $$('.lib-group', side).forEach((g, i) => { g.open = openBefore[i]; });
+                openBefore = null;
+            }
+            setTimeout(() => { filtering = false; }, 60);
         });
     }
 

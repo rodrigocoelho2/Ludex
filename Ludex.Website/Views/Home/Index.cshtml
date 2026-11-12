@@ -1,7 +1,6 @@
 @model HomePageModel
-@* Home, like Steam's library home: the game you're on across the top, then shelves you
-   scroll sideways (recent games, continue playing, what to play next from the backlog, wishlist deals) and what your
-   friends are up to. *@
+@* Home, calm: the game you're on across the whole width with one button, a line of numbers, then two shelves
+   (recent games, what to play next from the backlog), wishlist deals when there are any, and friends. *@
 @{
     Layout = "_App";
     ViewData["Title"] = "Home";
@@ -11,17 +10,14 @@
     var stats = home.Stats;
     var entries = Model.Library.Entries;
     var recent = Model.RecentGames;
-    var playing = Model.ContinuePlaying;
     var next = Model.PlayNext;
     var deals = Model.Deals;
-    var playingCount = playing.Count + (hero is { Status: GameStatus.Playing } ? 1 : 0);
 }
 
-<div class="lib-shell no-side">
-
-    <section class="lib-main home3">
-        @if (entries.Count == 0)
-        {
+<div class="home4">
+    @if (entries.Count == 0)
+    {
+        <div class="home-body">
             <section class="welcome rise">
                 <div class="welcome-tiles" aria-hidden="true">
                     <span style="--tint:#4A3A1E"></span><span style="--tint:#24405C"></span><span style="--tint:#5A1E2E"></span><span style="--tint:#2F4A22"></span>
@@ -37,111 +33,84 @@
                     </div>
                 </div>
             </section>
-        }
-        else
+        </div>
+    }
+    else
+    {
+        @if (hero is not null)
         {
-            <section class="home-top">
-                @if (hero is not null)
+            var heroGame = hero.Game;
+            var heroAchievements = Fmt.AchievementPercent(hero.AchievementsUnlocked, hero.AchievementsTotal);
+            var heroPlatform = hero.Platform ?? heroGame.Platforms.FirstOrDefault();
+            var heroMeta = new[] { heroGame.Developer, heroGame.Year?.ToString(), heroPlatform }.Where(static s => !string.IsNullOrEmpty(s));
+            var heroHours = hero.Hours ?? 0;
+            var heroHoursText = heroHours > 0 ? Fmt.Hours(heroHours) : "No hours yet";
+            var heroPlayed = heroHours > 0 ? " played" : string.Empty;
+            <section class="hh" style="--tint:@heroGame.Tint" aria-label="@(hero.Status == GameStatus.Playing ? "Continue playing" : "Last in your library")">
+                <div class="hh-art" aria-hidden="true">
+                    @if (home.HeroImageId is { } art)
+                    {
+                        <img class="art-lq" src="@Igdb.Url(art, Igdb.ScreenshotMed)" alt="" decoding="async" />
+                        <img class="art-img drift" src="@Igdb.Url(art, Igdb.Full)" alt="" decoding="async" fetchpriority="high" />
+                    }
+                    else if (heroGame.CoverImageId is { } cover)
+                    {
+                        <img class="art-img art-from-cover" src="@Igdb.Url(cover, Igdb.CoverBig)" alt="" decoding="async" />
+                    }
+                </div>
+                @if (home.HeroImageId is not null)
                 {
-                    var heroGame = hero.Game;
-                    var heroAchievements = Fmt.AchievementPercent(hero.AchievementsUnlocked, hero.AchievementsTotal);
-                    <article class="hero home-hero rise" style="--tint:@heroGame.Tint">
-                        <div class="hero-art" aria-hidden="true">
-                            @if (home.HeroImageId is { } art)
-                            {
-                                <img class="art-lq" src="@Igdb.Url(art, Igdb.ScreenshotMed)" alt="" decoding="async" />
-                                <img class="art-img drift" src="@Igdb.Url(art, Igdb.Full)" alt="" decoding="async" fetchpriority="high" />
-                            }
-                            else if (heroGame.CoverImageId is { } cover)
-                            {
-                                <img class="art-img art-from-cover drift" src="@Igdb.Url(cover, Igdb.CoverBig)" alt="" decoding="async" />
-                            }
-                            else
-                            {
-                                <span class="hero-ghost drift">@heroGame.Name</span>
-                            }
-                            @if (home.HeroImageId is not null || heroGame.CoverImageId is not null)
-                            {
-                                <span class="credit">Game art · IGDB</span>
-                            }
-                        </div>
-                        <div class="hero-body">
-                            <a class="hero-cover" href="/games/@heroGame.Id" tabindex="-1" aria-hidden="true">
-                                <partial name="_Cover" model="new CoverView(heroGame, Model.Transition(heroGame.Id))" />
-                            </a>
-                            <div class="hero-text">
-                                <div class="hero-tag">
-                                    <partial name="_StatusChip" model="hero.Status" />
-                                    <span>@(hero.Status == GameStatus.Playing ? "Pick up where you left off" : "Last in your library")</span>
-                                </div>
-                                <h1>@heroGame.Name</h1>
-                                <p class="meta">
-                                    @if (heroGame.Developer is { } dev) { <span>@dev</span> }
-                                    @if (heroGame.Year is { } year) { <span>@year</span> }
-                                    @if (heroGame.Platforms.Count > 0) { <span>@string.Join(" · ", heroGame.Platforms.Take(4))</span> }
-                                </p>
-                                <div class="hero-foot">
-                                    <div class="hero-facts">
-                                        <div class="fact"><span class="label">Hours</span><b class="num">@(hero.Hours is { } h ? Fmt.Hours(h).Replace(" h", string.Empty) : "—")</b></div>
-                                        @if (hero.RecentHours is { } rh)
-                                        {
-                                            <div class="fact"><span class="label">Last 2 weeks</span><b class="num">@Fmt.Hours(rh).Replace(" h", string.Empty)</b></div>
-                                        }
-                                        @if (heroAchievements is { } percent)
-                                        {
-                                            <div class="fact hero-ach">
-                                                <span class="label">Achievements</span>
-                                                <b class="num">@hero.AchievementsUnlocked<small>/@hero.AchievementsTotal</small></b>
-                                                <span class="lib-ach"><i style="width:@percent%"></i></span>
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <div class="fact"><span class="label">Your rating</span><b class="num gold">@Fmt.Rating(hero.Rating)<small>/10</small></b></div>
-                                        }
-                                    </div>
-                                    <div class="actions">
-                                        <a class="btn" href="/games/@heroGame.Id">@Icons.Get("arrow")Continue</a>
-                                        @if (hero.Status == GameStatus.Playing)
-                                        {
-                                            <button class="btn ghost" type="button" data-status="Finished" data-game="@heroGame.Id">@Icons.Get("check")Finished it</button>
-                                        }
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </article>
+                    <span class="credit">Game art · IGDB</span>
                 }
-                <div class="home-tiles stagger" aria-label="Your numbers">
-                    <a class="tile accent" href="/library"><b class="num" data-count="@stats.GameCount">@stats.GameCount</b><span>Games in your library</span></a>
-                    <a class="tile" href="/library?status=finished"><b class="num" data-count="@stats.FinishedThisYear">@stats.FinishedThisYear</b><span>Finished in @stats.Year</span></a>
-                    <a class="tile" href="/library?status=backlog"><b class="num" data-count="@Model.BacklogCount">@Model.BacklogCount</b><span>In the backlog</span></a>
-                    <div class="tile"><b class="num" data-count="@Math.Round(stats.TotalHours)">@Fmt.Count(stats.TotalHours)</b><span>Hours played</span></div>
+                <div class="hh-in">
+                    <a class="hh-cover" href="/games/@heroGame.Id" tabindex="-1" aria-hidden="true">
+                        <partial name="_Cover" model="new CoverView(heroGame, Model.Transition(heroGame.Id))" />
+                    </a>
+                    <div class="hh-text">
+                        <span class="hh-kicker">@(hero.Status == GameStatus.Playing ? "Continue playing" : "Last in your library")</span>
+                        <h1>@heroGame.Name</h1>
+                        <p class="hh-meta">@string.Join(" · ", heroMeta)</p>
+                        <div class="hh-acts">
+                            <a class="btn big" href="/games/@heroGame.Id">@Icons.Get("play")Continue</a>
+                            <span class="hh-progress">
+                                <span>
+                                    <b>@heroHoursText</b>@heroPlayed
+                                    @if (heroAchievements is not null)
+                                    {
+                                        <text> · <b>@hero.AchievementsUnlocked of @hero.AchievementsTotal</b> achievements</text>
+                                    }
+                                    else if (hero.Rating is { } rated)
+                                    {
+                                        <text> · rated <b>@rated/10</b></text>
+                                    }
+                                </span>
+                                @if (heroAchievements is { } percent)
+                                {
+                                    <span class="lib-ach"><i style="width:@percent%"></i></span>
+                                }
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </section>
+        }
+
+        <div class="home-body">
+            <p class="home-line rise">
+                <b>@Fmt.Count(stats.GameCount)</b> games ·
+                <b>@stats.FinishedThisYear</b> finished in @stats.Year ·
+                <b>@Model.BacklogCount</b> waiting in your backlog ·
+                <b>@Fmt.Count(stats.TotalHours)</b> hours played
+            </p>
 
             @if (recent.Count > 0)
             {
-                <section class="shelf rise" data-shelf>
+                <section class="shelf rise d1" data-shelf>
                     <partial name="_ShelfHead" model='new ShelfHead("Recent games", null, "/library")' />
                     <div class="shelf-row" data-shelf-row>
                         @foreach (var entry in recent)
                         {
-                            var sub = entry.RecentHours is { } rh ? $"{Fmt.Hours(rh)} in the last 2 weeks" : Fmt.Ago(entry.UpdatedAt);
-                            <partial name="_ShelfCard" model="new ShelfCard(entry, Model.Transition(entry.Game.Id), sub)" />
-                        }
-                    </div>
-                </section>
-            }
-
-            @if (playing.Count > 0)
-            {
-                <section class="shelf rise d1" data-shelf>
-                    <partial name="_ShelfHead" model='new ShelfHead("Continue playing", Fmt.Plural(playingCount, "game", "games"), "/library?status=playing")' />
-                    <div class="shelf-row" data-shelf-row>
-                        @foreach (var entry in playing)
-                        {
-                            var sub = entry.Hours is { } h && h > 0 ? $"{Fmt.Hours(h)} played" : "Just started";
+                            var sub = entry.RecentHours is { } rh ? $"{Fmt.Hours(rh)} in the last 2 weeks" : string.Join(" · ", new[] { entry.Platform, entry.Store }.Where(static s => !string.IsNullOrEmpty(s)));
                             <partial name="_ShelfCard" model="new ShelfCard(entry, Model.Transition(entry.Game.Id), sub)" />
                         }
                     </div>
@@ -151,14 +120,15 @@
             @if (next.Count > 0)
             {
                 <section class="shelf rise d1" data-shelf>
-                    <partial name="_ShelfHead" model='new ShelfHead("Play next", "Your backlog, best reviewed first", "/library?status=backlog")' />
+                    <partial name="_ShelfHead" model='new ShelfHead("Play next", "From your backlog, best reviewed first", "/library?status=backlog")' />
                     <div class="shelf-row" data-shelf-row>
                         @foreach (var entry in next)
                         {
                             var ttb = entry.Game.TimeToBeatMain;
-                            var sub = ttb is { } t ? $"{Fmt.Hours(t)} main story" : "Length unknown";
-                            var chip = entry.Game.CriticScore is { } score ? $"Critics {score}" : null;
-                            <partial name="_ShelfCard" model='new ShelfCard(entry, Model.Transition(entry.Game.Id), sub, chip, "critic")' />
+                            var sub = ttb is { } t ? $"{Fmt.Hours(t)} main story" : string.Empty;
+                            var score = entry.Game.CriticScore?.ToString();
+                            var scoreCss = (entry.Game.CriticScore ?? 0) >= 70 ? "good" : "mixed";
+                            <partial name="_ShelfCard" model="new ShelfCard(entry, Model.Transition(entry.Game.Id), sub, score, scoreCss)" />
                         }
                     </div>
                 </section>
@@ -172,42 +142,46 @@
                         @foreach (var entry in deals)
                         {
                             var price = entry.Price!;
-                            var chip = price.Cut is > 0 ? $"−{price.Cut}%" : "Under your alert";
+                            var chip = (price.Cut ?? 0) > 0 ? $"−{price.Cut}%" : "Alert";
                             var sub = Fmt.Money(price.Amount, price.Currency) + (price.Shop is { } shop ? $" · {shop}" : string.Empty);
                             <partial name="_ShelfCard" model='new ShelfCard(entry, Model.Transition(entry.Game.Id), sub, chip, "sale")' />
                         }
                     </div>
                 </section>
             }
-        }
 
-        <section class="split home-split">
-            <div class="split-main">
-                @if (home.Popular.Count > 0)
-                {
-                    <div class="section-head">
-                        <h2>Your friends love these</h2>
-                        <a href="/discover">Discover @Icons.Get("right")</a>
+            @if (home.FriendCount == 0)
+            {
+                <section class="home-invite rise d2" aria-labelledby="home-friends">
+                    <div>
+                        <h2 id="home-friends" class="h-calm">Play with friends</h2>
+                        <p>Add the people you play with to see what they're playing and which games you share.</p>
                     </div>
-                    <partial name="_Popular" model="home.Popular" />
-                }
-                else
-                {
-                    <div class="section-head">
-                        <h2>Find something new</h2>
-                        <a href="/discover">Discover @Icons.Get("right")</a>
+                    <a class="btn ghost" href="/friends">Add friends</a>
+                </section>
+            }
+            else
+            {
+                <section class="split home-split rise d2">
+                    <div class="split-main">
+                        <div class="section-head">
+                            <h2>Friends lately</h2>
+                            <a href="/friends">@Fmt.Plural(home.FriendCount, "friend", "friends") @Icons.Get("right")</a>
+                        </div>
+                        <partial name="_Feed" model="home.Feed" />
                     </div>
-                    <p class="muted small-empty">Games your friends rate well show up here once you have friends on Ludex.</p>
-                }
-            </div>
-
-            <aside class="split-side" id="friends">
-                <div class="section-head">
-                    <h2>Friends</h2>
-                    <a href="/friends">@(home.FriendCount == 0 ? "Add friends" : Fmt.Plural(home.FriendCount, "friend", "friends")) @Icons.Get("right")</a>
-                </div>
-                <partial name="_Feed" model="home.Feed" />
-            </aside>
-        </section>
-    </section>
+                    @if (home.Popular.Count > 0)
+                    {
+                        <div class="split-side">
+                            <div class="section-head">
+                                <h2>Your friends love these</h2>
+                                <a href="/discover">Discover @Icons.Get("right")</a>
+                            </div>
+                            <partial name="_Popular" model="home.Popular" />
+                        </div>
+                    }
+                </section>
+            }
+        </div>
+    }
 </div>

@@ -1,6 +1,7 @@
 @model LibrarySidebarView
 @* The library down the side, as on Steam: a filter, your collections (drop a game on one to put it there), then
-   every game by status. Stays put between the library and the game pages (app.js keeps its scroll position). *@
+   every game by status. Groups start closed except Playing (and the one with the game you're on); app.js remembers
+   the ones you open. Stays put between the library and the game pages (app.js keeps its scroll position). *@
 @{
     var groups = new[] { GameStatus.Playing, GameStatus.Backlog, GameStatus.Finished, GameStatus.Played, GameStatus.Wishlist, GameStatus.Dropped };
     var byId = Model.Entries.ToDictionary(static e => e.Game.Id);
@@ -30,8 +31,9 @@
         {
             var games = collection.GameIds.Select(id => byId.GetValueOrDefault(id)).OfType<LibraryEntryDTO>()
                 .OrderBy(static e => e.Game.Name, StringComparer.OrdinalIgnoreCase).ToList();
-            <details class="lib-group lib-col" open data-drop-collection="@collection.Id">
-                <summary><span>@collection.Name</span><small>(<span data-col-count>@games.Count</span>)</small><a class="lib-col-open" href="/library?collection=@collection.Id" aria-label="Show @collection.Name">@Icons.Get("right")</a></summary>
+            var colOpen = Model.Current is { } cur && games.Any(g => g.Game.Id == cur);
+            <details class="lib-group lib-col" open="@(colOpen ? "open" : null)" data-drop-collection="@collection.Id">
+                <summary><span>@collection.Name</span><small><span data-col-count>@games.Count</span></small><a class="lib-col-open" href="/library?collection=@collection.Id" aria-label="Show @collection.Name">@Icons.Get("right")</a></summary>
                 <ul>
                     @foreach (var entry in games)
                     {
@@ -49,8 +51,9 @@
                 continue;
             }
 
-            <details class="lib-group" open data-lib-group="@status">
-                <summary><span>@Fmt.Status(status)</span><small>(@games.Count)</small></summary>
+            var groupOpen = status == GameStatus.Playing || (Model.Current is { } here && games.Any(g => g.Game.Id == here));
+            <details class="lib-group" open="@(groupOpen ? "open" : null)" data-lib-group="@status">
+                <summary><span>@Fmt.Status(status)</span><small>@games.Count</small></summary>
                 <ul>
                     @foreach (var entry in games)
                     {

@@ -23,6 +23,8 @@ public static class Icons
         ["left"] = "<path d=\"M15 5l-7 7 7 7\"/>",
         ["right"] = "<path d=\"M9 5l7 7-7 7\"/>",
         ["arrow"] = "<path d=\"M5 12h14M13 6l6 6-6 6\"/>",
+        ["filter"] = "<path d=\"M4 6.5h16M7 12h10M10 17.5h4\"/>",
+        ["play"] = "<path d=\"M8 5.5v13l10.5-6.5z\" fill=\"currentColor\" stroke=\"none\"/>",
         ["star"] = "<path d=\"M12 3.8l2.5 5.2 5.7.8-4.1 4 1 5.6L12 16.7l-5.1 2.7 1-5.6-4.1-4 5.7-.8z\"/>",
         ["clock"] = "<circle cx=\"12\" cy=\"12\" r=\"8.5\"/><path d=\"M12 7.5V12l3 2\"/>",
         ["pad"] = "<path d=\"M7 8h10a4 4 0 0 1 4 4v2.5a2.5 2.5 0 0 1-4.5 1.5L15 14H9l-1.5 2A2.5 2.5 0 0 1 3 14.5V12a4 4 0 0 1 4-4z\"/><path d=\"M8 10.5v3M6.5 12h3M15.5 11h.01M17.5 13h.01\"/>",

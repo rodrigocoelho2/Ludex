@@ -51,27 +51,48 @@
         }
         else
         {
-            <div class="lib-bar rise" data-lib-bar>
-                <label class="lib-status">
-                    <span class="sr-only">Show</span>
-                    <select data-status-filter>
-                        @foreach (var (status, label, count) in statuses)
+            @* Status as tabs, sort, filters and view in one quiet row; the rest of the filters open under it. The
+               hidden status select stays the one source of truth app.js filters by. *@
+            <div class="lib-top rise" data-lib-bar>
+                <select data-status-filter hidden aria-hidden="true" tabindex="-1">
+                    @foreach (var (status, label, count) in statuses)
+                    {
+                        <option value="@(status?.ToString() ?? string.Empty)" selected="@(Model.Status == status ? "selected" : null)">@label</option>
+                    }
+                </select>
+                <div class="lib-tabs" role="tablist" aria-label="Status">
+                    @foreach (var (status, label, count) in statuses)
+                    {
+                        var on = Model.Status == status;
+                        if (status is not null && count == 0 && !on)
                         {
-                            <option value="@(status?.ToString() ?? string.Empty)" selected="@(Model.Status == status ? "selected" : null)">@label (@count)</option>
+                            continue;
                         }
-                    </select>
-                </label>
-                <label class="lib-sort">
-                    <span>Sort by</span>
-                    <select data-sort>
-                        @foreach (var (key, label) in sorts)
-                        {
-                            <option value="@key">@label</option>
-                        }
-                    </select>
-                </label>
+
+                        <button type="button" role="tab" class="lib-tab" data-status-tab="@(status?.ToString() ?? string.Empty)" aria-selected="@(on ? "true" : "false")">@(status is null ? "All" : label) <b>@count</b></button>
+                    }
+                </div>
+                <div class="lib-tools">
+                    <span class="in compact lib-find">@Icons.Get("search")<input type="search" placeholder="Filter" aria-label="Filter the library" autocomplete="off" data-text-filter /></span>
+                    <label class="lib-sort">
+                        <span>Sort</span>
+                        <select data-sort>
+                            @foreach (var (key, label) in sorts)
+                            {
+                                <option value="@key">@label</option>
+                            }
+                        </select>
+                    </label>
+                    <button type="button" class="btn soft small lib-filters-btn" data-filters-toggle aria-expanded="false" aria-controls="lib-filters">@Icons.Get("filter")Filters<b class="lib-filters-n" data-filters-count hidden></b></button>
+                    <span class="seg lib-view" role="group" aria-label="View">
+                        <button type="button" class="seg-btn" data-view="grid" aria-pressed="true" aria-label="Covers" title="Covers">@Icons.Get("grid")</button>
+                        <button type="button" class="seg-btn" data-view="list" aria-pressed="false" aria-label="List" title="List">@Icons.Get("list")</button>
+                    </span>
+                </div>
+            </div>
+            <div class="lib-filters" id="lib-filters" data-filters hidden>
                 <label class="lib-filter">
-                    <span class="sr-only">Platform</span>
+                    <span>Platform</span>
                     <select data-platform-filter>
                         <option value="">All platforms</option>
                         @foreach (var (family, platforms) in Model.Families)
@@ -84,12 +105,25 @@
                         }
                     </select>
                 </label>
+                @if (Model.Copies.Any())
+                {
+                    <label class="lib-filter">
+                        <span>Store or format</span>
+                        <select data-copy-filter>
+                            <option value="">Any</option>
+                            @foreach (var copy in Model.Copies)
+                            {
+                                <option value="@copy">@copy</option>
+                            }
+                        </select>
+                    </label>
+                }
                 @if (collections.Count > 0)
                 {
                     <label class="lib-filter">
-                        <span class="sr-only">Collection</span>
+                        <span>Collection</span>
                         <select data-collection-filter>
-                            <option value="">All collections</option>
+                            <option value="">Any</option>
                             @foreach (var c in collections)
                             {
                                 <option value="@c.Id" selected="@(Model.Collection == c.Id ? "selected" : null)">@c.Name (@c.GameIds.Count)</option>
@@ -101,38 +135,17 @@
                         <button type="button" class="link-btn danger" data-col-delete>Delete</button>
                     </span>
                 }
-                @if (Model.Copies.Any())
-                {
-                    <label class="lib-filter">
-                        <span class="sr-only">Copy</span>
-                        <select data-copy-filter>
-                            <option value="">All copies</option>
-                            @foreach (var copy in Model.Copies)
-                            {
-                                <option value="@copy">@copy</option>
-                            }
-                        </select>
-                    </label>
-                }
                 <label class="check lib-friends"><input type="checkbox" data-friends-filter /><span>Friends have it</span></label>
-                <span class="lib-bar-push"></span>
-                <button type="button" class="btn soft small" data-next-open>@Icons.Get("sparkle")What should I play?</button>
-                <span class="in compact lib-find">@Icons.Get("search")<input type="search" placeholder="Filter" aria-label="Filter the library" autocomplete="off" data-text-filter /></span>
+                <label class="lib-size" data-size-box>
+                    <span>Cover size</span>
+                    <input type="range" min="112" max="296" step="8" value="176" data-card-size />
+                </label>
             </div>
             <div class="lib-sub">
                 <p class="lib-count muted" data-shown-label>@Fmt.Plural(entries.Count, "game", "games")</p>
                 <span class="lib-bar-push"></span>
+                <button type="button" class="link-btn" data-next-open>@Icons.Get("sparkle")What should I play?</button>
                 <button type="button" class="link-btn lib-select-btn" data-select-mode aria-pressed="false">@Icons.Get("check")Select</button>
-                <label class="lib-size" data-size-box title="Card size">
-                    <span class="sr-only">Card size</span>
-                    <span class="lib-size-ico small" aria-hidden="true"></span>
-                    <input type="range" min="112" max="296" step="8" value="176" data-card-size />
-                    <span class="lib-size-ico" aria-hidden="true"></span>
-                </label>
-                <span class="seg lib-view" role="group" aria-label="View">
-                    <button type="button" class="seg-btn" data-view="grid" aria-pressed="true" aria-label="Covers" title="Covers">@Icons.Get("grid")</button>
-                    <button type="button" class="seg-btn" data-view="list" aria-pressed="false" aria-label="List" title="List">@Icons.Get("list")</button>
-                </span>
             </div>
 
             <div class="lib-head" data-lib-head hidden>
@@ -165,14 +178,6 @@
                        data-dev="@(game.Developer ?? string.Empty)" data-copy="@(copy ?? string.Empty)">
                         <span class="lib-cover">
                             <partial name="_Cover" model="new CoverView(game, Model.Transition(game.Id))" />
-                            @if (entry.Status != GameStatus.Finished)
-                            {
-                                <span class="lib-status-tag tag-@Fmt.StatusCss(entry.Status)">@Fmt.Status(entry.Status)</span>
-                            }
-                            @if (game.FriendNames.Count > 0)
-                            {
-                                <span class="lib-friends-dot" title="@Fmt.Owners(game.FriendNames)">@game.FriendNames.Count</span>
-                            }
                             @if (entry.Rating is { } rating)
                             {
                                 <span class="lib-score">@rating</span>
@@ -191,11 +196,8 @@
                             <span class="lib-ach" title="@entry.AchievementsUnlocked of @entry.AchievementsTotal achievements"><i style="width:@ap%"></i></span>
                         }
                         <span class="lib-meta">
-                            <span>@(entry.Hours is { } h && h > 0 ? Fmt.Hours(h) : Fmt.Status(entry.Status))</span>
-                            @if (copy is not null || entry.Platform is not null)
-                            {
-                                <span class="lib-copy">@(string.Join(" · ", new[] { entry.Platform, copy }.Where(static s => s is not null).Distinct()))</span>
-                            }
+                            <span class="lib-name">@game.Name</span>
+                            <span class="lib-line"><i class="dot-@Fmt.StatusCss(entry.Status)" aria-hidden="true"></i>@Fmt.Status(entry.Status)@(entry.Hours is { } h && h > 0 ? " · " + Fmt.Hours(h) : string.Empty)</span>
                         </span>
                         <span class="lib-row" aria-hidden="true">
                             <span class="c-name"><b>@game.Name</b><small>@(string.Join(" · ", new[] { entry.Platform, copy }.Where(static s => s is not null).Distinct()))</small></span>
