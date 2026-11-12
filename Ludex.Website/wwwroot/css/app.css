@@ -186,7 +186,8 @@ option, optgroup { background-color: #16202C; color: var(--text); }
 /* ---------- Shell ---------- */
 .app { min-height: 100vh; display: flex; flex-direction: column; overflow-x: clip; }
 .topbar { position: sticky; top: 0; z-index: 20; background: rgba(9, 14, 20, .86); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line-soft); view-transition-name: topbar; }
-.topbar-in { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); min-height: 64px; display: flex; align-items: center; gap: 12px 36px; }
+/* The top bar spans the whole window on every page (the library, a game, Friends, Discover…), like Steam's. */
+.topbar-in { max-width: none; margin: 0 auto; padding: 0 var(--gutter) 0 24px; min-height: 64px; display: flex; align-items: center; gap: 12px 36px; }
 .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--text); font-family: var(--display); font-weight: 800; font-size: 26px; letter-spacing: .06em; }
 .brand:hover { color: var(--text); }
 .brand.big { font-size: 34px; gap: 14px; }
@@ -693,7 +694,6 @@ a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 25
 
 /* ---------- Library shell (Steam style): the library down the side, cards or a game on the right ---------- */
 .page.wide { max-width: none; padding: 0; }
-.app:has(.page.wide) .topbar-in { max-width: none; padding-left: 24px; }
 .lib-shell { display: grid; grid-template-columns: 272px minmax(0, 1fr); min-height: calc(100vh - 64px); }
 .lib-shell.no-side { grid-template-columns: minmax(0, 1fr); }
 .lib-main { --pad: clamp(16px, 2.4vw, 32px); min-width: 0; padding: 24px var(--pad) 64px; }
@@ -1126,7 +1126,7 @@ body.has-sel-bar .toast { bottom: 96px; }
 /* ---------- Phone ---------- */
 @media (max-width: 860px) {
     .nav, .top-search, .top-acts .btn, .me-name { display: none; }
-    .topbar-in { min-height: 58px; }
+    .topbar-in { min-height: 58px; padding-left: var(--gutter); }
     .page { padding: 20px 16px calc(96px + env(safe-area-inset-bottom)); }
     .dock { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: rgba(10, 15, 21, .96); backdrop-filter: blur(12px); border-top: 1px solid var(--line-soft); padding-bottom: env(safe-area-inset-bottom); view-transition-name: dock; }
     .dock a { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 0 8px; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; position: relative; }
