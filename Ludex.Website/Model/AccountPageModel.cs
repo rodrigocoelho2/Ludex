@@ -40,6 +40,9 @@ public sealed class AccountPageModel
     /// <summary>Gets or sets a value indicating whether "Sign in with Discord" is shown.</summary>
     public bool DiscordEnabled { get; set; }
 
+    /// <summary>Gets or sets the Discord account's name, while creating an account with it.</summary>
+    public string? DiscordName { get; set; }
+
     /// <summary>Gets or sets the covers of the wall (games people added; empty on a new install).</summary>
     public List<GameSummaryDTO> Wall { get; set; } = [];
 }

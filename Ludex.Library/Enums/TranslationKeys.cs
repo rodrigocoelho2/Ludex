@@ -82,4 +82,7 @@ public enum TranslationKeys
 
     /// <summary>A Discord id that isn't one.</summary>
     DiscordInvalid,
+
+    /// <summary>Discord is the only way into the account, so it can't be unlinked before a password is set.</summary>
+    DiscordNeedsPassword,
 }

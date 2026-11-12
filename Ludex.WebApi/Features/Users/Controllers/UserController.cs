@@ -85,6 +85,20 @@ internal sealed class UserController(
     [SwaggerOperation(Summary = "UserDiscordSignIn", OperationId = "UserDiscordSignIn")]
     public async Task<ActionResult<UserDTO>> UserDiscordSignInAsync(UserDiscordSignInRequest item) => (await _userService.DiscordSignInAsync(item)).ToActionResult();
 
+    /// <summary>Creates an account that signs in with a Discord account (already checked by the Website), without a password.</summary>
+    /// <param name="item">The user name and the Discord account.</param>
+    /// <returns>The account.</returns>
+    [HttpPost("discord/create")]
+    [ProducesResponseType<UserDTO>((int)HttpStatusCode.OK)]
+    [SwaggerOperation(Summary = "UserDiscordCreate", OperationId = "UserDiscordCreate")]
+    public async Task<ActionResult<UserDTO>> UserDiscordCreateAsync(UserDiscordCreateRequest item)
+    {
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("UserDiscordCreate [UserName={UserName}]", item.UserName);
+
+        return (await _userService.DiscordCreateAsync(item)).ToActionResult();
+    }
+
     /// <summary>Links a Discord account to an account, or unlinks it.</summary>
     /// <param name="item">The account and the Discord account.</param>
     /// <returns>The account.</returns>

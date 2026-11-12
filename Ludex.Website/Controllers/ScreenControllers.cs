@@ -328,12 +328,10 @@ public sealed class SettingsController(LudexClient apiClient, IOptions<WebsiteOp
         var page = Shell(new SettingsPageModel { UserId = UserId, DiscordEnabled = options.Value.DiscordEnabled, DiscordNote = discord }, AppSection.Settings);
         return await ScreenAsync("Index", page, async p =>
         {
-            if (p.DiscordEnabled)
-            {
-                var me = await Api.UserGetAsync(UserId);
-                p.DiscordLinked = me.DiscordLinked;
-                p.DiscordName = me.DiscordName;
-            }
+            var me = await Api.UserGetAsync(UserId);
+            p.HasPassword = me.HasPassword;
+            p.DiscordLinked = me.DiscordLinked;
+            p.DiscordName = me.DiscordName;
 
             p.Health = await Api.HealthGetAsync();
             if (p.IsAdmin)
@@ -368,6 +366,10 @@ public sealed class SettingsController(LudexClient apiClient, IOptions<WebsiteOp
         try
         {
             await Api.UserDiscordLinkAsync(new UserDiscordLinkRequest { Id = UserId });
+        }
+        catch (LudexApiException exception) when (exception.StatusCode == System.Net.HttpStatusCode.BadRequest)
+        {
+            return Redirect("/settings?discord=needs-password#discord");
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
         {

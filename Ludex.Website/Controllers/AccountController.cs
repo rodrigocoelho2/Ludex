@@ -122,7 +122,8 @@ public sealed class AccountController(
 
     /// <summary>
     /// Back from Discord: signs in to the account the Discord account is linked to, or (from Settings) links it to the
-    /// signed-in account. A Discord account that isn't linked never gets in, and never creates an account.
+    /// signed-in account. A Discord account that isn't linked goes on to pick a user name for a new account when new
+    /// accounts are allowed; otherwise it doesn't get in.
     /// </summary>
     /// <param name="returnUrl">Where to go after signing in.</param>
     /// <returns>A redirect.</returns>
@@ -134,14 +135,15 @@ public sealed class AccountController(
             return NotFound();
         }
 
-        var discord = await DiscordAuthentication.TakeAsync(HttpContext);
-        if (discord is not { } account)
+        var account = await DiscordAuthentication.PeekAsync(HttpContext);
+        if (account is null)
         {
             return Redirect($"{LudexAuthentication.SignInPath}?discord=failed");
         }
 
         if (account.Mode == "link")
         {
+            await DiscordAuthentication.ForgetAsync(HttpContext);
             var me = LudexAuthentication.UserId(User);
             if (User.Identity?.IsAuthenticated != true || me.Length == 0)
             {
@@ -167,19 +169,104 @@ public sealed class AccountController(
         try
         {
             var user = await apiClient.UserDiscordSignInAsync(new UserDiscordSignInRequest { DiscordId = account.Id });
+            await DiscordAuthentication.ForgetAsync(HttpContext);
             await LudexAuthentication.SignInAsync(HttpContext, user, true, options.Value.RememberDays);
             return LocalRedirect(SafeReturnUrl(returnUrl));
         }
         catch (LudexApiException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
+            // Someone new: pick a user name for a new account (Discord's answer stays in its cookie for a few minutes).
+            var model = await PageModelAsync(returnUrl);
+            if (model.Unavailable is null && model.CanCreateAccount && !model.IsFirstAccount)
+            {
+                return Redirect($"/create-account/discord?returnUrl={Uri.EscapeDataString(SafeReturnUrl(returnUrl))}");
+            }
+
             if (logger.IsEnabled(LogLevel.Warning))
                 logger.LogWarning("Discord sign-in with an unlinked Discord account from {Address}", Address);
 
+            await DiscordAuthentication.ForgetAsync(HttpContext);
             return Redirect($"{LudexAuthentication.SignInPath}?discord=not-linked");
         }
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
         {
+            await DiscordAuthentication.ForgetAsync(HttpContext);
             return Redirect($"{LudexAuthentication.SignInPath}?discord=failed");
+        }
+    }
+
+    /// <summary>A new account with Discord: the user name to pick (Discord's handle is suggested).</summary>
+    /// <param name="returnUrl">Where to go after signing in.</param>
+    /// <returns>The view or a redirect.</returns>
+    [HttpGet("/create-account/discord")]
+    public async Task<IActionResult> DiscordCreate(string? returnUrl = null)
+    {
+        var account = options.Value.DiscordEnabled ? await DiscordAuthentication.PeekAsync(HttpContext) : null;
+        if (account is null || account.Mode == "link")
+        {
+            return Redirect($"{LudexAuthentication.SignInPath}?discord=failed");
+        }
+
+        var model = await PageModelAsync(returnUrl);
+        if (model.Unavailable is null && (!model.CanCreateAccount || model.IsFirstAccount))
+        {
+            await DiscordAuthentication.ForgetAsync(HttpContext);
+            return Redirect($"{LudexAuthentication.SignInPath}?discord=not-linked");
+        }
+
+        model.UserName = DiscordAuthentication.SuggestUserName(account.Handle, account.Name);
+        model.DiscordName = account.Name;
+        return View("DiscordCreate", model);
+    }
+
+    /// <summary>Creates the account with Discord (no password) and signs the browser in.</summary>
+    /// <param name="userName">The user name.</param>
+    /// <param name="returnUrl">Where to go after signing in.</param>
+    /// <returns>A redirect, or the form again with the errors.</returns>
+    [HttpPost("/create-account/discord")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DiscordCreateAsync([FromForm] string? userName, [FromForm] string? returnUrl)
+    {
+        var account = options.Value.DiscordEnabled ? await DiscordAuthentication.PeekAsync(HttpContext) : null;
+        if (account is null || account.Mode == "link")
+        {
+            return Redirect($"{LudexAuthentication.SignInPath}?discord=failed");
+        }
+
+        var model = await PageModelAsync(returnUrl);
+        model.UserName = (userName ?? string.Empty).Trim();
+        model.DiscordName = account.Name;
+        if (model.Unavailable is not null)
+        {
+            model.Errors = [model.Unavailable];
+            return View("DiscordCreate", model);
+        }
+
+        if (!model.CanCreateAccount || model.IsFirstAccount)
+        {
+            await DiscordAuthentication.ForgetAsync(HttpContext);
+            return Redirect($"{LudexAuthentication.SignInPath}?discord=not-linked");
+        }
+
+        try
+        {
+            var user = await apiClient.UserDiscordCreateAsync(new UserDiscordCreateRequest { UserName = model.UserName, DiscordId = account.Id, DiscordName = account.Name });
+            if (logger.IsEnabled(LogLevel.Information))
+                logger.LogInformation("Account {UserName} created with Discord", user.UserName);
+
+            await DiscordAuthentication.ForgetAsync(HttpContext);
+            await LudexAuthentication.SignInAsync(HttpContext, user, true, options.Value.RememberDays);
+            return LocalRedirect(model.ReturnUrl == "/" ? "/discover" : model.ReturnUrl);
+        }
+        catch (LudexApiException exception) when (exception.StatusCode == System.Net.HttpStatusCode.BadRequest)
+        {
+            model.Errors = [.. exception.ToValidationErrors().Select(static error => error.Message)];
+            return View("DiscordCreate", model);
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
+        {
+            model.Errors = [Unreachable];
+            return View("DiscordCreate", model);
         }
     }
 

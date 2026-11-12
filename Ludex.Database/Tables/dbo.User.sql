@@ -21,5 +21,5 @@ CREATE UNIQUE NONCLUSTERED INDEX [UX_User_DiscordID]
     ON [dbo].[User] ([DiscordID] ASC) WHERE [DiscordID] IS NOT NULL;
 GO
 
-EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'Accounts. Usernames are unique ignoring case; the first account is the admin. DiscordID (with the Discord name it had) is set when the person links Discord in Settings, and then signs in to this account. Every library entry, friendship and activity belongs to one account.',
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'Accounts. Usernames are unique ignoring case; the first account is the admin. DiscordID (with the Discord name it had) is set when the person links Discord in Settings, or signs up with Discord, and then signs in to this account. An account made with Discord has an empty PasswordHash (it never verifies) until a password is set. Every library entry, friendship and activity belongs to one account.',
     @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'User';

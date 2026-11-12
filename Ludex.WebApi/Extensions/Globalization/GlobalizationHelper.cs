@@ -63,6 +63,7 @@ internal sealed class GlobalizationHelper : IGlobalizationHelper
         [nameof(TranslationKeys.DiscordNotLinked)] = "No account here is linked to that Discord account. Sign in with your password and link it in Settings.",
         [nameof(TranslationKeys.DiscordTaken)] = "That Discord account is already linked to another account.",
         [nameof(TranslationKeys.DiscordInvalid)] = "isn't a Discord account.",
+        [nameof(TranslationKeys.DiscordNeedsPassword)] = "Discord is the only way into this account. Set a password before unlinking it.",
 
         ["UserName"] = "User name",
         ["Password"] = "Password",

@@ -10,7 +10,8 @@ namespace Ludex.Website.Security;
 /// <summary>
 /// "Sign in with Discord": Discord's OAuth2 (scope identify only) through ASP.NET Core's own OAuth handler. Discord's
 /// answer lands in a short-lived cookie of its own; <c>/sign-in/discord/done</c> reads it and signs in to the account
-/// that Discord account is linked to (or links it, from Settings). A Discord account never creates an account.
+/// that Discord account is linked to (or links it, from Settings). A Discord account that isn't linked yet can create a
+/// new account (when new accounts are allowed): the cookie stays while the person picks a user name.
 /// </summary>
 internal static class DiscordAuthentication
 {
@@ -28,6 +29,9 @@ internal static class DiscordAuthentication
 
     /// <summary>The claim with the Discord account's name.</summary>
     public const string NameClaim = "discord:name";
+
+    /// <summary>The claim with the Discord account's user name (the handle, suggested as the Ludex user name).</summary>
+    public const string UserNameClaim = "discord:username";
 
     /// <summary>The key, in the sign-in's properties, of what it's for ("signin" or "link").</summary>
     public const string ModeKey = "ludex:discord-mode";
@@ -86,6 +90,7 @@ internal static class DiscordAuthentication
                 var name = Text(root, "global_name") ?? Text(root, "username") ?? id;
                 context.Identity?.AddClaim(new Claim(IdClaim, id));
                 context.Identity?.AddClaim(new Claim(NameClaim, name));
+                context.Identity?.AddClaim(new Claim(UserNameClaim, Text(root, "username") ?? string.Empty));
             };
 
             // Cancelled on Discord, or anything else that went wrong: back to the sign-in page with a note, never an error page.
@@ -101,13 +106,12 @@ internal static class DiscordAuthentication
         return builder;
     }
 
-    /// <summary>The Discord account Discord just confirmed, from the short-lived cookie.</summary>
+    /// <summary>The Discord account Discord just confirmed, from the short-lived cookie (which stays).</summary>
     /// <param name="context">The request.</param>
-    /// <returns>The id, the name and what the sign-in was for; null when there's none.</returns>
-    public static async Task<(string Id, string Name, string Mode)?> TakeAsync(HttpContext context)
+    /// <returns>The account and what the sign-in was for; null when there's none.</returns>
+    public static async Task<DiscordAccount?> PeekAsync(HttpContext context)
     {
         var result = await context.AuthenticateAsync(ExternalScheme);
-        await context.SignOutAsync(ExternalScheme);
         if (!result.Succeeded || result.Principal is null)
         {
             return null;
@@ -120,7 +124,33 @@ internal static class DiscordAuthentication
         }
 
         var mode = result.Properties?.Items.TryGetValue(ModeKey, out var value) == true && value is not null ? value : "signin";
-        return (id, result.Principal.FindFirstValue(NameClaim) ?? id, mode);
+        return new DiscordAccount(id, result.Principal.FindFirstValue(NameClaim) ?? id, result.Principal.FindFirstValue(UserNameClaim) ?? string.Empty, mode);
+    }
+
+    /// <summary>Drops the short-lived cookie once Discord's answer has been used.</summary>
+    /// <param name="context">The request.</param>
+    /// <returns>A task.</returns>
+    public static Task ForgetAsync(HttpContext context) => context.SignOutAsync(ExternalScheme);
+
+    /// <summary>
+    /// A Ludex user name to suggest for a Discord account: its handle (or else its display name) with only the
+    /// characters Ludex allows, or empty when too little is left.
+    /// </summary>
+    /// <param name="handle">The Discord user name.</param>
+    /// <param name="name">The Discord display name.</param>
+    /// <returns>The suggestion, or empty.</returns>
+    public static string SuggestUserName(string? handle, string? name)
+    {
+        foreach (var candidate in new[] { handle, name })
+        {
+            var kept = new string((candidate ?? string.Empty).Where(static c => char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or '-').ToArray());
+            if (kept.Length >= 3)
+            {
+                return kept.Length <= 32 ? kept : kept[..32];
+            }
+        }
+
+        return string.Empty;
     }
 
     private static string? Text(JsonElement root, string name) =>
@@ -128,3 +158,10 @@ internal static class DiscordAuthentication
             ? value.GetString()
             : null;
 }
+
+/// <summary>A Discord account Discord just confirmed.</summary>
+/// <param name="Id">The Discord account's id.</param>
+/// <param name="Name">Its display name.</param>
+/// <param name="Handle">Its user name.</param>
+/// <param name="Mode">What the sign-in was for ("signin" or "link").</param>
+internal sealed record DiscordAccount(string Id, string Name, string Handle, string Mode);

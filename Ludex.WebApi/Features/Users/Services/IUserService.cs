@@ -36,6 +36,11 @@ internal interface IUserService
     /// <returns>The account, or not found.</returns>
     Task<ServiceApiResponse<UserDTO>> DiscordSignInAsync(UserDiscordSignInRequest item);
 
+    /// <summary>Creates an account that signs in with a (checked) Discord account, without a password.</summary>
+    /// <param name="item">The user name and the Discord account.</param>
+    /// <returns>The account, or the validation problems (user name taken, Discord account already linked).</returns>
+    Task<ServiceApiResponse<UserDTO>> DiscordCreateAsync(UserDiscordCreateRequest item);
+
     /// <summary>Links a Discord account to an account, or unlinks it.</summary>
     /// <param name="item">The account and the Discord account (none: unlink).</param>
     /// <returns>The account.</returns>

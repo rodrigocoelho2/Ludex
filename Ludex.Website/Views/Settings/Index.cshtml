@@ -55,7 +55,7 @@
                 <h2>Discord</h2>
                 @if (Model.DiscordLinked)
                 {
-                    <p class="muted">Linked to <b>@(Model.DiscordName ?? "your Discord account")</b>. "Sign in with Discord" opens this account; your password still works too.</p>
+                    <p class="muted">Linked to <b>@(Model.DiscordName ?? "your Discord account")</b>. "Sign in with Discord" opens this account@(Model.HasPassword ? "; your password still works too." : ". It's the only way in until you set a password below.")</p>
                 }
                 else
                 {
@@ -75,16 +75,20 @@
                     case "failed":
                         <p class="note err">Discord didn't finish. Try again.</p>
                         break;
+                    case "needs-password":
+                        <p class="note err">Discord is the only way into this account. Set a password below before unlinking it.</p>
+                        break;
                 }
             </div>
-            @if (Model.DiscordLinked)
+            @* Without a password, unlinking would lock the account: the button waits for one. *@
+            @if (Model.DiscordLinked && Model.HasPassword)
             {
                 <form method="post" action="/settings/discord/unlink">
                     @Html.AntiForgeryToken()
                     <button class="btn ghost" type="submit">Unlink</button>
                 </form>
             }
-            else
+            else if (!Model.DiscordLinked)
             {
                 <form method="post" action="/settings/discord">
                     @Html.AntiForgeryToken()
@@ -95,15 +99,22 @@
     }
 
     <section class="panel rise d1">
-        <h2>Password</h2>
+        <h2>@(Model.HasPassword ? "Password" : "Set a password")</h2>
         <form class="stack" method="post" action="/settings/password" autocomplete="off">
             @Html.AntiForgeryToken()
-            <label class="field"><span class="label">Current password</span><input name="currentPassword" type="password" autocomplete="current-password" required /></label>
+            @if (Model.HasPassword)
+            {
+                <label class="field"><span class="label">Current password</span><input name="currentPassword" type="password" autocomplete="current-password" required /></label>
+            }
+            else
+            {
+                <p class="muted">You signed up with Discord. Add a password to sign in with your user name too.</p>
+            }
             <div class="two">
                 <label class="field"><span class="label">New password</span><input name="newPassword" type="password" autocomplete="new-password" minlength="8" required /></label>
                 <label class="field"><span class="label">New password again</span><input name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required /></label>
             </div>
-            <button class="btn" type="submit">Change password</button>
+            <button class="btn" type="submit">@(Model.HasPassword ? "Change password" : "Set password")</button>
         </form>
     </section>
 

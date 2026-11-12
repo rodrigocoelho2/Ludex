@@ -46,6 +46,11 @@ public sealed class LudexClient(HttpClient httpClient)
     /// <returns>The account.</returns>
     public Task<UserDTO> UserDiscordSignInAsync(UserDiscordSignInRequest item) => PostAsync<UserDTO>("user/discord/signin", item);
 
+    /// <summary>Creates an account that signs in with Discord (no password until one is set).</summary>
+    /// <param name="item">The user name and the Discord account.</param>
+    /// <returns>The account.</returns>
+    public Task<UserDTO> UserDiscordCreateAsync(UserDiscordCreateRequest item) => PostAsync<UserDTO>("user/discord/create", item);
+
     /// <summary>Links a Discord account to an account, or unlinks it (no DiscordId).</summary>
     /// <param name="item">The account and the Discord account.</param>
     /// <returns>The account.</returns>

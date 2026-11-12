@@ -258,6 +258,9 @@ public sealed class SettingsPageModel : AppPageModel
     /// <summary>Gets or sets the linked Discord account's name.</summary>
     public string? DiscordName { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether the account has a password (one made with Discord may not).</summary>
+    public bool HasPassword { get; set; } = true;
+
     /// <summary>Gets or sets what just happened with Discord (linked, unlinked, taken, failed), for a note.</summary>
     public string? DiscordNote { get; set; }
 }

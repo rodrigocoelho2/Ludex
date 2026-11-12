@@ -29,6 +29,7 @@ internal sealed partial class UserService(
     private const string FieldCurrentPassword = "CurrentPassword";
     private const string FieldNewPassword = "NewPassword";
     private const string FieldIdentifier = "Identifier";
+    private const string FieldDiscordId = "DiscordId";
 
     // Spends the same time on an unknown user name as on a wrong password.
     private static readonly string DummyHash = PasswordHasher.Hash("not-a-real-password");
@@ -114,6 +115,52 @@ internal sealed partial class UserService(
     }
 
     /// <inheritdoc />
+    public async Task<ServiceApiResponse<UserDTO>> DiscordCreateAsync(UserDiscordCreateRequest item)
+    {
+        var userName = (item.UserName ?? string.Empty).Trim();
+        var discordId = (item.DiscordId ?? string.Empty).Trim();
+
+        var validationErrors = new List<ApiValidationError>();
+        if (!UserNamePattern().IsMatch(userName))
+        {
+            validationErrors.Add(await _globalizationHelper.ValidationErrorAsync(FieldUserName, nameof(TranslationKeys.UserNameInvalid)));
+        }
+
+        if (!UserRules.IsDiscordId(discordId))
+        {
+            validationErrors.Add(await _globalizationHelper.ValidationErrorAsync(FieldDiscordId, nameof(TranslationKeys.DiscordInvalid)));
+        }
+
+        if (validationErrors.Count > 0)
+        {
+            return (await ValidationProblemsAsync<UserDTO>()).AddErrorRange(validationErrors);
+        }
+
+        if (await _userRepository.GetByDiscordAsync(discordId) is not null)
+        {
+            return await DiscordTakenAsync();
+        }
+
+        // No password: the empty hash never verifies, so only Discord opens the account until one is set.
+        var user = await _userRepository.CreateAsync(userName, string.Empty, NewStamp());
+        if (user is null)
+        {
+            return (await ValidationProblemsAsync<UserDTO>())
+                .AddError(FieldUserName, (await _globalizationHelper.ValidationErrorAsync(FieldUserName, nameof(TranslationKeys.AlreadyExists), userName)).Message);
+        }
+
+        if (!await _userRepository.SetDiscordAsync(user.UserUniqueID, discordId, UserRules.DiscordName(item.DiscordName)))
+        {
+            // Linked somewhere else a moment ago: don't leave an account nobody can open.
+            await _userRepository.DeleteAsync(user.UserUniqueID);
+            return await DiscordTakenAsync();
+        }
+
+        await _userRepository.TouchLoginAsync(user.UserUniqueID);
+        return ServiceApiResponse<UserDTO>.Success(ToDTO((await _userRepository.GetAsync(user.UserUniqueID))!));
+    }
+
+    /// <inheritdoc />
     public async Task<ServiceApiResponse<UserDTO>> LinkDiscordAsync(UserDiscordLinkRequest item)
     {
         var user = Guid.TryParse(item.Id, out var id) ? await _userRepository.GetAsync(id) : null;
@@ -125,15 +172,20 @@ internal sealed partial class UserService(
         var discordId = string.IsNullOrWhiteSpace(item.DiscordId) ? null : item.DiscordId.Trim();
         if (discordId is not null && !UserRules.IsDiscordId(discordId))
         {
-            var error = await _globalizationHelper.ValidationErrorAsync("DiscordId", nameof(TranslationKeys.DiscordInvalid));
-            return ServiceApiResponse<UserDTO>.ValidationProblems(error.Message).AddError("DiscordId", error.Message);
+            var error = await _globalizationHelper.ValidationErrorAsync(FieldDiscordId, nameof(TranslationKeys.DiscordInvalid));
+            return ServiceApiResponse<UserDTO>.ValidationProblems(error.Message).AddError(FieldDiscordId, error.Message);
+        }
+
+        if (discordId is null && string.IsNullOrEmpty(user.PasswordHash))
+        {
+            var message = await _globalizationHelper.TranslateAsync(nameof(TranslationKeys.DiscordNeedsPassword));
+            return ServiceApiResponse<UserDTO>.ValidationProblems(message).AddError(FieldDiscordId, message);
         }
 
         var name = UserRules.DiscordName(item.DiscordName);
         if (!await _userRepository.SetDiscordAsync(user.UserUniqueID, discordId, discordId is null ? null : name))
         {
-            var message = await _globalizationHelper.TranslateAsync(nameof(TranslationKeys.DiscordTaken));
-            return ServiceApiResponse<UserDTO>.ValidationProblems(message).AddError("DiscordId", message);
+            return await DiscordTakenAsync();
         }
 
         return ServiceApiResponse<UserDTO>.Success(ToDTO((await _userRepository.GetAsync(user.UserUniqueID))!));
@@ -149,7 +201,8 @@ internal sealed partial class UserService(
         }
 
         var validationErrors = new List<ApiValidationError>();
-        if (!PasswordHasher.Verify(item.CurrentPassword ?? string.Empty, user.PasswordHash))
+        // An account made with Discord has no password yet: its first one needs no current password.
+        if (!string.IsNullOrEmpty(user.PasswordHash) && !PasswordHasher.Verify(item.CurrentPassword ?? string.Empty, user.PasswordHash))
         {
             validationErrors.Add(await _globalizationHelper.ValidationErrorAsync(FieldCurrentPassword, nameof(TranslationKeys.WrongCurrentPassword)));
         }
@@ -201,6 +254,7 @@ internal sealed partial class UserService(
         Accent = Accents.Normalize(user.Accent),
         DiscordLinked = !string.IsNullOrEmpty(user.DiscordID),
         DiscordName = string.IsNullOrEmpty(user.DiscordID) ? null : user.DiscordName,
+        HasPassword = !string.IsNullOrEmpty(user.PasswordHash),
     };
 
     private static string NewStamp() => Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
@@ -218,6 +272,12 @@ internal sealed partial class UserService(
         }
 
         return errors;
+    }
+
+    private async Task<ServiceApiResponse<UserDTO>> DiscordTakenAsync()
+    {
+        var message = await _globalizationHelper.TranslateAsync(nameof(TranslationKeys.DiscordTaken));
+        return ServiceApiResponse<UserDTO>.ValidationProblems(message).AddError(FieldDiscordId, message);
     }
 
     private async Task<ServiceApiResponse<T>> ValidationProblemsAsync<T>() =>
