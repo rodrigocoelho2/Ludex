@@ -70,6 +70,7 @@ internal sealed class GlobalizationHelper : IGlobalizationHelper
         ["CurrentPassword"] = "Current password",
         ["NewPassword"] = "New password",
         ["Identifier"] = "Account",
+        ["DiscordId"] = "Discord account",
         ["Query"] = "Search",
         ["GameId"] = "Game",
         ["Status"] = "Status",
