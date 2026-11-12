@@ -199,7 +199,9 @@ option, optgroup { background-color: #16202C; color: var(--text); }
 .nav a[aria-current=page] { color: var(--text); }
 .nav a[aria-current=page]::after { transform: none; }
 .top-acts { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 12px; }
-.top-search { position: relative; display: flex; align-items: center; width: min(260px, 26vw); }
+/* The search fills the space between the tabs and the buttons. */
+.top-search { position: relative; display: flex; align-items: center; flex: 1 1 auto; min-width: 160px; margin-right: 8px; }
+.top-search input { width: 100%; }
 .top-search .ic { position: absolute; left: 12px; color: var(--faint); width: 18px; height: 18px; }
 .top-search input { min-height: 36px; padding-left: 36px; font-size: 14px; background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .08); }
 .me { display: inline-flex; align-items: center; gap: 10px; color: var(--text); font-weight: 600; font-size: 15px; }
