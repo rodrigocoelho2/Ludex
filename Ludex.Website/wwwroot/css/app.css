@@ -150,6 +150,7 @@ option, optgroup { background-color: #16202C; color: var(--text); }
 .chip-wishlist { background: var(--gold); color: var(--on-accent); }
 .chip-dropped { background: #3A4656; color: var(--text); }
 .chip-backlog { background: #6B5BA8; color: #fff; }
+.chip-played { background: #2C8577; color: #fff; }
 
 .avatar { --av: #2E5E7E; position: relative; display: inline-grid; place-items: center; width: 40px; height: 40px; flex: none; background: linear-gradient(145deg, color-mix(in srgb, var(--av) 78%, #fff 22%), var(--av) 60%, color-mix(in srgb, var(--av) 70%, #000 30%)); color: #fff; font-weight: 700; font-size: 13.5px; letter-spacing: .04em; border-radius: var(--r-sm); overflow: hidden; }
 .avatar > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -814,6 +815,7 @@ a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 25
 .lib-col.is-drop { background: color-mix(in srgb, var(--accent) 14%, transparent); outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--r-sm); }
 .lib-col-acts { display: inline-flex; gap: 12px; }
 .lib-status-tag.tag-backlog { background: #6B5BA8; color: #fff; }
+.lib-status-tag.tag-played { background: #2C8577; color: #fff; }
 .lib-price { position: absolute; left: 8px; bottom: 8px; height: 24px; padding: 0 8px; display: flex; align-items: center; border-radius: 3px; background: rgba(0, 0, 0, .75); color: #fff; font-size: 12.5px; font-weight: 700; }
 .lib-price.sale { background: #4C6B22; color: #BEEE11; }
 .lib-ach { display: block; height: 3px; margin-top: 12px; border-radius: 2px; background: rgba(255, 255, 255, .08); overflow: hidden; }
@@ -1074,6 +1076,7 @@ a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 25
 .c-status .dot-finished { background: var(--ok); }
 .c-status .dot-wishlist { background: var(--gold); }
 .c-status .dot-backlog { background: #8F7FD0; }
+.c-status .dot-played { background: #3FB3A0; }
 .c-status .dot-dropped { background: var(--danger); }
 .c-num { font-variant-numeric: tabular-nums; color: var(--soft); white-space: nowrap; }
 .c-num.gold { color: var(--gold); font-weight: 700; }

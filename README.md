@@ -60,6 +60,8 @@
 
 - **Search the whole IGDB catalog as you type**, with skeleton rows while it looks, and add a game as Playing,
   Finished or Wishlist in one tap — or open it first.
+- **Six statuses**: Playing, Backlog, Finished (you reached the end), Played (games without an end, like CS2 or
+  Minecraft, or ones you played but don't count as finished), Wishlist and Dropped.
 - Each result says which of your friends have it.
 
 **A game** (laid out like a game in Steam's library)

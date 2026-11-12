@@ -36,7 +36,7 @@ public sealed class SteamRulesTests
     public void PlayedInTheLast30DaysIsPlaying() => Assert.Equal((GameStatus.Playing, true), SteamRules.Suggest(45, Now.AddDays(-12), Now));
 
     [Fact]
-    public void TwoHoursOrMoreNotLatelyIsFinished() => Assert.Equal((GameStatus.Finished, true), SteamRules.Suggest(120, Now.AddDays(-200), Now));
+    public void TwoHoursOrMoreNotLatelyIsPlayed() => Assert.Equal((GameStatus.Played, true), SteamRules.Suggest(120, Now.AddDays(-200), Now));
 
     [Fact]
     public void LessThanTwoHoursNotLatelyIsDropped() => Assert.Equal((GameStatus.Dropped, true), SteamRules.Suggest(119, null, Now));

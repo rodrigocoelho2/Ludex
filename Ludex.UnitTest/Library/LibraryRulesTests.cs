@@ -14,6 +14,7 @@ public sealed class LibraryRulesTests
     [InlineData(GameStatus.Playing, ActivityKind.Started)]
     [InlineData(GameStatus.Finished, ActivityKind.Added)]
     [InlineData(GameStatus.Dropped, ActivityKind.Added)]
+    [InlineData(GameStatus.Played, ActivityKind.Added)]
     public void ANewGameAddsOneLineByItsStatus(GameStatus status, ActivityKind expected)
     {
         var lines = LibraryRules.Activities(null, null, status, null);
@@ -33,6 +34,8 @@ public sealed class LibraryRulesTests
     [InlineData(GameStatus.Wishlist, GameStatus.Playing, ActivityKind.Started)]
     [InlineData(GameStatus.Playing, GameStatus.Finished, ActivityKind.Finished)]
     [InlineData(GameStatus.Playing, GameStatus.Dropped, ActivityKind.Dropped)]
+    [InlineData(GameStatus.Playing, GameStatus.Played, ActivityKind.Played)]
+    [InlineData(GameStatus.Finished, GameStatus.Played, ActivityKind.Played)]
     [InlineData(GameStatus.Dropped, GameStatus.Wishlist, ActivityKind.Wishlisted)]
     public void ANewStatusAddsItsLine(GameStatus before, GameStatus after, ActivityKind expected)
     {

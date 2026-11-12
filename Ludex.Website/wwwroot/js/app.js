@@ -86,7 +86,7 @@
         }
     }
 
-    const statusWords = { Playing: 'Playing', Finished: 'Finished', Wishlist: 'Wishlist', Dropped: 'Dropped', Backlog: 'Backlog' };
+    const statusWords = { Playing: 'Playing', Finished: 'Finished', Wishlist: 'Wishlist', Dropped: 'Dropped', Backlog: 'Backlog', Played: 'Played' };
     const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
     /* ---------- Undo: put games back as they were ---------- */

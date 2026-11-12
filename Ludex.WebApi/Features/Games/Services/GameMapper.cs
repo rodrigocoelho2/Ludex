@@ -61,7 +61,7 @@ internal static class GameMapper
     /// </summary>
     /// <param name="value">The stored number.</param>
     /// <returns>The status, or null when the number isn't one.</returns>
-    public static GameStatus? Status(byte? value) => value is >= 1 and <= 5 ? (GameStatus)value.Value : null;
+    public static GameStatus? Status(byte? value) => value is >= 1 and <= 6 ? (GameStatus)value.Value : null;
 
     /// <summary>
     /// A UTC time read from the database.

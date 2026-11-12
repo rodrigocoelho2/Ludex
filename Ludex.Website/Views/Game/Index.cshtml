@@ -10,7 +10,7 @@
     var copyNow = mine?.Store ?? mine?.Format?.ToString();
     var copyChoices = Ludex.Library.Platforms.GameCopies.Choices(mine?.Platform);
     var copyLabel = Ludex.Library.Platforms.GameCopies.UsesStores(mine?.Platform) ? "Bought on" : "Copy";
-    var statuses = new[] { GameStatus.Playing, GameStatus.Backlog, GameStatus.Finished, GameStatus.Wishlist, GameStatus.Dropped };
+    var statuses = new[] { GameStatus.Playing, GameStatus.Backlog, GameStatus.Finished, GameStatus.Played, GameStatus.Wishlist, GameStatus.Dropped };
     var achievements = Model.Achievements;
     var mineCollections = mine?.CollectionIds ?? [];
     var shots = detail.Screenshots;

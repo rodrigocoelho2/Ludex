@@ -20,6 +20,7 @@ public static class Fmt
         GameStatus.Wishlist => "Wishlist",
         GameStatus.Dropped => "Dropped",
         GameStatus.Backlog => "Backlog",
+        GameStatus.Played => "Played",
         _ => status.ToString(),
     };
 
@@ -155,6 +156,7 @@ public static class Fmt
         ActivityKind.Rated => "rated",
         ActivityKind.Wishlisted => "wishlisted",
         ActivityKind.Dropped => "dropped",
+        ActivityKind.Played => "played",
         _ => "played",
     };
 

@@ -27,7 +27,7 @@
     else
     {
         <select class="steam-status" aria-label="Status for @g.Game.Name">
-            @foreach (var s in new[] { GameStatus.Playing, GameStatus.Finished, GameStatus.Backlog, GameStatus.Dropped, GameStatus.Wishlist })
+            @foreach (var s in new[] { GameStatus.Playing, GameStatus.Played, GameStatus.Finished, GameStatus.Backlog, GameStatus.Dropped, GameStatus.Wishlist })
             {
                 <option value="@s" selected="@(s == g.SuggestedStatus ? "selected" : null)">@Fmt.Status(s)</option>
             }

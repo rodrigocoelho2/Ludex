@@ -15,7 +15,7 @@ internal static class LibraryRules
     /// <summary>
     /// The feed lines a change produces.
     /// A new game: on the wishlist → Wishlisted; playing → Started; finished or dropped → Added. Then a rating → Rated.
-    /// A game already there: a new status → Started / Finished / Wishlisted / Dropped; a new rating → Rated.
+    /// A game already there: a new status → Started / Finished / Played / Wishlisted / Dropped; a new rating → Rated.
     /// Taking a rating away, or saving hours and notes only, adds nothing.
     /// </summary>
     /// <param name="statusBefore">The status before (null: the game wasn't in the library).</param>
@@ -41,6 +41,7 @@ internal static class LibraryRules
             {
                 GameStatus.Playing => ActivityKind.Started,
                 GameStatus.Finished => ActivityKind.Finished,
+                GameStatus.Played => ActivityKind.Played,
                 GameStatus.Wishlist => ActivityKind.Wishlisted,
                 _ => ActivityKind.Dropped,
             }, null));
@@ -67,6 +68,7 @@ internal static class LibraryRules
         Wishlist = rows.Count(static r => r.Status == (byte)GameStatus.Wishlist),
         Dropped = rows.Count(static r => r.Status == (byte)GameStatus.Dropped),
         Backlog = rows.Count(static r => r.Status == (byte)GameStatus.Backlog),
+        Played = rows.Count(static r => r.Status == (byte)GameStatus.Played),
     };
 
     /// <summary>

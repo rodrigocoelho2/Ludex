@@ -82,6 +82,9 @@ public sealed class LibraryCountsDTO
 
     /// <summary>Gets or sets the games owned and not started.</summary>
     public int Backlog { get; set; }
+
+    /// <summary>Gets or sets how many were played (games without an end).</summary>
+    public int Played { get; set; }
 }
 
 /// <summary>The library.</summary>

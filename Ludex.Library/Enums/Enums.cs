@@ -20,7 +20,7 @@ public enum GameStatus
     /// <summary>Being played now.</summary>
     Playing = 1,
 
-    /// <summary>Played to the end (or as far as it goes).</summary>
+    /// <summary>Played to the end (the credits rolled).</summary>
     Finished = 2,
 
     /// <summary>Not played yet, but wanted.</summary>
@@ -31,6 +31,9 @@ public enum GameStatus
 
     /// <summary>Owned, not started yet (games bought on Steam come in like this).</summary>
     Backlog = 5,
+
+    /// <summary>Played, but there's no end to reach (CS2, Apex, Minecraft) or it isn't one you finish: not on it now.</summary>
+    Played = 6,
 }
 
 /// <summary>
@@ -55,6 +58,9 @@ public enum ActivityKind
 
     /// <summary>Dropped.</summary>
     Dropped = 6,
+
+    /// <summary>Marked as played (a game without an end).</summary>
+    Played = 7,
 }
 
 /// <summary>

@@ -2,7 +2,7 @@
 @* The library down the side, as on Steam: a filter, your collections (drop a game on one to put it there), then
    every game by status. Stays put between the library and the game pages (app.js keeps its scroll position). *@
 @{
-    var groups = new[] { GameStatus.Playing, GameStatus.Backlog, GameStatus.Finished, GameStatus.Wishlist, GameStatus.Dropped };
+    var groups = new[] { GameStatus.Playing, GameStatus.Backlog, GameStatus.Finished, GameStatus.Played, GameStatus.Wishlist, GameStatus.Dropped };
     var byId = Model.Entries.ToDictionary(static e => e.Game.Id);
 }
 <aside class="lib-side" data-lib-side aria-label="Your library">

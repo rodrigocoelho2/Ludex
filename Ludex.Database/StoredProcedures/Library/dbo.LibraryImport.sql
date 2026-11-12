@@ -52,7 +52,7 @@ BEGIN
         [AppID]         INT            '$.AppID',
         [RecentMinutes] INT            '$.RecentMinutes'
     ) j
-    WHERE j.[Status] BETWEEN 1 AND 5
+    WHERE j.[Status] BETWEEN 1 AND 6
       AND (j.[Hours] IS NULL OR j.[Hours] BETWEEN 0 AND 99999)
       AND EXISTS (SELECT 1 FROM [dbo].[Game] g WHERE g.[GameID] = j.[GameID])
     GROUP BY j.[GameID];

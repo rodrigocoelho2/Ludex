@@ -7,7 +7,7 @@ namespace Ludex.WebApi.Features.Steam.Services;
 /// <summary>
 /// The rules of the Steam import, kept apart from Steam so the tests can check them: what a typed profile is, hours
 /// from minutes, and the status a game is suggested with.
-/// Played in the last 30 days → Playing. Played 2 hours or more, not lately → Finished. Under 2 hours → Dropped.
+/// Played in the last 30 days → Playing. Played 2 hours or more, not lately → Played (Steam can't tell if you reached the end). Under 2 hours → Dropped.
 /// Never played → Backlog, and left unticked (the daily sync adds games bought later as Backlog).
 /// </summary>
 internal static partial class SteamRules
@@ -15,8 +15,8 @@ internal static partial class SteamRules
     /// <summary>Played within this many days: Playing.</summary>
     public const int RecentDays = 30;
 
-    /// <summary>At least this many minutes (not lately): Finished; fewer: Dropped.</summary>
-    public const int FinishedMinutes = 120;
+    /// <summary>At least this many minutes (not lately): Played; fewer: Dropped.</summary>
+    public const int PlayedMinutes = 120;
 
     /// <summary>
     /// What was typed as a Steam profile: a SteamID64, a profile address, or a custom profile name.
@@ -82,7 +82,7 @@ internal static partial class SteamRules
             return (GameStatus.Playing, true);
         }
 
-        return (minutes >= FinishedMinutes ? GameStatus.Finished : GameStatus.Dropped, true);
+        return (minutes >= PlayedMinutes ? GameStatus.Played : GameStatus.Dropped, true);
     }
 
     /// <summary>

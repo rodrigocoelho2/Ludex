@@ -27,6 +27,9 @@ internal static class ProfileRules
     /// <summary>XP for each finished game.</summary>
     public const int XpPerFinished = 100;
 
+    /// <summary>XP for each game marked played (no end to reach).</summary>
+    public const int XpPerPlayed = 50;
+
     /// <summary>XP for each rating.</summary>
     public const int XpPerRating = 20;
 
@@ -46,6 +49,7 @@ internal static class ProfileRules
         var played = rows.Where(static r => r.Status != (byte)GameStatus.Wishlist).ToList();
         var hours = (int)Math.Floor(rows.Sum(static r => r.Hours ?? 0m));
         return (played.Count(static r => r.Status == (byte)GameStatus.Finished) * XpPerFinished)
+            + (played.Count(static r => r.Status == (byte)GameStatus.Played) * XpPerPlayed)
             + (rows.Count(static r => r.Rating is not null) * XpPerRating)
             + (played.Count * XpPerGame)
             + (rows.Sum(static r => (int)(r.AchievementsUnlocked ?? 0)) * XpPerAchievement)

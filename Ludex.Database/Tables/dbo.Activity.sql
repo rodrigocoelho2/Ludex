@@ -17,5 +17,5 @@ CREATE NONCLUSTERED INDEX [IX_Activity_UserID_At]
     INCLUDE ([GameID], [Kind], [Rating]);
 GO
 
-EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'What each account did with its games, for the friends'' feed. Kind: 1 Added, 2 Started, 3 Finished, 4 Rated, 5 Wishlisted, 6 Dropped.',
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'What each account did with its games, for the friends'' feed. Kind: 1 Added, 2 Started, 3 Finished, 4 Rated, 5 Wishlisted, 6 Dropped, 7 Played.',
     @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'Activity';
