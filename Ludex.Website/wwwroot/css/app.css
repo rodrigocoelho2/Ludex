@@ -1217,6 +1217,9 @@ body.has-sel-bar .toast { bottom: 96px; }
 .lib-group summary small { margin-left: auto; font-weight: 500; }
 .lib-side-head { padding: 12px 8px 4px; color: var(--faint); font-size: 13px; }
 
+.showcase-head, .showcase-head h2 { text-transform: none; letter-spacing: .01em; font-family: var(--display); font-weight: 700; font-size: 19px; color: var(--text); }
+.yg-status { flex-wrap: wrap; }
+
 /* iPhone: keep the bar below the clock and the battery (the app runs edge to edge) */
 .topbar { padding-top: env(safe-area-inset-top); }
 .topbar-in { padding-left: max(24px, env(safe-area-inset-left)); padding-right: max(var(--gutter), env(safe-area-inset-right)); }
@@ -1294,7 +1297,8 @@ body.has-sel-bar .toast { bottom: 96px; }
     .g-body { grid-template-columns: minmax(0, 1fr); }
     .viewer-nav { width: 36px; height: 52px; }
     .your-game { padding: 14px; gap: 14px; }
-    .yg-status { width: 100%; }
+    .yg-status { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; }
+    .yg-status .pill-btn { justify-content: center; }
     .pill-btn { flex: 1; padding: 0 6px; }
     .yg-rating { width: 100%; display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px 10px; }
     .yg-rating .rating { grid-column: 1 / -1; order: 2; }

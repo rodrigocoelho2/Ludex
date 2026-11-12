@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/banner.png" alt="Ludex — Every game you've played. In one place." width="100%">
+  <img src="docs/images/banner.png" alt="Ludex — Every game you've played, on one shelf." width="100%">
 </p>
 
 <p align="center">
@@ -14,7 +14,7 @@
   <img alt="SQL Server" src="https://img.shields.io/badge/SQL%20Server-Dapper%20%2B%20stored%20procedures-CC2927?logo=microsoftsqlserver&logoColor=white">
   <img alt="IGDB" src="https://img.shields.io/badge/IGDB-games%20%C2%B7%20covers%20%C2%B7%20art-9147FF?logo=twitch&logoColor=white">
   <img alt="Docker" src="https://img.shields.io/badge/Docker-UGREEN%20NAS-2496ED?logo=docker&logoColor=white">
-  <img alt="CI" src="https://github.com/rodrigocoelho2/Ludex/actions/workflows/ci.yml/badge.svg?branch=main">
+  <img alt="Steam" src="https://img.shields.io/badge/Steam-import%20%C2%B7%20daily%20sync%20%C2%B7%20achievements-1B2838?logo=steam&logoColor=white">
 </p>
 
 <p align="center">
@@ -22,6 +22,7 @@
   <a href="#screenshots">Screenshots</a> ·
   <a href="#deploying-on-the-nas">Deploying on the NAS</a> ·
   <a href="#the-game-catalog-igdb">IGDB</a> ·
+  <a href="#steam-and-prices">Steam & prices</a> ·
   <a href="#development">Development</a>
 </p>
 
@@ -38,20 +39,27 @@
 
 **Home**
 
-- **The game you're playing** in a big hero with its art, your rating and hours, and the friends who have it too; the
-  other games you're playing beside it. "Finished it" in one tap.
-- **Your numbers** on flat Metro tiles that count up: games in the library, finished this year, average rating, wishlist.
-- **Added lately**, and **what your friends did**: who finished, started, rated or wishlisted what, marked when you have
-  the game too. And the **games your friends love** that you don't have yet, a heart away from your wishlist.
+- **The game you're on** across the whole width, with its art, one **Continue** button, the hours and the
+  achievements bar. Your numbers in one line under it: games, finished this year, the backlog, hours played.
+- **Recent games**, then **Play next**: the backlog, best reviewed first, with the critic score beside each name.
+  **Wishlist deals** when something you want is on sale or under your alert, and what your **friends** did lately.
 
 **Library** (laid out like Steam's)
 
-- **The library down the side**, by status, with a search; it stays there when you open a game, so the game page
-  sits next to it like on Steam.
-- Every game as a cover with your **rating**, its status, the friends who have it, hours and **which copy** you own.
-- Sort like Steam: last played, alphabetical, friends who have it, your rating, hours played, release date, date
-  added. Filter by status, by **platform** (a family or one console: PS5, Switch…), by **copy** (physical, digital,
-  Steam, Epic Games, GOG…) and to **only the games your friends have**. The cards rearrange with an animation.
+- **The library down the side**: your collections, then every game by status; the groups stay closed except Playing,
+  and Ludex remembers the ones you open. It stays there when you open a game, like on Steam.
+- **Status tabs** with counts (All, Playing, Backlog, Finished, Played, Wishlist, Dropped), a filter, a sort and one
+  **Filters** button for the rest: platform (a family or one console), **store or format** (Steam, Epic Games, GOG…,
+  physical or digital), a collection, only the games your friends have, and the cover size.
+- **Clean covers**: the name and a status dot under each. A badge shows only for what you sort by: your rating,
+  the **critic score** (green from 70, yellow below, like Steam) or the achievements.
+- **11 sorts** like Steam's: last played, alphabetical, friends who have it, % of achievements, your rating, critic
+  score, hours, hours in the last 2 weeks, shortest to beat, release date, date added. The cards move into place.
+- **A list view** with sortable columns (hours, achievements, rating, critics, time to beat, last played).
+- **Hover a cover** for a moment to see its hours, the last two weeks, your rating, the critics, achievements and the
+  friends who have it.
+- **Pick several** (Ctrl/⌘ + click, Shift + click for a run, or Select on the phone) and set their status, put them in a
+  collection or remove them in one go — with **Undo** on every change, here and on the game page.
 - **Which copy**: on a PC, the store it came from (Steam, Epic Games, GOG, EA app, Ubisoft Connect, Battle.net,
   Microsoft Store, Rockstar, itch.io); on a console, physical or digital — only what that console had (no digital
   NES or PS2 games, no physical iOS ones).
@@ -91,7 +99,8 @@
 
 - A **profile photo** (shrunk to 256 px on the device before it's sent), a **bio**, a **location** and a **favourite
   game**, all in **Edit profile**.
-- **Level and XP** from the library: 100 XP per finished game, 20 per rating, 5 per game, 1 per hour. Level L starts
+- **Level and XP** from the library: 100 XP per finished game, 50 per played one, 20 per rating, 5 per game, 2 per
+  achievement, 1 per hour. Level L starts
   at 100·(L−1)² XP, and the ring changes colour every ten levels.
 - **22 badges** to earn: First finish, Finisher, Completionist, Hall of fame, 100-hour club, Marathoner, Thousand hours,
   Critic, Perfect ten, Tough crowd, Collector, Curator, Wishful thinking, Platform hopper, Retro soul, Day one, Good
@@ -102,6 +111,7 @@
 **Friends**
 
 - Ask anyone on your Ludex by user name; they accept or decline. Only friends see each other's games.
+- The **bell** tells you about wishlist prices under your alert and games Steam added to your backlog.
 - What they've been up to, and their favourites you haven't played.
 
 **Fluid on purpose**
@@ -110,7 +120,8 @@
   top bar stays put).
 - Covers and art **blur up**: a tiny version blurred at once, the sharp one fading in over it — no empty boxes, no jumps.
 - Things arrive in a quick cascade, buttons give under the finger, the home art drifts slowly. With "reduce motion" on,
-  nothing moves.
+  nothing moves. Only what moves is animated, so a big library stays smooth.
+- A link to the page you're already on doesn't reload it: it just scrolls back to the top.
 
 **Built to self-host**
 
@@ -120,34 +131,43 @@
 - **Accounts for the house**: everyone has their own library; the first account (protected by a setup key) is the
   admin and can remove accounts. Sign-ups can be closed.
 - **Phone and computer**: the same pages, a dock on the phone and a top bar on the computer; adds to the Home Screen
-  like an app. One dark Metro look: square tiles, Barlow Condensed capitals, cyan and gold.
+  like an app, and keeps clear of the iPhone's clock and battery. A calm dark look in Barlow Condensed, with
+  **nine colour themes** (Cyan, Deep blue, Emerald, Lime, Gold, Ember, Crimson, Rose, Violet) in Settings that follow
+  your account to every device.
 - **Works without IGDB too**: until the Twitch credentials are set, a short built-in list of well-known games (no
-  images) lets you try it — and lets CI take the screenshots.
+  images) lets you try it.
 
 ## Screenshots
 
 ### On the phone
-<img src="docs/images/phone.png" alt="Phone: home, library, a game and friends">
+<img src="docs/images/everyday.png" alt="Phone: home, the library, a game and the profile">
 
 ### On the computer
 <table>
 <tr>
-<td width="50%"><b>Library</b><br><img src="docs/images/desktop-library.png" alt="The library as covers with status and rating, and the filters"></td>
-<td width="50%"><b>A game</b><br><img src="docs/images/desktop-game.png" alt="A game's page: art, cover, facts, friends who have it and your entry"></td>
+<td width="50%"><b>Library</b><br><img src="docs/images/desktop-library.png" alt="The library: the sidebar with collections and statuses, status tabs and clean covers"></td>
+<td width="50%"><b>Sorted by critic score</b><br><img src="docs/images/desktop-critic.png" alt="The library sorted by critic score, with green and yellow scores on the covers"></td>
 </tr>
 <tr>
-<td width="50%"><b>Discover</b><br><img src="docs/images/desktop-discover.png" alt="Search results with one-tap adds and the friends' favourites"></td>
-<td width="50%"><b>Friends</b><br><img src="docs/images/desktop-friends.png" alt="Friends, requests and what they've been playing"></td>
+<td width="50%"><b>List view and selection</b><br><img src="docs/images/desktop-list.png" alt="The library as a list with sortable columns, three games picked and the selection bar"></td>
+<td width="50%"><b>Hovering a cover</b><br><img src="docs/images/desktop-hover.png" alt="The card that shows a game's hours, rating, achievements and friends"></td>
 </tr>
 <tr>
-<td width="50%"><b>Sign in</b><br><img src="docs/images/desktop-sign-in.png" alt="The sign-in page with the wall of covers"></td>
-<td width="50%"><b>Settings</b><br><img src="docs/images/desktop-settings.png" alt="Account, password, the catalog and the accounts of the house"></td>
+<td width="50%"><b>A game</b><br><img src="docs/images/desktop-game.png" alt="A game's page: art, title, your status and rating, screenshots and the facts"></td>
+<td width="50%"><b>Profile</b><br><img src="docs/images/desktop-profile.png" alt="A profile: level, badges, favourite game, numbers and friends"></td>
 </tr>
 </table>
 
-The pictures show the built-in list of games, which has no images, so every cover is drawn in the game's colour with
-its name; with IGDB they're the real covers, art and screenshots. CI takes them again, on a computer and a phone, on
-every push (the `ci-output-compose` branch).
+### Colour themes
+<img src="docs/images/themes.png" alt="Home in the Cyan, Violet, Emerald and Ember themes">
+
+<details>
+<summary>Settings → Appearance</summary>
+<img src="docs/images/desktop-settings.png" alt="The nine colour themes in Settings">
+</details>
+
+The pictures use a demo account. Covers and art are drawn in each game's colour with its name; with IGDB they're the
+real covers, art and screenshots.
 
 ## Deploying on the NAS
 
@@ -212,6 +232,15 @@ build fails, the running version stays.
 Server, set `SQL_SERVER` in `.env` to its container name (on `sql-net`) and run
 `docker network create nas-net && docker compose up -d --build`.
 
+## Steam and prices
+
+- **Steam**: put a Steam Web API key in `.env` as `STEAM_API_KEY` ([steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey)),
+  update Ludex, then **Settings → Steam**: your profile link or SteamID, a preview with what each game becomes, and
+  **Import**. Your profile's game details must be public. After that it syncs on its own every day; **Sync now** is
+  on the Steam page.
+- **Wishlist prices**: a free [IsThereAnyDeal](https://isthereanydeal.com/apps/my/) key in `.env` as `ITAD_API_KEY`
+  (and `LUDEX_PRICE_COUNTRY`, `PT` by default). Prices show on wishlisted games and on Home's deals.
+
 ## The game catalog (IGDB)
 
 IGDB is free and is used through a Twitch application:
@@ -238,9 +267,7 @@ Ludex.UnitTest   library rules, catalogs, platform names, passwords, the SDK con
 
 - Every database call is a stored procedure through Dapper; no SQL in C#.
 - The Website never references the WebApi: `Ludex.Sdk` carries copies of the DTOs, and a test checks they match.
-- **CI** builds everything, publishes the dacpac twice (the second run must change nothing), runs the tests, then runs
-  the real `docker-compose.yml` against a stand-in `shared-sql`, fills it with three friends through the pages and
-  takes every screenshot on a computer and a phone. Logs and screenshots land on the `ci-output-*` branches.
+- Builds and checks happen on the NAS (`apps.sh atualizar ludex`); the GitHub Actions workflow is kept but disabled.
 - Locally: copy the two `appsettings.Development.json.example` files to `appsettings.Development.json`, point the
   WebApi at a SQL Server, and run both projects (`Ludex.WebApi` on :5099, `Ludex.Website` on :5098).
 
