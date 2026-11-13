@@ -27,6 +27,7 @@
     <Folder Include="StoredProcedures\Notifications\" />
     <Folder Include="StoredProcedures\Prices\" />
     <Folder Include="StoredProcedures\Steam\" />
+    <Folder Include="StoredProcedures\Psn\" />
     <Folder Include="Scripts\" />
   </ItemGroup>
 
@@ -86,6 +87,15 @@
     <Build Include="Tables\dbo.Notification.sql" />
     <Build Include="Tables\dbo.PlaytimeDay.sql" />
     <Build Include="Tables\dbo.SteamOwned.sql" />
+    <Build Include="Tables\dbo.PsnAccount.sql" />
+    <Build Include="Tables\dbo.PsnTitle.sql" />
+    <Build Include="StoredProcedures\Psn\dbo.PsnAccountGet.sql" />
+    <Build Include="StoredProcedures\Psn\dbo.PsnAccountList.sql" />
+    <Build Include="StoredProcedures\Psn\dbo.PsnAccountSave.sql" />
+    <Build Include="StoredProcedures\Psn\dbo.PsnAccountMark.sql" />
+    <Build Include="StoredProcedures\Psn\dbo.PsnAccountDelete.sql" />
+    <Build Include="StoredProcedures\Psn\dbo.PsnTitleList.sql" />
+    <Build Include="StoredProcedures\Psn\dbo.PsnTitleRemember.sql" />
     <Build Include="StoredProcedures\Users\dbo.UserCount.sql" />
     <Build Include="StoredProcedures\Users\dbo.UserCreate.sql" />
     <Build Include="StoredProcedures\Users\dbo.UserDelete.sql" />

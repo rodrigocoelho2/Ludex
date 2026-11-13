@@ -4,6 +4,8 @@ using Ludex.WebApi.Features.Games.Models.Entities;
 using Ludex.WebApi.Features.Games.Repositories;
 using Ludex.WebApi.Features.Prices.Services;
 using Ludex.WebApi.Features.Profile.Repositories;
+using Ludex.WebApi.Features.Psn.Repositories;
+using Ludex.WebApi.Features.Psn.Services;
 using Ludex.WebApi.Features.Steam.Services;
 using Microsoft.Extensions.Options;
 
@@ -14,13 +16,17 @@ namespace Ludex.WebApi.Features.Jobs;
 /// 1. games whose data is older than the current version are fetched again (critics' rating, times to beat);
 /// 2. every Steam library not synced in the last 20 hours is synced (hours, the last two weeks, games bought since,
 ///    achievement counts);
-/// 3. wishlist prices not checked in the last 20 hours are checked, and the alerts they reach raised.
+/// 3. every PlayStation library not synced in the last 20 hours is synced (time played, trophies, games played for the
+///    first time since), and the bell warns a week before a PlayStation sign-in runs out;
+/// 4. wishlist prices not checked in the last 20 hours are checked, and the alerts they reach raised.
 /// Each step that has nothing to do costs one query; a failure is logged and the next run tries again.
 /// </summary>
 /// <param name="catalog">The catalog.</param>
 /// <param name="gameRepository">Games.</param>
 /// <param name="profileRepository">Profiles (the Steam accounts).</param>
 /// <param name="steamService">The Steam sync.</param>
+/// <param name="psnRepository">PlayStation connections.</param>
+/// <param name="psnService">The PlayStation sync.</param>
 /// <param name="priceService">Wishlist prices.</param>
 /// <param name="options">What is configured.</param>
 /// <param name="timeProvider">The clock.</param>
@@ -30,6 +36,8 @@ internal sealed class LudexJobs(
     IGameRepository gameRepository,
     IProfileRepository profileRepository,
     ISteamService steamService,
+    IPsnRepository psnRepository,
+    IPsnService psnService,
     PriceService priceService,
     IOptions<LudexOptions> options,
     TimeProvider timeProvider,
@@ -72,6 +80,7 @@ internal sealed class LudexJobs(
     {
         await StepAsync("catalog refresh", RefreshCatalogAsync, cancellationToken);
         await StepAsync("Steam sync", SyncSteamAsync, cancellationToken);
+        await StepAsync("PlayStation sync", SyncPlayStationAsync, cancellationToken);
         await StepAsync("wishlist prices", CheckPricesAsync, cancellationToken);
     }
 
@@ -123,6 +132,23 @@ internal sealed class LudexJobs(
             catch (Exception exception) when (exception is SteamUnavailableException or CatalogUnavailableException)
             {
                 logger.LogWarning("Steam sync stopped for one account: {Problem}", exception.Message);
+            }
+        }
+    }
+
+    private async Task SyncPlayStationAsync(CancellationToken cancellationToken)
+    {
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        foreach (var account in await psnRepository.ListAsync())
+        {
+            var due = account.SyncedAt is not { } synced || now - DateTime.SpecifyKind(synced, DateTimeKind.Utc) >= SyncAfter;
+            try
+            {
+                await psnService.RunDailyAsync(account, due, cancellationToken);
+            }
+            catch (Exception exception) when (exception is PsnUnavailableException or CatalogUnavailableException)
+            {
+                logger.LogWarning("PlayStation sync stopped for one account: {Problem}", exception.Message);
             }
         }
     }

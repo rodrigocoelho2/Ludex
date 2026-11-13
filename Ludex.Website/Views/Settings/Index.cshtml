@@ -47,6 +47,24 @@
         <a class="btn" href="/steam">@Icons.Get("arrow")Import from Steam</a>
     </section>
 
+    <section class="panel rise d1 steam-card">
+        <span class="empty-ico" aria-hidden="true">@Icons.Get("trophy")</span>
+        <div>
+            <h2>PlayStation</h2>
+            <p class="muted">Connect your PlayStation account: PS5 and PS4 games with their hours, PS3 and PS Vita games through their trophies, synced every day.</p>
+        </div>
+        <a class="btn" href="/psn">@Icons.Get("arrow")Connect PlayStation</a>
+    </section>
+
+    <section class="panel rise d1 steam-card">
+        <span class="empty-ico" aria-hidden="true">@Icons.Get("library")</span>
+        <div>
+            <h2>Playnite</h2>
+            <p class="muted">Epic, GOG, EA app, Ubisoft Connect, Battle.net, Xbox, emulators: export your Playnite library and bring it all in, with hours and stores.</p>
+        </div>
+        <a class="btn" href="/playnite">@Icons.Get("arrow")Import from Playnite</a>
+    </section>
+
     @if (Model.DiscordEnabled)
     {
         <section class="panel rise d1 discord-card" id="discord">

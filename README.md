@@ -15,6 +15,8 @@
   <img alt="IGDB" src="https://img.shields.io/badge/IGDB-games%20%C2%B7%20covers%20%C2%B7%20art-9147FF?logo=twitch&logoColor=white">
   <img alt="Docker" src="https://img.shields.io/badge/Docker-UGREEN%20NAS-2496ED?logo=docker&logoColor=white">
   <img alt="Steam" src="https://img.shields.io/badge/Steam-import%20%C2%B7%20daily%20sync%20%C2%B7%20achievements-1B2838?logo=steam&logoColor=white">
+  <img alt="PlayStation" src="https://img.shields.io/badge/PlayStation-daily%20sync%20%C2%B7%20trophies-003791?logo=playstation&logoColor=white">
+  <img alt="Playnite" src="https://img.shields.io/badge/Playnite-Epic%20%C2%B7%20GOG%20%C2%B7%20EA%20%C2%B7%20Ubisoft%20%C2%B7%20more-2E3440">
 </p>
 
 <p align="center">
@@ -23,6 +25,7 @@
   <a href="#deploying-on-the-nas">Deploying on the NAS</a> ·
   <a href="#the-game-catalog-igdb">IGDB</a> ·
   <a href="#steam-and-prices">Steam & prices</a> ·
+  <a href="#playstation-and-playnite">PlayStation & Playnite</a> ·
   <a href="#sign-in-with-discord">Discord</a> ·
   <a href="#development">Development</a>
 </p>
@@ -88,6 +91,10 @@
   it from the grid or the sidebar, filter the library by it; put a game in or out from its page too.
 - **Steam syncs on its own every day**: more hours, the hours of the last two weeks (on the profile and the cards),
   and games bought since come in as **Backlog** (games left out at the import stay out). "Sync now" on the Steam page.
+- **PlayStation syncs every day too**: PS5 and PS4 games with their hours, PS3 and PS Vita games through their
+  trophies, trophy counts on the cards; games played for the first time come in on their own.
+- **Playnite**: every other launcher (Epic, GOG, EA app, Ubisoft Connect, Battle.net, Xbox, itch.io, emulators) from
+  one CSV export, with hours, the store and Playnite's completion status.
 - **Steam achievements**: the count on every card and a "% of achievements" sort; on the game page every
   achievement with its icon, when you unlocked it and how rare it is. Achievements give XP and three badges.
 - **Critic score and time to beat** (IGDB): on the game page, and sorts by critic score and by shortest to beat.
@@ -112,7 +119,8 @@
 **Friends**
 
 - Ask anyone on your Ludex by user name; they accept or decline. Only friends see each other's games.
-- The **bell** tells you about wishlist prices under your alert and games Steam added to your backlog.
+- The **bell** tells you about wishlist prices under your alert, games Steam or PlayStation added, and a PlayStation
+  sign-in that needs renewing.
 - What they've been up to, and their favourites you haven't played.
 
 **Fluid on purpose**
@@ -243,6 +251,21 @@ Server, set `SQL_SERVER` in `.env` to its container name (on `sql-net`) and run
 - **Wishlist prices**: a free [IsThereAnyDeal](https://isthereanydeal.com/apps/my/) key in `.env` as `ITAD_API_KEY`
   (and `LUDEX_PRICE_COUNTRY`, `PT` by default). Prices show on wishlisted games and on Home's deals.
 
+## PlayStation and Playnite
+
+Both need IGDB (they match games by name) and nothing else in `.env`.
+
+- **PlayStation** (**Settings → PlayStation**): sign in at [playstation.com](https://www.playstation.com/), open
+  [ca.account.sony.com/api/v1/ssocookie](https://ca.account.sony.com/api/v1/ssocookie) in the same browser, and paste the
+  64-character `npsso` value. Ludex uses it once and keeps only Sony's refresh token, encrypted (AES-GCM, with a key
+  derived from `LUDEX_API_KEY`). Review the games, **Import**, and from then on it syncs every day: more hours, trophy
+  counts, new games. Sony's sign-in lasts about two months; the bell warns a week before, and a new NPSSO renews it.
+  Ludex only reads; it uses the same calls as Sony's PlayStation App, which Sony doesn't document.
+- **Playnite**: install the **Library Exporter Advanced** add-on, open its export window (Extensions → Library Exporter
+  Advanced), tick **Sources, Platforms, Time Played, Completion Status, Last Played**, export all games, and upload the
+  CSV at **Settings → Playnite**. Columns in any of Playnite's languages work. Steam games are left to the Steam import
+  when Steam is connected. Upload again whenever you like: hours only go up and nothing you set is overwritten.
+
 ## Sign in with Discord
 
 Optional:
@@ -280,7 +303,7 @@ Ludex.Library    shared enums, ServiceApiResponse, validation
 Ludex.WebApi     the engine: accounts, the catalog (IGDB / built-in), libraries, friends, activity
 Ludex.Sdk        typed client of the WebApi (the Website's only way in)
 Ludex.Website    the app: ASP.NET Core MVC, Razor views, one stylesheet and one script, a PWA
-Ludex.UnitTest   library rules, catalogs, platform names, passwords, the SDK contract
+Ludex.UnitTest   library rules, catalogs, platform names, name matching, Playnite and PlayStation, the SDK contract
 ```
 
 - Every database call is a stored procedure through Dapper; no SQL in C#.
@@ -291,4 +314,4 @@ Ludex.UnitTest   library rules, catalogs, platform names, passwords, the SDK con
 
 ---
 
-<p align="center"><sub>Ludex isn't affiliated with Valve, Steam, Microsoft, Twitch or IGDB.</sub></p>
+<p align="center"><sub>Ludex isn't affiliated with Valve, Steam, Sony, PlayStation, Playnite, Microsoft, Twitch or IGDB.</sub></p>

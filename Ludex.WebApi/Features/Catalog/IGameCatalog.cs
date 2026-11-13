@@ -116,4 +116,14 @@ internal interface IGameCatalog
     /// <returns>The games the catalog knows.</returns>
     /// <exception cref="CatalogUnavailableException">The catalog can't be reached.</exception>
     Task<List<CatalogGame>> GetManyAsync(IReadOnlyCollection<int> ids, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Searches many names at once (the Playnite and PlayStation imports), in as few calls as the catalog allows.
+    /// </summary>
+    /// <param name="names">The names.</param>
+    /// <param name="take">At most this many candidates per name.</param>
+    /// <param name="cancellationToken">Cancels the calls.</param>
+    /// <returns>The candidates of each name, best first (search fields only); names with none are left out.</returns>
+    /// <exception cref="CatalogUnavailableException">The catalog can't be reached.</exception>
+    Task<Dictionary<string, List<CatalogGame>>> SearchManyAsync(IReadOnlyCollection<string> names, int take, CancellationToken cancellationToken = default);
 }

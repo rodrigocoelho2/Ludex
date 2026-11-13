@@ -1,0 +1,59 @@
+@model ImportListView
+@{
+    var statuses = new[] { GameStatus.Playing, GameStatus.Played, GameStatus.Finished, GameStatus.Backlog, GameStatus.Dropped, GameStatus.Wishlist };
+}
+@if (Model.New.Count > 0)
+{
+    <section class="steam-block">
+        <div class="steam-block-head">
+            <h2 class="g-h">New to your library <span class="muted">· @Model.New.Count</span></h2>
+            <div class="steam-quick">
+                <button type="button" class="link-btn" data-steam-pick="all">Tick all</button>
+                <button type="button" class="link-btn" data-steam-pick="played">Only played</button>
+                <button type="button" class="link-btn" data-steam-pick="none">None</button>
+                <label class="inline-field"><span>Set all to</span>
+                    <select data-steam-all>
+                        <option value="">—</option>
+                        @foreach (var s in statuses) { <option value="@s">@Fmt.Status(s)</option> }
+                    </select>
+                </label>
+            </div>
+        </div>
+        <ul class="steam-list">
+            @foreach (var g in Model.New)
+            {
+                <partial name="~/Views/Imports/_ImportRow.cshtml" model="g" />
+            }
+        </ul>
+    </section>
+}
+
+@if (Model.Known.Count > 0)
+{
+    <section class="steam-block">
+        <h2 class="g-h">Already in your library <span class="muted">· @Model.Known.Count</span></h2>
+        <p class="muted small-empty">@Model.KnownNote</p>
+        <ul class="steam-list">
+            @foreach (var g in Model.Known)
+            {
+                <partial name="~/Views/Imports/_ImportRow.cshtml" model="g" />
+            }
+        </ul>
+    </section>
+}
+
+@if (Model.New.Count + Model.Known.Count > 0)
+{
+    <div class="steam-bar" data-steam-bar>
+        <span><b data-steam-count>0</b> <span data-steam-count-word>games</span> ticked</span>
+        <button class="btn" type="button" data-steam-import>@Icons.Get("check")<span>Import</span></button>
+    </div>
+}
+
+@if (Model.Unmatched.Count > 0)
+{
+    <details class="steam-unmatched">
+        <summary>@Fmt.Plural(Model.Unmatched.Count, "name", "names") IGDB couldn't match with confidence</summary>
+        <p class="muted">Add these from Discover if you want them: a wrong game in your library is worse than one left out. @string.Join(" · ", Model.Unmatched)</p>
+    </details>
+}

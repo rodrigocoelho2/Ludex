@@ -198,6 +198,76 @@ internal sealed class IgdbCatalog(
         return trimmed.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal);
     }
 
+    /// <inheritdoc />
+    public async Task<Dictionary<string, List<CatalogGame>>> SearchManyAsync(IReadOnlyCollection<string> names, int take, CancellationToken cancellationToken = default)
+    {
+        // IGDB's multiquery runs up to ten searches in one call, each one labelled. A call starts every 300 ms with up
+        // to three in flight (IGDB allows four a second), so a thousand names take about half a minute.
+        var distinct = names.Where(static n => !string.IsNullOrWhiteSpace(n)).Distinct(StringComparer.Ordinal).ToList();
+        var limit = Math.Clamp(take, 1, 20).ToString(CultureInfo.InvariantCulture);
+        var gate = new SemaphoreSlim(3);   // not disposed: calls still running after a cancel release it
+        var calls = new List<Task<List<(string Name, List<CatalogGame> Games)>>>();
+        foreach (var chunk in distinct.Chunk(10))
+        {
+            if (calls.Count > 0)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(300), timeProvider, cancellationToken);
+            }
+
+            await gate.WaitAsync(cancellationToken);
+            calls.Add(SearchChunkAsync(chunk, limit, gate, cancellationToken));
+        }
+
+        var found = new Dictionary<string, List<CatalogGame>>(StringComparer.Ordinal);
+        foreach (var answer in (await Task.WhenAll(calls)).SelectMany(static a => a))
+        {
+            found[answer.Name] = answer.Games;
+        }
+
+        return found;
+    }
+
+    private async Task<List<(string Name, List<CatalogGame> Games)>> SearchChunkAsync(string[] chunk, string limit, SemaphoreSlim gate, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var body = new StringBuilder();
+            for (var i = 0; i < chunk.Length; i++)
+            {
+                body.Append(CultureInfo.InvariantCulture, $"query games \"q{i}\" {{ search \"{Escape(chunk[i])}\"; fields {SearchFields}; where version_parent = null; limit {limit}; }};\n");
+            }
+
+            List<IgdbMultiAnswer> answers;
+            try
+            {
+                answers = await QueryAsync<IgdbMultiAnswer>("multiquery", body.ToString(), cancellationToken);
+            }
+            catch (CatalogUnavailableException exception) when (exception.Message.Contains("429", StringComparison.Ordinal))
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1), timeProvider, cancellationToken);   // too many at once: once more
+                answers = await QueryAsync<IgdbMultiAnswer>("multiquery", body.ToString(), cancellationToken);
+            }
+
+            var found = new List<(string Name, List<CatalogGame> Games)>();
+            foreach (var answer in answers)
+            {
+                if (answer.Name is { Length: > 1 } label
+                    && int.TryParse(label.AsSpan(1), NumberStyles.None, CultureInfo.InvariantCulture, out var index)
+                    && index < chunk.Length
+                    && answer.Result is { Count: > 0 } games)
+                {
+                    found.Add((chunk[index], games.Select(Map).ToList()));
+                }
+            }
+
+            return found;
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
     /// <summary>Several games by id, with everything the game page shows, in as few calls as IGDB allows.</summary>
     private async Task<Dictionary<int, IgdbGame>> GamesAsync(IReadOnlyCollection<int> ids, CancellationToken cancellationToken)
     {
@@ -425,6 +495,16 @@ internal sealed class IgdbTimeToBeat
 
     [JsonPropertyName("completely")]
     public long? Completely { get; set; }
+}
+
+/// <summary>One labelled answer of IGDB's multiquery.</summary>
+internal sealed class IgdbMultiAnswer
+{
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
+
+    [JsonPropertyName("result")]
+    public List<IgdbGame>? Result { get; set; }
 }
 
 /// <summary>A game in another store, as IGDB links it (here: a Steam app).</summary>

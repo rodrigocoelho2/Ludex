@@ -1,0 +1,82 @@
+@model PlaynitePageModel
+@{
+    Layout = "_App";
+    ViewData["Title"] = "Import from Playnite";
+    var preview = Model.Preview;
+    var read = preview is { Available: true } && Model.FileName is not null && Model.ReadProblem is null;
+}
+
+<div class="steam-page" data-steam="@(read ? "playnite" : null)" data-import-url="/playnite/import" data-import-name="Playnite">
+    <a class="back rise" href="/settings">@Icons.Get("left")Settings</a>
+    <div class="page-head rise">
+        <div>
+            <h1>Import from Playnite</h1>
+            <p class="muted">Playnite gathers Epic, GOG, EA app, Ubisoft Connect, Battle.net, Xbox, itch.io and emulators in one place. Export it once and your games, hours and stores come here.</p>
+        </div>
+    </div>
+
+    @if (preview is { Available: false })
+    {
+        <div class="msg err rise" role="alert">@Icons.Get("info")<p>@preview.Problem</p></div>
+    }
+    else
+    {
+        <section class="panel glass rise d1 import-steps">
+            <h2>In Playnite</h2>
+            <ol>
+                <li>Install the add-on <b>Library Exporter Advanced</b>: menu (top left) → <b>Add-ons…</b> → <b>Browse</b> → <b>Generic</b>, search for it, <b>Install</b> and restart Playnite.</li>
+                <li>Menu → <b>Extensions</b> → <b>Library Exporter Advanced</b> → <b>Open export window</b>.</li>
+                <li>In <b>Fields to export</b> tick <b>Sources</b>, <b>Platforms</b>, <b>Time Played</b>, <b>Completion Status</b> and <b>Last Played</b> (the name always goes).</li>
+                <li><b>Export all games</b> and save the CSV, then choose it below.</li>
+            </ol>
+        </section>
+
+        <form class="panel glass rise d1 steam-form" method="post" action="/playnite" enctype="multipart/form-data" data-steam-load>
+            <label class="field">
+                <span class="label">Playnite's export (CSV)</span>
+                <span class="in">@Icons.Get("library")<input name="file" type="file" accept=".csv,text/csv" required /></span>
+                <span class="hint">Read here and matched to IGDB by name; nothing is added until you tick and import. Do it again whenever you like: hours only go up, and what you set here stays.</span>
+            </label>
+            <div class="actions">
+                <button class="btn" type="submit" data-steam-load-button>@Icons.Get("search")<span>@(read ? "Read another file" : "Read the file")</span></button>
+            </div>
+            <p class="steam-wait muted" hidden data-steam-wait>@Icons.Get("clock")Matching your games to IGDB… about half a minute for a thousand games.</p>
+        </form>
+
+        @if (Model.ReadProblem is { } problem)
+        {
+            <div class="msg err rise" role="alert">@Icons.Get("info")<p>@problem</p></div>
+        }
+
+        @if (read && preview is not null)
+        {
+            <section class="steam-account panel glass rise d1">
+                <span class="empty-ico" aria-hidden="true">@Icons.Get("library")</span>
+                <div class="steam-who">
+                    <b>@Model.FileName</b>
+                    <span class="muted">@Fmt.Plural(preview.GameCount, "game", "games") in the file · @preview.Games.Count matched · @Model.New.Count new to your library</span>
+                </div>
+            </section>
+
+            @if (preview.SteamSkipped > 0)
+            {
+                <div class="msg rise" role="status">@Icons.Get("info")<p>@Fmt.Plural(preview.SteamSkipped, "Steam game was", "Steam games were") left out: your Steam import brings those with their achievements and keeps them in sync.</p></div>
+            }
+
+            @if (preview.Missing.Count > 0)
+            {
+                <div class="msg rise" role="status">@Icons.Get("info")<p>The export has no <b>@string.Join(", ", preview.Missing)</b>. Tick @(preview.Missing.Count == 1 ? "it" : "them") in the export window and export again for hours, statuses and stores.</p></div>
+            }
+
+            @if (preview.Games.Count > 0)
+            {
+                <p class="muted steam-rule">Suggested: Playnite's completion status when it says one (Beaten, Completed → <b>Finished</b>; Playing; Abandoned → <b>Dropped</b>; Plan to Play, On Hold → <b>Backlog</b>); otherwise by the hours, as for Steam. Change any of them before importing.</p>
+                <partial name="~/Views/Imports/_ImportList.cshtml" model='new ImportListView(Model.New, Model.Known, preview.Unmatched, "These keep their status, rating and notes. Ticked ones take Playnite’s hours when it has more, and a platform or store if they have none.")' />
+            }
+            else if (preview.Unmatched.Count > 0)
+            {
+                <partial name="~/Views/Imports/_ImportList.cshtml" model='new ImportListView([], [], preview.Unmatched, string.Empty)' />
+            }
+        }
+    }
+</div>

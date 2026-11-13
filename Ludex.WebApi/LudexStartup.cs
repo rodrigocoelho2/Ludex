@@ -16,10 +16,13 @@ using Ludex.WebApi.Features.Library.Repositories;
 using Ludex.WebApi.Features.Library.Services;
 using Ludex.WebApi.Features.Notifications.Repositories;
 using Ludex.WebApi.Features.Notifications.Services;
+using Ludex.WebApi.Features.Playnite.Services;
 using Ludex.WebApi.Features.Prices.Repositories;
 using Ludex.WebApi.Features.Prices.Services;
 using Ludex.WebApi.Features.Profile.Repositories;
 using Ludex.WebApi.Features.Profile.Services;
+using Ludex.WebApi.Features.Psn.Repositories;
+using Ludex.WebApi.Features.Psn.Services;
 using Ludex.WebApi.Features.Steam.Services;
 using Ludex.WebApi.Features.Users.Repositories;
 using Ludex.WebApi.Features.Users.Services;
@@ -80,6 +83,15 @@ internal static class LudexStartup
             client.DefaultRequestHeaders.UserAgent.ParseAdd("Ludex/1.0 (+https://github.com/rodrigocoelho2/Ludex)");
         });
 
+        // PlayStation Network: Sony's sign-in answers with a redirect that carries the code, so redirects aren't
+        // followed, and the NPSSO goes in a header of its own (no cookie jar).
+        services.AddHttpClient(PsnClient.HttpClientName, static client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(30);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Linux; Android 11) Ludex/1.0");
+            })
+            .ConfigurePrimaryHttpMessageHandler(static () => new SocketsHttpHandler { AllowAutoRedirect = false, UseCookies = false });
+
         // IsThereAnyDeal (wishlist prices).
         services.AddHttpClient(ItadClient.HttpClientName, static client =>
         {
@@ -112,6 +124,7 @@ internal static class LudexStartup
         services.AddSingleton<ICollectionRepository, CollectionRepository>();
         services.AddSingleton<INotificationRepository, NotificationRepository>();
         services.AddSingleton<IPriceRepository, PriceRepository>();
+        services.AddSingleton<IPsnRepository, PsnRepository>();
 
         // Services
         services.AddSingleton<GameStore>();
@@ -126,8 +139,13 @@ internal static class LudexStartup
         services.AddSingleton<INotificationService, NotificationService>();
         services.AddSingleton<ItadClient>();
         services.AddSingleton<PriceService>();
+        services.AddSingleton<GameMatcher>();
+        services.AddSingleton<IPlayniteService, PlayniteService>();
+        services.AddSingleton<PsnClient>();
+        services.AddSingleton<PsnTokenProtector>();
+        services.AddSingleton<IPsnService, PsnService>();
 
-        // What Ludex does on its own: catalog refresh, the daily Steam sync, wishlist prices.
+        // What Ludex does on its own: catalog refresh, the daily Steam and PlayStation syncs, wishlist prices.
         services.AddHostedService<LudexJobs>();
 
         return services;

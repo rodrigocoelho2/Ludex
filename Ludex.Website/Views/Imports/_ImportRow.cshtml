@@ -1,0 +1,45 @@
+@model ImportGameDTO
+@{
+    var g = Model;
+    var inLibrary = g.Game.MyStatus is not null;
+    var copy = g.Store ?? g.Format?.ToString();
+    var sub = new List<string> { g.Hours > 0 ? $"{Fmt.Hours(g.Hours)} played" : (g.TrophiesEarned is > 0 ? "Trophies earned" : "Never played") };
+    sub.Add(copy is null ? g.Platform : $"{g.Platform} · {copy}");
+    if (g.Source is { Length: > 0 } source && source != g.Platform && source != g.Store) { sub.Add($"from {source}"); }
+    if (g.TrophiesTotal is > 0) { sub.Add($"{g.TrophiesEarned ?? 0}/{g.TrophiesTotal} trophies"); }
+    if (g.LastPlayedAt is { } last) { sub.Add("last played " + Fmt.Ago(last)); }
+    var upToDate = inLibrary && !g.Selected && g.Hours <= (g.LibraryHours ?? 0m);
+    var playedAt = g.LastPlayedAt?.ToString("o", System.Globalization.CultureInfo.InvariantCulture);
+    var played = g.Hours > 0 || g.TrophiesEarned is > 0;
+}
+<li class="steam-row@(upToDate ? " is-done" : string.Empty)" data-steam-row data-game="@g.Game.Id" data-hours="@Fmt.Input(g.Hours > 0 ? g.Hours : null)" data-played="@playedAt" data-minutes-played="@(played ? "1" : "0")"
+    data-key="@g.Key" data-platform="@g.Platform" data-store="@g.Store" data-format="@g.Format" data-trophies="@g.TrophiesEarned" data-trophies-total="@g.TrophiesTotal">
+    <label class="steam-check">
+        <input type="checkbox" checked="@(g.Selected ? "checked" : null)" disabled="@(upToDate ? "disabled" : null)" aria-label="Import @g.Game.Name" />
+    </label>
+    <span class="steam-cover"><partial name="_Cover" model='new CoverView(g.Game, "none")' /></span>
+    <span class="steam-text">
+        <b>@g.Game.Name</b>
+        @if (!string.Equals(g.Name, g.Game.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            <small class="muted">as “@g.Name”</small>
+        }
+        <small>@string.Join(" · ", sub)</small>
+    </span>
+    @if (inLibrary)
+    {
+        <span class="steam-state">
+            <partial name="_StatusChip" model="g.Game.MyStatus!.Value" />
+            <small class="muted">@(upToDate ? "Up to date" : g.Hours > (g.LibraryHours ?? 0m) ? $"{Fmt.Hours(g.LibraryHours)} → {Fmt.Hours(g.Hours)}" : "Update")</small>
+        </span>
+    }
+    else
+    {
+        <select class="steam-status" aria-label="Status for @g.Game.Name">
+            @foreach (var s in new[] { GameStatus.Playing, GameStatus.Played, GameStatus.Finished, GameStatus.Backlog, GameStatus.Dropped, GameStatus.Wishlist })
+            {
+                <option value="@s" selected="@(s == g.SuggestedStatus ? "selected" : null)">@Fmt.Status(s)</option>
+            }
+        </select>
+    }
+</li>

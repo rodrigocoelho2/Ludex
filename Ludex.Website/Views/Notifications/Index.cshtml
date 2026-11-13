@@ -21,7 +21,7 @@
             {
                 <li>
                     <a class="note row-soft@(n.Read ? string.Empty : " new")" href="@(n.Url ?? "#")">
-                        <span class="note-ico">@Icons.Get(n.Kind == NotificationKind.PriceAlert ? "tag" : "library")</span>
+                        <span class="note-ico">@(Icons.Get(n.Kind switch { NotificationKind.PriceAlert => "tag", NotificationKind.ConnectionProblem => "info", _ => "library" }))</span>
                         <span class="note-text"><span>@n.Text</span><small>@Fmt.Ago(n.CreatedAt)</small></span>
                     </a>
                 </li>

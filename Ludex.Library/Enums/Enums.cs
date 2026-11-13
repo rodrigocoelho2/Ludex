@@ -115,4 +115,10 @@ public enum NotificationKind
 
     /// <summary>The daily Steam sync added games bought since.</summary>
     SteamNewGames = 2,
+
+    /// <summary>The daily PlayStation sync added games played since.</summary>
+    NewGames = 3,
+
+    /// <summary>A connected account (PlayStation) needs to be connected again.</summary>
+    ConnectionProblem = 4,
 }

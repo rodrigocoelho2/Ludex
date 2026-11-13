@@ -206,6 +206,54 @@ public sealed class LudexClient(HttpClient httpClient)
     public Task<AchievementsDTO> SteamAchievementsAsync(string userId, int gameId) =>
         GetAsync<AchievementsDTO>($"steam/achievements?userId={Uri.EscapeDataString(userId)}&gameId={gameId}");
 
+    // ----- Playnite -----
+
+    /// <summary>Reads Playnite's export (Library Exporter Advanced) and matches it to the catalog.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="csv">The CSV.</param>
+    /// <returns>The games with a suggested status (Problem: why the file can't be read).</returns>
+    public Task<PlaynitePreviewDTO> PlaynitePreviewAsync(string userId, string? csv) =>
+        PostAsync<PlaynitePreviewDTO>("playnite/preview", new PlaynitePreviewRequest { UserId = userId, Csv = csv });
+
+    /// <summary>Adds the Playnite games ticked.</summary>
+    /// <param name="item">The account and the games.</param>
+    /// <returns>How many were added and updated.</returns>
+    public Task<ImportResultDTO> PlayniteImportAsync(PlayniteImportRequest item) => PostAsync<ImportResultDTO>("playnite/import", item);
+
+    // ----- PlayStation -----
+
+    /// <summary>The account's PlayStation connection.</summary>
+    /// <param name="userId">The account.</param>
+    /// <returns>The connection.</returns>
+    public Task<PsnStatusDTO> PsnStatusAsync(string userId) => GetAsync<PsnStatusDTO>($"psn?userId={Uri.EscapeDataString(userId)}");
+
+    /// <summary>Connects PlayStation with an NPSSO.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="npsso">The NPSSO (or the whole page that shows it).</param>
+    /// <returns>The connection (a <see cref="LudexApiException"/> with 400 when Sony refuses the NPSSO).</returns>
+    public Task<PsnStatusDTO> PsnConnectAsync(string userId, string? npsso) =>
+        PostAsync<PsnStatusDTO>("psn/connect", new PsnConnectRequest { UserId = userId, Npsso = npsso });
+
+    /// <summary>Reads the PlayStation games played and matches them to the catalog.</summary>
+    /// <param name="userId">The account.</param>
+    /// <returns>The games with a suggested status (Status.Problem: what's in the way).</returns>
+    public Task<PsnPreviewDTO> PsnPreviewAsync(string userId) => GetAsync<PsnPreviewDTO>($"psn/preview?userId={Uri.EscapeDataString(userId)}");
+
+    /// <summary>Adds the PlayStation games ticked.</summary>
+    /// <param name="item">The account and the games.</param>
+    /// <returns>How many were added and updated.</returns>
+    public Task<ImportResultDTO> PsnImportAsync(PsnImportRequest item) => PostAsync<ImportResultDTO>("psn/import", item);
+
+    /// <summary>Syncs the library with PlayStation now.</summary>
+    /// <param name="userId">The account.</param>
+    /// <returns>What changed.</returns>
+    public Task<ImportResultDTO> PsnSyncAsync(string userId) => PostAsync<ImportResultDTO>("psn/sync", new PsnAccountRequest { UserId = userId });
+
+    /// <summary>Disconnects PlayStation (the games imported stay).</summary>
+    /// <param name="userId">The account.</param>
+    /// <returns>The connection (none).</returns>
+    public Task<PsnStatusDTO> PsnDisconnectAsync(string userId) => PostAsync<PsnStatusDTO>("psn/disconnect", new PsnAccountRequest { UserId = userId });
+
     // ----- Collections -----
 
     /// <summary>The account's collections.</summary>

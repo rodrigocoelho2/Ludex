@@ -317,6 +317,48 @@ public sealed class SteamPageModel : AppPageModel
     public List<SteamGameDTO> Known => Preview is null ? [] : [.. Preview.Games.Where(static g => g.Game.MyStatus is not null)];
 }
 
+/// <summary>The Playnite import page.</summary>
+public sealed class PlaynitePageModel : AppPageModel
+{
+    /// <summary>Gets or sets the file read (null: none yet).</summary>
+    public string? FileName { get; set; }
+
+    /// <summary>Gets or sets what was read (Available: whether the import can run).</summary>
+    public PlaynitePreviewDTO? Preview { get; set; }
+
+    /// <summary>Gets or sets why the file couldn't be read.</summary>
+    public string? ReadProblem { get; set; }
+
+    /// <summary>Gets the games new to the library.</summary>
+    public List<ImportGameDTO> New => Preview is null ? [] : [.. Preview.Games.Where(static g => g.Game.MyStatus is null)];
+
+    /// <summary>Gets the games already in the library.</summary>
+    public List<ImportGameDTO> Known => Preview is null ? [] : [.. Preview.Games.Where(static g => g.Game.MyStatus is not null)];
+}
+
+/// <summary>The games of an import to review (the Playnite and PlayStation pages).</summary>
+/// <param name="New">The games new to the library.</param>
+/// <param name="Known">The games already there.</param>
+/// <param name="Unmatched">The names not matched.</param>
+/// <param name="KnownNote">What happens to the games already there.</param>
+public sealed record ImportListView(List<ImportGameDTO> New, List<ImportGameDTO> Known, List<string> Unmatched, string KnownNote);
+
+/// <summary>The PlayStation page.</summary>
+public sealed class PsnPageModel : AppPageModel
+{
+    /// <summary>Gets or sets the connection.</summary>
+    public PsnStatusDTO Status { get; set; } = new();
+
+    /// <summary>Gets or sets the games read (null: not loaded).</summary>
+    public PsnPreviewDTO? Preview { get; set; }
+
+    /// <summary>Gets the games new to the library.</summary>
+    public List<ImportGameDTO> New => Preview is null ? [] : [.. Preview.Games.Where(static g => g.Game.MyStatus is null)];
+
+    /// <summary>Gets the games already in the library.</summary>
+    public List<ImportGameDTO> Known => Preview is null ? [] : [.. Preview.Games.Where(static g => g.Game.MyStatus is not null)];
+}
+
 /// <summary>Editing one's profile.</summary>
 public sealed class ProfileEditPageModel : AppPageModel
 {

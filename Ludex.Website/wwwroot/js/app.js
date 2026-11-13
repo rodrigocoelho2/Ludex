@@ -924,13 +924,29 @@
             if (!games.length) return;
             button.disabled = true;
             button.classList.add('is-busy');
-            const result = await post('/steam/import', { steamId: steam.dataset.steam, games });
+            // Playnite and PlayStation send the copy too (platform, store or format) and PlayStation its trophies.
+            const other = steam.dataset.importUrl;
+            if (other) {
+                const rowOf = g => boxes().find(x => Number(x.row.dataset.game) === g.gameId).row;
+                games.forEach(g => {
+                    const d = rowOf(g).dataset;
+                    Object.assign(g, {
+                        key: d.key || null,
+                        platform: d.platform || null,
+                        store: d.store || null,
+                        format: d.format || null,
+                        trophiesEarned: d.trophies === undefined || d.trophies === '' ? null : Number(d.trophies),
+                        trophiesTotal: d.trophiesTotal === undefined || d.trophiesTotal === '' ? null : Number(d.trophiesTotal),
+                    });
+                });
+            }
+            const result = await post(other || '/steam/import', other ? { games } : { steamId: steam.dataset.steam, games });
             button.classList.remove('is-busy');
             if (!result) { button.disabled = false; return; }
             const parts = [];
             if (result.added) parts.push(`${result.added} added`);
-            if (result.updated) parts.push(`${result.updated} with more hours`);
-            toast(parts.length ? `Steam: ${parts.join(', ')}` : 'Already up to date');
+            if (result.updated) parts.push(other ? `${result.updated} updated` : `${result.updated} with more hours`);
+            toast(parts.length ? `${steam.dataset.importName || 'Steam'}: ${parts.join(', ')}` : 'Already up to date');
             setTimeout(() => { location.href = '/library'; }, 1200);
         });
         if (bar) bar.classList.add('is-ready');
@@ -992,18 +1008,18 @@
             .catch(() => { });
     }
 
-    /* ---------- Steam: sync now ---------- */
+    /* ---------- Steam and PlayStation: sync now ---------- */
     $('[data-steam-sync]')?.addEventListener('click', async e => {
         const button = e.currentTarget;
         button.disabled = true;
         button.classList.add('is-busy');
-        const result = await post('/steam/sync', {});
+        const result = await post(button.dataset.syncUrl || '/steam/sync', {});
         button.disabled = false;
         button.classList.remove('is-busy');
         if (!result) return;
         const parts = [];
         if (result.added) parts.push(`${result.added} new`);
-        if (result.updated) parts.push(`${result.updated} with more hours`);
+        if (result.updated) parts.push(button.dataset.syncUrl ? `${result.updated} updated` : `${result.updated} with more hours`);
         if (result.achievements) parts.push(`${result.achievements} achievement counts`);
         toast(parts.length ? `Synced: ${parts.join(', ')}` : 'Synced: nothing new');
     });

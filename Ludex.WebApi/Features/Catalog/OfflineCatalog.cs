@@ -56,6 +56,22 @@ internal sealed class OfflineCatalog : IGameCatalog
     public Task<List<CatalogGame>> GetManyAsync(IReadOnlyCollection<int> ids, CancellationToken cancellationToken = default) =>
         Task.FromResult(Games.Where(g => ids.Contains(g.Id)).ToList());
 
+    /// <inheritdoc />
+    public async Task<Dictionary<string, List<CatalogGame>>> SearchManyAsync(IReadOnlyCollection<string> names, int take, CancellationToken cancellationToken = default)
+    {
+        var found = new Dictionary<string, List<CatalogGame>>(StringComparer.Ordinal);
+        foreach (var name in names.Distinct(StringComparer.Ordinal))
+        {
+            var games = await SearchAsync(name, take, cancellationToken);
+            if (games.Count > 0)
+            {
+                found[name] = games;
+            }
+        }
+
+        return found;
+    }
+
     /// <summary>
     /// Lower case without accents or punctuation, for matching ("Pokémon: Z-A" → "pokemon z a").
     /// </summary>

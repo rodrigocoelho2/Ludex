@@ -1,0 +1,104 @@
+@model PsnPageModel
+@{
+    Layout = "_App";
+    ViewData["Title"] = "PlayStation";
+    var status = Model.Status;
+    var preview = Model.Preview;
+    var loaded = preview is not null && status.Connected && status.Problem is null;
+}
+
+<div class="steam-page" data-steam="@(loaded ? "psn" : null)" data-import-url="/psn/import" data-import-name="PlayStation">
+    <a class="back rise" href="/settings">@Icons.Get("left")Settings</a>
+    <div class="page-head rise">
+        <div>
+            <h1>PlayStation</h1>
+            <p class="muted">Your PS5 and PS4 games with their hours, your PS3 and PS Vita games through their trophies, and trophy counts. Ludex only reads; it never changes anything on your account.</p>
+        </div>
+    </div>
+
+    @if (!status.Available)
+    {
+        <div class="msg err rise" role="alert">@Icons.Get("info")<p>@status.Problem</p></div>
+    }
+    else
+    {
+        @if (status.Problem is { } problem)
+        {
+            <div class="msg err rise" role="alert">@Icons.Get("info")<p>@problem</p></div>
+        }
+
+        @if (!status.Connected)
+        {
+            @if (status.Broken)
+            {
+                <div class="msg err rise" role="alert">@Icons.Get("info")<p>The PlayStation sign-in ran out (Sony's lasts about two months). Paste a new NPSSO below: your games and their matches are kept.</p></div>
+            }
+
+            <section class="panel glass rise d1 import-steps">
+                <h2>Connect PlayStation</h2>
+                <ol>
+                    <li>In a browser, sign in at <a href="https://www.playstation.com/" target="_blank" rel="noopener">playstation.com</a> with your PlayStation account.</li>
+                    <li>In the same browser open <a href="https://ca.account.sony.com/api/v1/ssocookie" target="_blank" rel="noopener">ca.account.sony.com/api/v1/ssocookie</a>. It shows <code>{"npsso":"…"}</code>.</li>
+                    <li>Copy the 64 letters and digits between the quotes (or the whole line) and paste them here.</li>
+                </ol>
+                <p class="muted">The NPSSO works like a password for your PlayStation account: paste it only here, never send it to anyone. Ludex uses it once to sign in and keeps only Sony's sign-in, encrypted.</p>
+            </section>
+
+            <form class="panel glass rise d1 steam-form" method="post" action="/psn/connect" autocomplete="off" data-steam-load>
+                <label class="field">
+                    <span class="label">NPSSO</span>
+                    <span class="in">@Icons.Get("key")<input name="npsso" type="password" placeholder="64 letters and digits" autocapitalize="none" spellcheck="false" required /></span>
+                </label>
+                <div class="actions">
+                    <button class="btn" type="submit" data-steam-load-button>@Icons.Get("bolt")<span>Connect and load my games</span></button>
+                </div>
+                <p class="steam-wait muted" hidden data-steam-wait>@Icons.Get("clock")Signing in to PlayStation and matching your games to IGDB…</p>
+            </form>
+        }
+        else
+        {
+            <section class="steam-account panel glass rise d1">
+                <span class="empty-ico" aria-hidden="true">@Icons.Get("pad")</span>
+                <div class="steam-who">
+                    <b>@(status.OnlineId ?? "PlayStation account")</b>
+                    <span class="muted">Connected @(status.ConnectedAt is { } at ? Fmt.Ago(at) : string.Empty)@(status.ExpiresAt is { } ends ? $" · sign-in good until {Fmt.ShortDate(ends)}" : string.Empty)@(loaded ? $" · {preview!.GameCount} games · {preview.Games.Count} matched · {Model.New.Count} new to your library" : string.Empty)</span>
+                </div>
+                <form method="post" action="/psn/disconnect" data-confirm="Disconnect PlayStation? The games you imported stay in your library.">
+                    <button class="btn ghost small" type="submit">Disconnect</button>
+                </form>
+            </section>
+
+            @if (status.SyncedAt is { } syncedAt)
+            {
+                <section class="panel glass rise d1 steam-sync">
+                    <div>
+                        <h2>Synced with PlayStation</h2>
+                        <p class="muted">Last time @Fmt.Ago(syncedAt). Every day Ludex syncs on its own: more hours, trophies, and games you play for the first time come in by how you played them.</p>
+                    </div>
+                    <button type="button" class="btn" data-steam-sync data-sync-url="/psn/sync">@Icons.Get("refresh")<span>Sync now</span></button>
+                </section>
+            }
+
+            @if (!loaded)
+            {
+                <form class="panel glass rise d1 steam-form" method="get" action="/psn" data-steam-load>
+                    <input type="hidden" name="load" value="true" />
+                    <p class="muted">@(status.SyncedAt is null ? "Load your games to choose what goes into your library." : "Load your games again to add ones you left out.")</p>
+                    <div class="actions">
+                        <button class="btn" type="submit" data-steam-load-button>@Icons.Get("search")<span>Load my PlayStation games</span></button>
+                    </div>
+                    <p class="steam-wait muted" hidden data-steam-wait>@Icons.Get("clock")Reading your PlayStation games and matching them to IGDB…</p>
+                </form>
+            }
+            else if (preview!.Games.Count > 0 || preview.Unmatched.Count > 0)
+            {
+                <p class="muted steam-rule">Suggested: the platinum → <b>Finished</b>; played in the last 30 days → <b>Playing</b>; 2 h or more → <b>Played</b>; less → <b>Dropped</b>. PS3 and PS Vita games come from their trophies. Change any of them before importing.</p>
+                <partial name="~/Views/Imports/_ImportList.cshtml" model='new ImportListView(Model.New, Model.Known, preview.Unmatched, "These keep their status, rating and notes. Ticked ones take PlayStation’s hours when it has more, and its trophy count.")' />
+            }
+            else
+            {
+                <div class="msg rise" role="status">@Icons.Get("info")<p>PlayStation lists no games for this account yet.</p></div>
+            }
+        }
+    }
+</div>

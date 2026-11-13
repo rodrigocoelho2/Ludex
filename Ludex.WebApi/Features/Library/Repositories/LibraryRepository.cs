@@ -93,7 +93,23 @@ public sealed class AchievementTarget
 /// <param name="PlayedAt">When it was last played (UTC).</param>
 /// <param name="AppID">Its Steam app.</param>
 /// <param name="RecentMinutes">Minutes played on Steam in the last two weeks.</param>
-internal sealed record LibraryImportRow(int GameID, byte Status, decimal? Hours, DateTime? PlayedAt, int? AppID = null, int? RecentMinutes = null);
+/// <param name="Platform">The platform of the copy (null: a Steam game, PC / Steam / Digital).</param>
+/// <param name="Store">The store of the copy (with a platform; only filled where the entry has no copy yet).</param>
+/// <param name="Format">Physical or digital (with a platform).</param>
+/// <param name="AchUnlocked">Trophies or achievements earned (games that aren't Steam games).</param>
+/// <param name="AchTotal">Trophies or achievements the game has.</param>
+internal sealed record LibraryImportRow(
+    int GameID,
+    byte Status,
+    decimal? Hours,
+    DateTime? PlayedAt,
+    int? AppID = null,
+    int? RecentMinutes = null,
+    string? Platform = null,
+    string? Store = null,
+    byte? Format = null,
+    short? AchUnlocked = null,
+    short? AchTotal = null);
 
 /// <summary>What dbo.LibraryImport did.</summary>
 public sealed class LibraryImportCounts
