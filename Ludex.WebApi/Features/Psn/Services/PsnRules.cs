@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Ludex.Library.Enums;
 using Ludex.WebApi.Features.Catalog;
+using Ludex.WebApi.Features.Psn.Models.DTOs;
 
 namespace Ludex.WebApi.Features.Psn.Services;
 
@@ -14,7 +15,8 @@ namespace Ludex.WebApi.Features.Psn.Services;
 /// <param name="TrophiesEarned">Trophies earned (null: no trophy list found).</param>
 /// <param name="TrophiesTotal">Trophies the game has.</param>
 /// <param name="Platinum">Whether the platinum is earned.</param>
-internal sealed record PsnGame(string Key, string Name, string Platform, int Minutes, DateTimeOffset? LastPlayed, int? TrophiesEarned, int? TrophiesTotal, bool Platinum);
+/// <param name="TrophyList">Its trophy list and the service to read it from ("NPWR12345_00:trophy2"; null: none found).</param>
+internal sealed record PsnGame(string Key, string Name, string Platform, int Minutes, DateTimeOffset? LastPlayed, int? TrophiesEarned, int? TrophiesTotal, bool Platinum, string? TrophyList = null);
 
 /// <summary>
 /// How PlayStation's answers become Ludex's: time played ("PT228H56M33S"), the platform, one game per concept, and
@@ -115,7 +117,8 @@ internal static partial class PsnRules
                 Max(last, best?.LastUpdatedDateTime),
                 best?.EarnedTrophies?.Total,
                 best?.DefinedTrophies?.Total,
-                lists2.Any(static l => l.EarnedTrophies?.Platinum > 0)));
+                lists2.Any(static l => l.EarnedTrophies?.Platinum > 0),
+                best is null ? null : TrophyList(best)));
         }
 
         foreach (var list in lists.Where(l => !used.Contains(l.NpCommunicationId!)))
@@ -129,7 +132,8 @@ internal static partial class PsnRules
                 list.LastUpdatedDateTime,
                 list.EarnedTrophies?.Total,
                 list.DefinedTrophies?.Total,
-                list.EarnedTrophies?.Platinum > 0));
+                list.EarnedTrophies?.Platinum > 0,
+                TrophyList(list)));
         }
 
         return [.. games.OrderByDescending(static g => g.LastPlayed ?? DateTimeOffset.MinValue)];
@@ -156,6 +160,57 @@ internal static partial class PsnRules
 
         return null;
     }
+
+    /// <summary>
+    /// A trophy list as Ludex keeps it: its id and the service it is read from (PS5 lists are "trophy2").
+    /// </summary>
+    /// <param name="list">The trophy list.</param>
+    /// <returns>"NPWR12345_00:trophy2".</returns>
+    public static string TrophyList(PsnTrophyTitle list) =>
+        $"{list.NpCommunicationId}:{((list.TrophyTitlePlatform ?? string.Empty).Contains("PS5", StringComparison.OrdinalIgnoreCase) ? "trophy2" : "trophy")}";
+
+    /// <summary>
+    /// A game's trophies as the game page shows them: earned first (latest first), then the rest, the most earned
+    /// first; hidden ones still locked keep their secret.
+    /// </summary>
+    /// <param name="definitions">The trophies of the list.</param>
+    /// <param name="earned">The account's progress in it.</param>
+    /// <returns>The trophies.</returns>
+    public static List<PsnTrophyDTO> Trophies(IEnumerable<PsnTrophyDefinition> definitions, IEnumerable<PsnTrophyProgress> earned)
+    {
+        var progress = earned.GroupBy(static e => e.TrophyId).ToDictionary(static g => g.Key, static g => g.First());
+        return
+        [
+            .. definitions.Select(d =>
+            {
+                var mine = progress.GetValueOrDefault(d.TrophyId);
+                var unlocked = mine?.Earned == true;
+                var secret = d.TrophyHidden == true && !unlocked;
+                return new PsnTrophyDTO
+                {
+                    Name = secret ? "Hidden trophy" : d.TrophyName ?? "Trophy",
+                    Description = secret ? null : d.TrophyDetail,
+                    IconUrl = d.TrophyIconUrl,
+                    Grade = Grade(d.TrophyType),
+                    Earned = unlocked,
+                    EarnedAt = unlocked ? mine!.EarnedDateTime : null,
+                    Rarity = double.TryParse(mine?.TrophyEarnedRate, NumberStyles.Float, CultureInfo.InvariantCulture, out var rate) ? rate : null,
+                    Hidden = d.TrophyHidden == true,
+                };
+            })
+            .OrderByDescending(static t => t.Earned)
+            .ThenByDescending(static t => t.EarnedAt ?? DateTimeOffset.MinValue)
+            .ThenByDescending(static t => t.Rarity ?? -1),
+        ];
+    }
+
+    private static string Grade(string? type) => (type ?? string.Empty).ToLowerInvariant() switch
+    {
+        "platinum" => "Platinum",
+        "gold" => "Gold",
+        "silver" => "Silver",
+        _ => "Bronze",
+    };
 
     // ™ and ® are dropped from the names PlayStation shows.
     private static string Clean(string name) => name.Replace("™", string.Empty, StringComparison.Ordinal).Replace("®", string.Empty, StringComparison.Ordinal).Trim();

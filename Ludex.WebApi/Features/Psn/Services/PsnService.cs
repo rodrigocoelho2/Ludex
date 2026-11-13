@@ -12,6 +12,7 @@ using Ludex.WebApi.Features.Notifications.Repositories;
 using Ludex.WebApi.Features.Psn.Models.DTOs;
 using Ludex.WebApi.Features.Psn.Repositories;
 using Ludex.WebApi.Features.Steam.Services;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Ludex.WebApi.Features.Psn.Services;
 
@@ -51,6 +52,12 @@ internal interface IPsnService
     /// <returns>The connection (none).</returns>
     Task<ServiceApiResponse<PsnStatusDTO>> DisconnectAsync(PsnAccountRequest item);
 
+    /// <summary>The account's trophies in a game it played on PlayStation (the game page).</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="gameId">The game.</param>
+    /// <returns>The trophies, or not found (no trophy list known, or not connected).</returns>
+    Task<ServiceApiResponse<PsnTrophiesDTO>> TrophiesAsync(string userId, int gameId);
+
     /// <summary>The daily job for one connection: warn before the sign-in runs out, then sync when it's due.</summary>
     /// <param name="account">The connection.</param>
     /// <param name="due">Whether the library is due a sync.</param>
@@ -70,6 +77,7 @@ internal interface IPsnService
 /// <param name="libraryRepository">Libraries.</param>
 /// <param name="notificationRepository">The bell.</param>
 /// <param name="globalizationHelper">Messages.</param>
+/// <param name="cache">Access tokens (an hour) and trophy lists.</param>
 /// <param name="timeProvider">The clock.</param>
 /// <param name="logger">Logger.</param>
 internal sealed class PsnService(
@@ -81,6 +89,7 @@ internal sealed class PsnService(
     ILibraryRepository libraryRepository,
     INotificationRepository notificationRepository,
     IGlobalizationHelper globalizationHelper,
+    IMemoryCache cache,
     TimeProvider timeProvider,
     ILogger<PsnService> logger) : IPsnService
 {
@@ -119,6 +128,7 @@ internal sealed class PsnService(
         try
         {
             var tokens = await psn.SignInAsync(npsso);
+            cache.Set($"psn:access:{user:N}", tokens.AccessToken, TimeSpan.FromMinutes(50));
             var onlineId = await psn.OnlineIdAsync(tokens.AccessToken);
             await psnRepository.SaveAsync(user, onlineId, protector.Protect(tokens.RefreshToken), tokens.RefreshExpiresAt.UtcDateTime);
             logger.LogInformation("PlayStation connected for one account");
@@ -243,7 +253,7 @@ internal sealed class PsnService(
         List<PsnTitleRemember> titles;
         try
         {
-            titles = [.. (await GamesAsync(account, CancellationToken.None)).Select(g => new PsnTitleRemember(g.Key, g.Name, ticked.TryGetValue(g.Key, out var id) ? id : null))];
+            titles = [.. (await GamesAsync(account, CancellationToken.None)).Select(g => new PsnTitleRemember(g.Key, g.Name, ticked.TryGetValue(g.Key, out var id) ? id : null, g.TrophyList))];
         }
         catch (Exception exception) when (exception is PsnSignInException or PsnUnavailableException)
         {
@@ -293,6 +303,7 @@ internal sealed class PsnService(
             return await NotFoundAsync<PsnStatusDTO>(item.UserId);
         }
 
+        cache.Remove($"psn:access:{user:N}");
         await psnRepository.DeleteAsync(user);
         logger.LogInformation("PlayStation disconnected for one account");
         return ServiceApiResponse<PsnStatusDTO>.Success(Status(null));
@@ -364,6 +375,7 @@ internal sealed class PsnService(
             GameStatus status;
             if (known.TryGetValue(game.Key, out var title))
             {
+                remember.Add(new PsnTitleRemember(game.Key, game.Name, null, game.TrophyList));   // keeps its game, takes its trophy list
                 if (title.GameID is not { } id || CopyRules.Pick(copies[id], game.Platform) is null)
                 {
                     continue;   // left out at the import, or its PlayStation copy taken out of the library since
@@ -375,7 +387,7 @@ internal sealed class PsnService(
             else
             {
                 var row = matched.GetValueOrDefault(game.Name);
-                remember.Add(new PsnTitleRemember(game.Key, game.Name, row?.GameID));
+                remember.Add(new PsnTitleRemember(game.Key, game.Name, row?.GameID, game.TrophyList));
                 if (row is null)
                 {
                     continue;
@@ -414,9 +426,68 @@ internal sealed class PsnService(
         return new ImportResultDTO { Added = counts.Added, Updated = counts.Updated };
     }
 
-    // The account's games, signing in with the refresh token (and keeping a new one when Sony sends it).
+    /// <inheritdoc />
+    public async Task<ServiceApiResponse<PsnTrophiesDTO>> TrophiesAsync(string userId, int gameId)
+    {
+        if (!Guid.TryParse(userId, out var user))
+        {
+            return await NotFoundAsync<PsnTrophiesDTO>(userId);
+        }
+
+        var account = await psnRepository.GetAsync(user);
+        if (account?.Token is null || await psnRepository.TrophyListAsync(user, gameId) is not { } saved || saved.Split(':') is not [var list, var service])
+        {
+            return await NotFoundAsync<PsnTrophiesDTO>(userId);
+        }
+
+        try
+        {
+            var access = await AccessAsync(account, CancellationToken.None);
+            var definitions = await cache.GetOrCreateAsync($"psn:list:{saved}", async e =>
+            {
+                e.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(12);
+                return await psn.TrophyListAsync(access, list, service);
+            }) ?? [];
+            var earned = await cache.GetOrCreateAsync($"psn:earned:{user:N}:{saved}", async e =>
+            {
+                e.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+                return await psn.TrophiesEarnedAsync(access, list, service);
+            }) ?? [];
+            var items = PsnRules.Trophies(definitions, earned);
+            return items.Count == 0
+                ? await NotFoundAsync<PsnTrophiesDTO>(userId)
+                : ServiceApiResponse<PsnTrophiesDTO>.Success(new PsnTrophiesDTO { Earned = items.Count(static t => t.Earned), Total = items.Count, Items = items });
+        }
+        catch (PsnSignInException exception)
+        {
+            await BreakAsync(user, notify: false);
+            return Invalid<PsnTrophiesDTO>(exception.Message);
+        }
+        catch (PsnUnavailableException exception)
+        {
+            return Invalid<PsnTrophiesDTO>(exception.Message);
+        }
+    }
+
+    // The account's games.
     private async Task<List<PsnGame>> GamesAsync(PsnAccountRow account, CancellationToken cancellationToken)
     {
+        var access = await AccessAsync(account, cancellationToken);
+        var played = await psn.PlayedAsync(access, cancellationToken);
+        var trophies = await psn.TrophiesAsync(access, cancellationToken);
+        return PsnRules.Games(played, trophies);
+    }
+
+    // An access token: kept for 50 minutes (Sony's last an hour); a new one comes from the refresh token, and a new
+    // refresh token Sony sends is kept.
+    private async Task<string> AccessAsync(PsnAccountRow account, CancellationToken cancellationToken)
+    {
+        var key = $"psn:access:{account.UserUniqueID:N}";
+        if (cache.TryGetValue(key, out string? kept) && kept is not null)
+        {
+            return kept;
+        }
+
         var refresh = protector.Unprotect(account.Token)
                       ?? throw new PsnSignInException("Ludex can't read the saved PlayStation sign-in (was LUDEX_API_KEY changed?). Connect PlayStation again.");
         var tokens = await psn.RefreshAsync(refresh, cancellationToken);
@@ -425,14 +496,14 @@ internal sealed class PsnService(
             await psnRepository.SaveAsync(account.UserUniqueID, null, protector.Protect(tokens.RefreshToken), tokens.RefreshExpiresAt.UtcDateTime);
         }
 
-        var played = await psn.PlayedAsync(tokens.AccessToken, cancellationToken);
-        var trophies = await psn.TrophiesAsync(tokens.AccessToken, cancellationToken);
-        return PsnRules.Games(played, trophies);
+        cache.Set(key, tokens.AccessToken, TimeSpan.FromMinutes(50));
+        return tokens.AccessToken;
     }
 
     // The sign-in no longer works: the token goes (the page asks to connect again), and the bell says so once.
     private async Task BreakAsync(Guid user, bool notify)
     {
+        cache.Remove($"psn:access:{user:N}");
         await psnRepository.SaveAsync(user, null, null, null);
         if (notify)
         {

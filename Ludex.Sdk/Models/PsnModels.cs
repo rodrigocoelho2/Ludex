@@ -70,3 +70,44 @@ public sealed class PsnImportRequest
     /// <summary>Gets or sets the games.</summary>
     public List<ImportGameRequest> Games { get; set; } = [];
 }
+
+/// <summary>An account's trophies in a game it played on PlayStation.</summary>
+public sealed class PsnTrophiesDTO
+{
+    /// <summary>Gets or sets how many are earned.</summary>
+    public int Earned { get; set; }
+
+    /// <summary>Gets or sets how many the game has.</summary>
+    public int Total { get; set; }
+
+    /// <summary>Gets or sets the trophies: earned first (latest first), then the rest, the most earned first.</summary>
+    public List<PsnTrophyDTO> Items { get; set; } = [];
+}
+
+/// <summary>One trophy.</summary>
+public sealed class PsnTrophyDTO
+{
+    /// <summary>Gets or sets the name ("Hidden trophy" for a hidden one still locked).</summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets what it takes (null for a hidden one still locked).</summary>
+    public string? Description { get; set; }
+
+    /// <summary>Gets or sets the icon.</summary>
+    public string? IconUrl { get; set; }
+
+    /// <summary>Gets or sets the grade: Bronze, Silver, Gold or Platinum.</summary>
+    public string Grade { get; set; } = "Bronze";
+
+    /// <summary>Gets or sets a value indicating whether it is earned.</summary>
+    public bool Earned { get; set; }
+
+    /// <summary>Gets or sets when it was earned.</summary>
+    public DateTimeOffset? EarnedAt { get; set; }
+
+    /// <summary>Gets or sets the % of players who have it (null: unknown).</summary>
+    public double? Rarity { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether it is hidden until earned.</summary>
+    public bool Hidden { get; set; }
+}

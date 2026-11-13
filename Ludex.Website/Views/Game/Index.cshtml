@@ -174,10 +174,45 @@
             }
 
         <div class="g-text rise d2">
-            @if (achievements is null && mine is { AchievementsTotal: > 0 })
+            @if (Model.Trophies is { Total: > 0 } trophyList)
             {
-                // A copy that isn't a Steam copy: its count only (PlayStation trophies, from the import and the daily sync).
-                var playStation = Ludex.Library.Platforms.GameCopies.UsesStores(mine.Platform) == false && (mine.Platform ?? string.Empty).StartsWith("PS", StringComparison.OrdinalIgnoreCase);
+                var trophyPercent = Fmt.AchievementPercent(trophyList.Earned, trophyList.Total) ?? 0;
+                <section class="g-block achievements trophies" data-achievements>
+                    <div class="ach-head">
+                        <h2 class="g-h">Trophies <span class="muted">· @mine?.Platform</span></h2>
+                        <span class="ach-count"><b class="num">@trophyList.Earned</b> / @trophyList.Total <span class="muted">(@trophyPercent%)</span></span>
+                    </div>
+                    <span class="ach-bar"><i style="width:@trophyPercent%"></i></span>
+                    <ul class="ach-grid">
+                        @for (var i = 0; i < trophyList.Items.Count; i++)
+                        {
+                            var t = trophyList.Items[i];
+                            <li class="ach@(t.Earned ? " on" : string.Empty)" hidden="@(i >= 12 ? "hidden" : null)" data-ach-item>
+                                <span class="ach-ico">
+                                    @if (t.IconUrl is { } trophyIcon)
+                                    {
+                                        <img src="@trophyIcon" alt="" loading="lazy" decoding="async" />
+                                    }
+                                    <i class="grade grade-@t.Grade.ToLowerInvariant()" title="@t.Grade"></i>
+                                </span>
+                                <span class="ach-text">
+                                    <b>@t.Name</b>
+                                    <small>@(t.Description ?? (t.Hidden ? "Earn it to see what it is." : string.Empty))</small>
+                                    <small class="ach-meta">@t.Grade · @(t.EarnedAt is { } earnedAt ? "Earned " + Fmt.ShortDate(earnedAt) : "Not earned")@(t.Rarity is { } rarity ? $" · {rarity.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)}% of players" : string.Empty)</small>
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                    @if (trophyList.Items.Count > 12)
+                    {
+                        <button type="button" class="link-btn" data-ach-more>Show all @trophyList.Items.Count</button>
+                    }
+                </section>
+            }
+            else if (achievements is null && mine is { AchievementsTotal: > 0 })
+            {
+                // Only the count is known (a PlayStation copy not synced since trophy lists were kept, or PlayStation unreachable).
+                var playStation = (mine.Platform ?? string.Empty).StartsWith("PS", StringComparison.OrdinalIgnoreCase);
                 var countPercent = Fmt.AchievementPercent(mine.AchievementsUnlocked, mine.AchievementsTotal) ?? 0;
                 <section class="g-block achievements">
                     <div class="ach-head">
@@ -187,7 +222,7 @@
                     <span class="ach-bar"><i style="width:@countPercent%"></i></span>
                     @if (playStation)
                     {
-                        <p class="muted small-empty">From PlayStation (@mine.Platform), synced every day.</p>
+                        <p class="muted small-empty">The full list shows after the next PlayStation sync (Settings → PlayStation → Sync now).</p>
                     }
                 </section>
             }

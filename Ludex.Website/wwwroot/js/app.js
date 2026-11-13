@@ -927,6 +927,9 @@
                 status: $('.steam-status', row)?.value || 'Finished',
                 hours: row.dataset.hours === '' ? null : Number(row.dataset.hours),
                 lastPlayedAt: row.dataset.played || null,
+                // Steam: the app (achievements are read by it) and the last two weeks.
+                appId: row.dataset.app ? Number(row.dataset.app) : null,
+                recentHours: row.dataset.recent ? Number(row.dataset.recent) : null,
             }));
             if (!games.length) return;
             button.disabled = true;

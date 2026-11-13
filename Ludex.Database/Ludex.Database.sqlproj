@@ -98,6 +98,7 @@
     <Build Include="StoredProcedures\Psn\dbo.PsnAccountDelete.sql" />
     <Build Include="StoredProcedures\Psn\dbo.PsnTitleList.sql" />
     <Build Include="StoredProcedures\Psn\dbo.PsnTitleRemember.sql" />
+    <Build Include="StoredProcedures\Psn\dbo.PsnTrophyListGet.sql" />
     <Build Include="StoredProcedures\Users\dbo.UserCount.sql" />
     <Build Include="StoredProcedures\Users\dbo.UserCreate.sql" />
     <Build Include="StoredProcedures\Users\dbo.UserDelete.sql" />

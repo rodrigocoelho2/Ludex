@@ -43,8 +43,9 @@ public sealed class PsnTitleRow
 /// <summary>A PlayStation game to remember (sent as JSON to dbo.PsnTitleRemember).</summary>
 /// <param name="TitleKey">The title's key.</param>
 /// <param name="Name">Its name.</param>
-/// <param name="GameID">Its game (null: none).</param>
-internal sealed record PsnTitleRemember(string TitleKey, string Name, int? GameID);
+/// <param name="GameID">Its game (null: none, or keep the one known).</param>
+/// <param name="TrophyList">Its trophy list ("NPWR12345_00:trophy2"; null: keep the one known).</param>
+internal sealed record PsnTitleRemember(string TitleKey, string Name, int? GameID, string? TrophyList = null);
 
 /// <summary>
 /// PlayStation connections and the games they have shown.
@@ -88,6 +89,12 @@ internal interface IPsnRepository
     /// <param name="titles">The titles.</param>
     /// <returns>A task.</returns>
     Task RememberAsync(Guid userId, IReadOnlyCollection<PsnTitleRemember> titles);
+
+    /// <summary>The trophy list of a game the account played on PlayStation.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="gameId">The game.</param>
+    /// <returns>"NPWR12345_00:trophy2", or null when none is known.</returns>
+    Task<string?> TrophyListAsync(Guid userId, int gameId);
 }
 
 /// <summary>
@@ -118,4 +125,8 @@ internal sealed class PsnRepository(ISqlConnectionFactory connectionFactory) : R
     /// <inheritdoc />
     public Task RememberAsync(Guid userId, IReadOnlyCollection<PsnTitleRemember> titles) =>
         ExecuteAsync("[dbo].[PsnTitleRemember]", new { UserUniqueID = userId, Titles = Json(titles) });
+
+    /// <inheritdoc />
+    public Task<string?> TrophyListAsync(Guid userId, int gameId) =>
+        QuerySingleOrDefaultAsync<string>("[dbo].[PsnTrophyListGet]", new { UserUniqueID = userId, GameID = gameId });
 }

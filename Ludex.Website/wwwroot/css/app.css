@@ -859,6 +859,13 @@ a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 25
 .ach:not(.on) { opacity: .62; }
 .ach-ico { width: 48px; height: 48px; flex: none; border-radius: 3px; overflow: hidden; background: #22303F; }
 .ach-ico img { width: 100%; height: 100%; object-fit: cover; }
+.trophies .ach-ico { position: relative; overflow: visible; }
+.trophies .ach-ico img { border-radius: 3px; }
+.grade { position: absolute; right: -3px; bottom: -3px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--bg, #0E1620); }
+.grade-bronze { background: #C98B5B; }
+.grade-silver { background: #B8C4D6; }
+.grade-gold { background: #F5B841; }
+.grade-platinum { background: linear-gradient(135deg, #E8F1FF, #8FB7E8); }
 .ach:not(.on) .ach-ico img { filter: grayscale(1); }
 .ach-text { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .ach-text b { font-size: 14.5px; font-weight: 600; }

@@ -51,7 +51,7 @@ public sealed class SteamController(LudexClient apiClient) : WebsiteBaseControll
     {
         UserId = UserId,
         SteamId = form.SteamId,
-        Games = [.. form.Games.Select(static g => new SteamImportGameRequest { GameId = g.GameId, Status = g.Status, Hours = g.Hours, LastPlayedAt = g.LastPlayedAt })],
+        Games = [.. form.Games.Select(static g => new SteamImportGameRequest { GameId = g.GameId, Status = g.Status, Hours = g.Hours, LastPlayedAt = g.LastPlayedAt, AppId = g.AppId, RecentHours = g.RecentHours })],
     })));
 }
 
@@ -79,4 +79,10 @@ public sealed class SteamImportFormGame
 
     /// <summary>Gets or sets when it was last played on Steam.</summary>
     public DateTimeOffset? LastPlayedAt { get; set; }
+
+    /// <summary>Gets or sets its Steam app (its achievements are read by it).</summary>
+    public int? AppId { get; set; }
+
+    /// <summary>Gets or sets the hours played on Steam in the last two weeks.</summary>
+    public decimal? RecentHours { get; set; }
 }

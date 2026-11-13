@@ -334,12 +334,13 @@ internal sealed class SteamService(
             .ToDictionary(static g => g.Key, static g => g.First().GameID);
         var copies = library.ToLookup(static r => r.GameID);
 
-        // Match to the catalog only what isn't matched yet and could matter: everything the first time, then new apps.
-        var toMatch = owned.Select(static g => g.AppId).Where(app => !gameByApp.ContainsKey(app) && (!addNew || !known.Contains(app))).ToList();
+        // Match to the catalog every app not linked to the library yet: new apps, and games already in the library whose
+        // copy doesn't know its Steam app (so their achievements can be read). One IGDB call per 200 apps.
+        var toMatch = owned.Select(static g => g.AppId).Where(app => !gameByApp.ContainsKey(app)).ToList();
         var matched = toMatch.Count == 0 ? new Dictionary<int, CatalogGame>() : await catalog.SteamAsync(toMatch, cancellationToken);
-        foreach (var game in matched.Values.DistinctBy(static g => g.Id))
+        foreach (var game in matched.Where(m => addNew && !known.Contains(m.Key)).Select(static m => m.Value).DistinctBy(static g => g.Id))
         {
-            await gameRepository.UpsertAsync(GameRow.From(game));
+            await gameRepository.UpsertAsync(GameRow.From(game));   // games that may be added (the rest are in dbo.Game already)
         }
 
         var now = timeProvider.GetUtcNow();

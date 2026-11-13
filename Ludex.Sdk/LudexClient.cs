@@ -260,6 +260,13 @@ public sealed class LudexClient(HttpClient httpClient)
     /// <returns>What changed.</returns>
     public Task<ImportResultDTO> PsnSyncAsync(string userId) => PostAsync<ImportResultDTO>("psn/sync", new PsnAccountRequest { UserId = userId });
 
+    /// <summary>The account's trophies in a game it played on PlayStation.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="gameId">The game.</param>
+    /// <returns>The trophies (a <see cref="LudexApiException"/> with 404 when no trophy list is known).</returns>
+    public Task<PsnTrophiesDTO> PsnTrophiesAsync(string userId, int gameId) =>
+        GetAsync<PsnTrophiesDTO>($"psn/trophies?userId={Uri.EscapeDataString(userId)}&gameId={gameId.ToString(CultureInfo.InvariantCulture)}");
+
     /// <summary>Disconnects PlayStation (the games imported stay).</summary>
     /// <param name="userId">The account.</param>
     /// <returns>The connection (none).</returns>

@@ -8,7 +8,7 @@
     var upToDate = inLibrary && g.Hours <= (g.LibraryHours ?? 0m);
     var playedAt = g.LastPlayedAt?.ToString("o", System.Globalization.CultureInfo.InvariantCulture);
 }
-<li class="steam-row@(upToDate ? " is-done" : string.Empty)" data-steam-row data-game="@g.Game.Id" data-hours="@Fmt.Input(g.Hours)" data-played="@playedAt" data-minutes-played="@(g.Hours > 0 ? "1" : "0")">
+<li class="steam-row@(upToDate ? " is-done" : string.Empty)" data-steam-row data-game="@g.Game.Id" data-app="@g.AppId" data-recent="@Fmt.Input(g.RecentHours)" data-hours="@Fmt.Input(g.Hours)" data-played="@playedAt" data-minutes-played="@(g.Hours > 0 ? "1" : "0")">
     <label class="steam-check">
         <input type="checkbox" checked="@(g.Selected ? "checked" : null)" disabled="@(upToDate ? "disabled" : null)" aria-label="Import @g.Game.Name" />
     </label>

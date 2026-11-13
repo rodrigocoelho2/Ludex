@@ -156,6 +156,34 @@ internal sealed class PsnClient(IHttpClientFactory httpClientFactory, TimeProvid
     }
 
     /// <summary>
+    /// The trophies of a trophy list (names, details, icons, grades).
+    /// </summary>
+    /// <param name="accessToken">The access token.</param>
+    /// <param name="list">The list's id (NPWR12345_00).</param>
+    /// <param name="service">"trophy2" for PS5 lists, "trophy" before.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The trophies.</returns>
+    public async Task<List<PsnTrophyDefinition>> TrophyListAsync(string accessToken, string list, string service, CancellationToken cancellationToken = default) =>
+        (await GetAsync<PsnTrophyDefinitionPage>(
+            $"trophy/v1/npCommunicationIds/{Uri.EscapeDataString(list)}/trophyGroups/all/trophies?npServiceName={Uri.EscapeDataString(service)}",
+            accessToken,
+            cancellationToken))?.Trophies ?? [];
+
+    /// <summary>
+    /// The account's progress in a trophy list (which are earned, when, and how rare).
+    /// </summary>
+    /// <param name="accessToken">The access token.</param>
+    /// <param name="list">The list's id.</param>
+    /// <param name="service">"trophy2" for PS5 lists, "trophy" before.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The trophies.</returns>
+    public async Task<List<PsnTrophyProgress>> TrophiesEarnedAsync(string accessToken, string list, string service, CancellationToken cancellationToken = default) =>
+        (await GetAsync<PsnTrophyProgressPage>(
+            $"trophy/v1/users/me/npCommunicationIds/{Uri.EscapeDataString(list)}/trophyGroups/all/trophies?npServiceName={Uri.EscapeDataString(service)}",
+            accessToken,
+            cancellationToken))?.Trophies ?? [];
+
+    /// <summary>
     /// The account's PSN name (best effort: null when Sony won't say).
     /// </summary>
     /// <param name="accessToken">The access token.</param>
@@ -366,4 +394,44 @@ internal sealed class PsnTrophyCounts
 internal sealed class PsnProfile
 {
     public string? OnlineId { get; set; }
+}
+
+/// <summary>A trophy list's trophies.</summary>
+internal sealed class PsnTrophyDefinitionPage
+{
+    public List<PsnTrophyDefinition>? Trophies { get; set; }
+}
+
+/// <summary>One trophy of a list.</summary>
+internal sealed class PsnTrophyDefinition
+{
+    public int TrophyId { get; set; }
+
+    public bool? TrophyHidden { get; set; }
+
+    public string? TrophyType { get; set; }
+
+    public string? TrophyName { get; set; }
+
+    public string? TrophyDetail { get; set; }
+
+    public string? TrophyIconUrl { get; set; }
+}
+
+/// <summary>The account's progress in a trophy list.</summary>
+internal sealed class PsnTrophyProgressPage
+{
+    public List<PsnTrophyProgress>? Trophies { get; set; }
+}
+
+/// <summary>The account's progress in one trophy.</summary>
+internal sealed class PsnTrophyProgress
+{
+    public int TrophyId { get; set; }
+
+    public bool? Earned { get; set; }
+
+    public DateTimeOffset? EarnedDateTime { get; set; }
+
+    public string? TrophyEarnedRate { get; set; }
 }

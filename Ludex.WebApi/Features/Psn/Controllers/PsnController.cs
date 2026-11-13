@@ -68,6 +68,16 @@ internal sealed class PsnController(IPsnService psnService) : InternalController
     [SwaggerOperation(Summary = "PsnSync", OperationId = "PsnSync")]
     public async Task<ActionResult<ImportResultDTO>> PsnSyncAsync(PsnAccountRequest item) => (await psnService.SyncNowAsync(item)).ToActionResult();
 
+    /// <summary>The account's trophies in a game it played on PlayStation.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="gameId">The game.</param>
+    /// <returns>The trophies (404: no trophy list known).</returns>
+    [HttpGet("trophies")]
+    [ProducesResponseType<PsnTrophiesDTO>((int)HttpStatusCode.OK)]
+    [ProducesResponseType((int)HttpStatusCode.NotFound)]
+    [SwaggerOperation(Summary = "PsnTrophies", OperationId = "PsnTrophies")]
+    public async Task<ActionResult<PsnTrophiesDTO>> PsnTrophiesAsync(string userId, int gameId) => (await psnService.TrophiesAsync(userId, gameId)).ToActionResult();
+
     /// <summary>Disconnects PlayStation (the games imported stay).</summary>
     /// <param name="item">The account.</param>
     /// <returns>The connection (none).</returns>

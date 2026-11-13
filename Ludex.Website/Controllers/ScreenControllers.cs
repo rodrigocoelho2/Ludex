@@ -150,6 +150,18 @@ public sealed class GameController(LudexClient apiClient) : WebsiteBaseControlle
                 page.Sidebar = [];
             }
 
+            if (detail.Mine is { SteamAppId: null, AchievementsTotal: > 0 } ps && (ps.Platform ?? string.Empty).StartsWith("PS", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    page.Trophies = await Api.PsnTrophiesAsync(UserId, id);
+                }
+                catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
+                {
+                    page.Trophies = null;   // not synced since trophy lists were kept, or PlayStation can't be reached: the count stays
+                }
+            }
+
             if (detail.Mine?.SteamAppId is not null)
             {
                 try

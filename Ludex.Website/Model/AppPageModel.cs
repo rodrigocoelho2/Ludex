@@ -206,6 +206,9 @@ public sealed class GamePageModel : AppPageModel
     /// <summary>Gets or sets the account's Steam achievements in this game (null: not a Steam game, none, or unreachable).</summary>
     public AchievementsDTO? Achievements { get; set; }
 
+    /// <summary>Gets or sets the account's PlayStation trophies in this game (null: not a PlayStation copy, or unknown).</summary>
+    public PsnTrophiesDTO? Trophies { get; set; }
+
     /// <summary>Gets the copies each platform of the "played on" list can have, for the page script.</summary>
     public Dictionary<string, IReadOnlyList<string>> CopyChoices =>
         PlatformChoices.Append("Other").Append(string.Empty).Distinct(StringComparer.OrdinalIgnoreCase)

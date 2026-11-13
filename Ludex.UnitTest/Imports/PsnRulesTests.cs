@@ -59,6 +59,37 @@ public sealed class PsnRulesTests
     }
 
     [Fact]
+    public void TrophyListsKeepTheirService()
+    {
+        Assert.Equal("NPWR1_00:trophy2", PsnRules.TrophyList(new PsnTrophyTitle { NpCommunicationId = "NPWR1_00", TrophyTitlePlatform = "PS5" }));
+        Assert.Equal("NPWR2_00:trophy", PsnRules.TrophyList(new PsnTrophyTitle { NpCommunicationId = "NPWR2_00", TrophyTitlePlatform = "PS3,PSVITA" }));
+    }
+
+    [Fact]
+    public void EarnedTrophiesComeFirstAndHiddenOnesKeepTheirSecret()
+    {
+        var definitions = new List<PsnTrophyDefinition>
+        {
+            new() { TrophyId = 0, TrophyName = "All of them", TrophyType = "platinum" },
+            new() { TrophyId = 1, TrophyName = "First steps", TrophyType = "bronze" },
+            new() { TrophyId = 2, TrophyName = "The twist", TrophyDetail = "Spoiler", TrophyType = "gold", TrophyHidden = true },
+        };
+        var earned = new List<PsnTrophyProgress>
+        {
+            new() { TrophyId = 1, Earned = true, EarnedDateTime = Now.AddDays(-2), TrophyEarnedRate = "88.5" },
+            new() { TrophyId = 0, Earned = false, TrophyEarnedRate = "3.1" },
+            new() { TrophyId = 2, Earned = false, TrophyEarnedRate = "40.0" },
+        };
+
+        var trophies = PsnRules.Trophies(definitions, earned);
+
+        Assert.Equal(new[] { "First steps", "Hidden trophy", "All of them" }, trophies.Select(static t => t.Name));
+        Assert.Equal(("Bronze", true, 88.5), (trophies[0].Grade, trophies[0].Earned, trophies[0].Rarity!.Value));
+        Assert.Null(trophies[1].Description);
+        Assert.Equal("Platinum", trophies[2].Grade);
+    }
+
+    [Fact]
     public void TheTokenIsKeptEncrypted()
     {
         var protector = new PsnTokenProtector(Options.Create(new LudexOptions { ApiKey = "one key" }));
