@@ -201,13 +201,69 @@ internal sealed class IgdbCatalog(
     /// <inheritdoc />
     public async Task<Dictionary<string, List<CatalogGame>>> SearchManyAsync(IReadOnlyCollection<string> names, int take, CancellationToken cancellationToken = default)
     {
-        // IGDB's multiquery runs up to ten searches in one call, each one labelled. A call starts every 300 ms with up
-        // to three in flight (IGDB allows four a second), so a thousand names take about half a minute.
+        // 1. The exact name (ignoring case), ten names a call with IGDB's multiquery: most names are found here.
+        // 2. A full-text search, one name a call, for the rest (a store's spelling: "Grand Theft Auto V (PlayStation5)").
+        //    IGDB's multiquery doesn't search, so this can't be batched; at most 100 names a run keep it under a minute.
+        // Calls start every 300 ms with up to three in flight (IGDB allows four a second).
         var distinct = names.Where(static n => !string.IsNullOrWhiteSpace(n)).Distinct(StringComparer.Ordinal).ToList();
         var limit = Math.Clamp(take, 1, 20).ToString(CultureInfo.InvariantCulture);
+        var found = new Dictionary<string, List<CatalogGame>>(StringComparer.Ordinal);
+
+        var exact = await PacedAsync(distinct.Chunk(10), chunk => ExactChunkAsync(chunk, limit, cancellationToken), cancellationToken);
+        foreach (var (name, games) in exact.SelectMany(static a => a))
+        {
+            found[name] = games;
+        }
+
+        var rest = distinct.Where(n => !found.ContainsKey(n)).Take(100).ToList();
+        var searched = await PacedAsync(rest, async name =>
+        {
+            var body = $"search \"{Escape(Plain(name))}\"; fields {SearchFields}; where version_parent = null; limit {limit};";
+            return (Name: name, Games: (await RetryAsync(() => QueryAsync<IgdbGame>("games", body, cancellationToken), cancellationToken)).Select(Map).ToList());
+        }, cancellationToken);
+        foreach (var (name, games) in searched.Where(static s => s.Games.Count > 0))
+        {
+            found[name] = games;
+        }
+
+        return found;
+    }
+
+    // A store's name as IGDB spells it: ’ as ', no ™ ® ©.
+    private static string Plain(string name) =>
+        string.Join(' ', name.Replace('’', '\'').Replace("™", string.Empty, StringComparison.Ordinal).Replace("®", string.Empty, StringComparison.Ordinal)
+            .Replace("©", string.Empty, StringComparison.Ordinal).Split(' ', StringSplitOptions.RemoveEmptyEntries));
+
+    private async Task<List<(string Name, List<CatalogGame> Games)>> ExactChunkAsync(string[] chunk, string limit, CancellationToken cancellationToken)
+    {
+        var body = new StringBuilder();
+        for (var i = 0; i < chunk.Length; i++)
+        {
+            body.Append(CultureInfo.InvariantCulture, $"query games \"q{i}\" {{ fields {SearchFields}; where name ~ \"{Escape(Plain(chunk[i]))}\" & version_parent = null; limit {limit}; }};\n");
+        }
+
+        var answers = await RetryAsync(() => QueryAsync<IgdbMultiAnswer>("multiquery", body.ToString(), cancellationToken), cancellationToken);
+        var found = new List<(string Name, List<CatalogGame> Games)>();
+        foreach (var answer in answers)
+        {
+            if (answer.Name is { Length: > 1 } label
+                && int.TryParse(label.AsSpan(1), NumberStyles.None, CultureInfo.InvariantCulture, out var index)
+                && index < chunk.Length
+                && answer.Result is { Count: > 0 } games)
+            {
+                found.Add((chunk[index], games.Select(Map).ToList()));
+            }
+        }
+
+        return found;
+    }
+
+    // Runs calls one every 300 ms, at most three at once, and returns their answers in order.
+    private async Task<List<T>> PacedAsync<TIn, T>(IEnumerable<TIn> items, Func<TIn, Task<T>> call, CancellationToken cancellationToken)
+    {
         var gate = new SemaphoreSlim(3);   // not disposed: calls still running after a cancel release it
-        var calls = new List<Task<List<(string Name, List<CatalogGame> Games)>>>();
-        foreach (var chunk in distinct.Chunk(10))
+        var calls = new List<Task<T>>();
+        foreach (var item in items)
         {
             if (calls.Count > 0)
             {
@@ -215,56 +271,35 @@ internal sealed class IgdbCatalog(
             }
 
             await gate.WaitAsync(cancellationToken);
-            calls.Add(SearchChunkAsync(chunk, limit, gate, cancellationToken));
+            calls.Add(Run(item));
         }
 
-        var found = new Dictionary<string, List<CatalogGame>>(StringComparer.Ordinal);
-        foreach (var answer in (await Task.WhenAll(calls)).SelectMany(static a => a))
+        return [.. await Task.WhenAll(calls)];
+
+        async Task<T> Run(TIn item)
         {
-            found[answer.Name] = answer.Games;
+            try
+            {
+                return await call(item);
+            }
+            finally
+            {
+                gate.Release();
+            }
         }
-
-        return found;
     }
 
-    private async Task<List<(string Name, List<CatalogGame> Games)>> SearchChunkAsync(string[] chunk, string limit, SemaphoreSlim gate, CancellationToken cancellationToken)
+    // Too many calls at once (429): wait a second and try once more.
+    private async Task<List<T>> RetryAsync<T>(Func<Task<List<T>>> call, CancellationToken cancellationToken)
     {
         try
         {
-            var body = new StringBuilder();
-            for (var i = 0; i < chunk.Length; i++)
-            {
-                body.Append(CultureInfo.InvariantCulture, $"query games \"q{i}\" {{ search \"{Escape(chunk[i])}\"; fields {SearchFields}; where version_parent = null; limit {limit}; }};\n");
-            }
-
-            List<IgdbMultiAnswer> answers;
-            try
-            {
-                answers = await QueryAsync<IgdbMultiAnswer>("multiquery", body.ToString(), cancellationToken);
-            }
-            catch (CatalogUnavailableException exception) when (exception.Message.Contains("429", StringComparison.Ordinal))
-            {
-                await Task.Delay(TimeSpan.FromSeconds(1), timeProvider, cancellationToken);   // too many at once: once more
-                answers = await QueryAsync<IgdbMultiAnswer>("multiquery", body.ToString(), cancellationToken);
-            }
-
-            var found = new List<(string Name, List<CatalogGame> Games)>();
-            foreach (var answer in answers)
-            {
-                if (answer.Name is { Length: > 1 } label
-                    && int.TryParse(label.AsSpan(1), NumberStyles.None, CultureInfo.InvariantCulture, out var index)
-                    && index < chunk.Length
-                    && answer.Result is { Count: > 0 } games)
-                {
-                    found.Add((chunk[index], games.Select(Map).ToList()));
-                }
-            }
-
-            return found;
+            return await call();
         }
-        finally
+        catch (CatalogUnavailableException exception) when (exception.Message.Contains("429", StringComparison.Ordinal))
         {
-            gate.Release();
+            await Task.Delay(TimeSpan.FromSeconds(1), timeProvider, cancellationToken);
+            return await call();
         }
     }
 

@@ -17,6 +17,7 @@ internal static class NameMatch
         "complete edition", "ultimate edition", "gold edition", "standard edition", "digital deluxe edition",
         "enhanced edition", "director s cut", "directors cut", "anniversary edition", "special edition", "premium edition",
         "complete", "goty", "ps4", "ps5", "ps4 ps5", "ps4 and ps5", "for windows", "pc", "windows edition",
+        "playstation5", "playstation 5", "playstation4", "playstation 4", "ps4 edition", "ps5 edition", "trophy", "trophies",
     ];
 
     /// <summary>

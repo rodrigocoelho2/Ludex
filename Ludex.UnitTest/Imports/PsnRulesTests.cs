@@ -59,6 +59,36 @@ public sealed class PsnRulesTests
     }
 
     [Fact]
+    public void GamesBoughtAndNeverPlayedComeInWithNoTime()
+    {
+        var played = new List<PsnPlayedTitle>
+        {
+            new() { TitleId = "CUSA1", Name = "Warframe", Category = "ps4_game", Concept = new PsnConcept { Id = 7, Name = "Warframe" }, PlayDuration = "PT24M", LastPlayedDateTime = Now.AddYears(-8) },
+        };
+        var purchased = new List<PsnPurchasedGame>
+        {
+            new() { ConceptId = "7", Name = "Warframe", Platform = "PS4", TitleId = "CUSA1" },
+            new() { ConceptId = "9", Name = "Grand Theft Auto VI", Platform = "PS5", TitleId = "PPSA1" },
+        };
+
+        var games = PsnRules.Games(played, [], purchased);
+
+        Assert.Equal(2, games.Count);
+        Assert.Equal(("c:7", 24), (games[0].Key, games[0].Minutes));
+        Assert.Equal(("c:9", "Grand Theft Auto VI", "PS5", 0), (games[1].Key, games[1].Name, games[1].Platform, games[1].Minutes));
+    }
+
+    [Theory]
+    [InlineData("BLAZBLUE CONTINUUM SHIFT EXTEND Trophy", "BLAZBLUE CONTINUUM SHIFT EXTEND")]
+    [InlineData("Grand Theft Auto V (PlayStation®5)", "Grand Theft Auto V")]
+    [InlineData("Marvel’s Spider-Man™", "Marvel’s Spider-Man")]
+    public void StoreSuffixesAreDropped(string name, string clean)
+    {
+        var games = PsnRules.Games([], [new PsnTrophyTitle { NpCommunicationId = "NPWR1_00", TrophyTitleName = name, TrophyTitlePlatform = "PS4" }]);
+        Assert.Equal(clean, Assert.Single(games).Name);
+    }
+
+    [Fact]
     public void TrophyListsKeepTheirService()
     {
         Assert.Equal("NPWR1_00:trophy2", PsnRules.TrophyList(new PsnTrophyTitle { NpCommunicationId = "NPWR1_00", TrophyTitlePlatform = "PS5" }));

@@ -475,7 +475,8 @@ internal sealed class PsnService(
         var access = await AccessAsync(account, cancellationToken);
         var played = await psn.PlayedAsync(access, cancellationToken);
         var trophies = await psn.TrophiesAsync(access, cancellationToken);
-        return PsnRules.Games(played, trophies);
+        var purchased = await psn.PurchasedAsync(access, cancellationToken);
+        return PsnRules.Games(played, trophies, purchased);
     }
 
     // An access token: kept for 50 minutes (Sony's last an hour); a new one comes from the refresh token, and a new

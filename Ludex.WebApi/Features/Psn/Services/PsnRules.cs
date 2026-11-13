@@ -82,9 +82,20 @@ internal static partial class PsnRules
     /// </summary>
     /// <param name="played">The games played.</param>
     /// <param name="trophies">The trophy lists.</param>
+    /// <param name="purchased">The games bought (never played ones come in with no time).</param>
     /// <returns>The games, most recently played first.</returns>
-    public static List<PsnGame> Games(IEnumerable<PsnPlayedTitle> played, IEnumerable<PsnTrophyTitle> trophies)
+    public static List<PsnGame> Games(IEnumerable<PsnPlayedTitle> played, IEnumerable<PsnTrophyTitle> trophies, IEnumerable<PsnPurchasedGame>? purchased = null)
     {
+        // Games bought and never played come in too (no time, no trophies): one game per concept with the ones played.
+        played = played.Concat((purchased ?? []).Where(static p => !string.IsNullOrWhiteSpace(p.Name) && (p.ConceptId is { Length: > 0 } || p.TitleId is { Length: > 0 }))
+            .Select(static p => new PsnPlayedTitle
+            {
+                TitleId = p.TitleId,
+                Name = p.Name,
+                Category = string.Equals(p.Platform, "PS5", StringComparison.OrdinalIgnoreCase) ? "ps5_native_game" : "ps4_game",
+                Concept = long.TryParse(p.ConceptId, NumberStyles.None, CultureInfo.InvariantCulture, out var concept) ? new PsnConcept { Id = concept } : null,
+            })).ToList();
+
         var lists = trophies.Where(static t => !string.IsNullOrWhiteSpace(t.TrophyTitleName) && !string.IsNullOrWhiteSpace(t.NpCommunicationId)).ToList();
         var byName = lists.GroupBy(static t => NameMatch.Base(NameMatch.Key(t.TrophyTitleName))).ToDictionary(static g => g.Key, static g => g.ToList());
         var used = new HashSet<string>(StringComparer.Ordinal);
@@ -212,8 +223,20 @@ internal static partial class PsnRules
         _ => "Bronze",
     };
 
-    // ™ and ® are dropped from the names PlayStation shows.
-    private static string Clean(string name) => name.Replace("™", string.Empty, StringComparison.Ordinal).Replace("®", string.Empty, StringComparison.Ordinal).Trim();
+    // ™ and ® are dropped from the names PlayStation shows, and what trophy lists and stores add to them
+    // ("… Trophy", "… (PlayStation®5)").
+    private static string Clean(string name)
+    {
+        var text = name.Replace("™", string.Empty, StringComparison.Ordinal).Replace("®", string.Empty, StringComparison.Ordinal).Trim();
+        text = PlatformSuffix().Replace(text, string.Empty).Trim();
+        return TrophySuffix().Replace(text, string.Empty).Trim();
+    }
+
+    [GeneratedRegex(@"\s*[\(\[]\s*(PlayStation\s*[45]|PS[45])(\s*(and|&|/)\s*(PlayStation\s*[45]|PS[45]))?\s*(Edition|Version)?\s*[\)\]]\s*$", RegexOptions.IgnoreCase)]
+    private static partial Regex PlatformSuffix();
+
+    [GeneratedRegex(@"\s+(Trophy|Trophies|Trophy Set)\s*$", RegexOptions.IgnoreCase)]
+    private static partial Regex TrophySuffix();
 
     private static DateTimeOffset? Max(DateTimeOffset? a, DateTimeOffset? b) => a is null ? b : b is null ? a : a > b ? a : b;
 

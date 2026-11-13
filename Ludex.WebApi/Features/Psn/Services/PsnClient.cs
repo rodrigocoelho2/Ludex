@@ -42,6 +42,10 @@ internal sealed class PsnClient(IHttpClientFactory httpClientFactory, TimeProvid
 
     private const string AuthUrl = "https://ca.account.sony.com/api/authz/v3/oauth/";
     private const string ApiUrl = "https://m.np.playstation.com/api/";
+    private const string GraphQlUrl = "https://web.np.playstation.com/api/graphql/v1/op";
+
+    // The PlayStation website's saved query for the games bought (psn-api's getPurchasedGames).
+    private const string PurchasedQueryHash = "827a423f6a8ddca4107ac01395af2ec0eafd8396fc7fa204aaf9b7ed2eefa168";
     private const string ClientId = "09515159-7237-4370-9b40-3806e67c0891";
     private const string RedirectUri = "com.scee.psxandroid.scecompcall://redirect";
     private const string Scope = "psn:mobile.v2.core psn:clientapp";
@@ -128,6 +132,44 @@ internal sealed class PsnClient(IHttpClientFactory httpClientFactory, TimeProvid
         }
 
         return titles;
+    }
+
+    /// <summary>
+    /// The PS4 and PS5 games the account bought (PS Plus games left out), played or not. Best effort: Sony's website
+    /// query may change, and then only the games played are imported.
+    /// </summary>
+    /// <param name="accessToken">The access token.</param>
+    /// <param name="cancellationToken">Cancels the calls.</param>
+    /// <returns>The games (empty when Sony won't say).</returns>
+    public async Task<List<PsnPurchasedGame>> PurchasedAsync(string accessToken, CancellationToken cancellationToken = default)
+    {
+        var games = new List<PsnPurchasedGame>();
+        const int size = 100;
+        for (var start = 0; start < 5000; start += size)
+        {
+            var variables = JsonSerializer.Serialize(new { isActive = true, platform = new[] { "ps4", "ps5" }, size, start, sortBy = "ACTIVE_DATE", sortDirection = "desc", membership = "NONE" });
+            var extensions = JsonSerializer.Serialize(new { persistedQuery = new { version = 1, sha256Hash = PurchasedQueryHash } });
+            var url = $"{GraphQlUrl}?operationName=getPurchasedGameList&variables={Uri.EscapeDataString(variables)}&extensions={Uri.EscapeDataString(extensions)}";
+            PsnPurchasedAnswer? answer;
+            try
+            {
+                answer = await GetAsync<PsnPurchasedAnswer>(url, accessToken, cancellationToken);
+            }
+            catch (Exception exception) when (exception is PsnUnavailableException or PsnSignInException)
+            {
+                logger.LogWarning("PlayStation: the games bought couldn't be read ({Problem}); only the games played are used", exception.Message);
+                break;
+            }
+
+            var page = answer?.Data?.PurchasedTitlesRetrieve?.Games ?? [];
+            games.AddRange(page);
+            if (page.Count < size)
+            {
+                break;
+            }
+        }
+
+        return games;
     }
 
     /// <summary>
@@ -249,7 +291,7 @@ internal sealed class PsnClient(IHttpClientFactory httpClientFactory, TimeProvid
 
     private async Task<T?> GetAsync<T>(string path, string accessToken, CancellationToken cancellationToken)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, ApiUrl + path);
+        using var request = new HttpRequestMessage(HttpMethod.Get, path.StartsWith("https://", StringComparison.Ordinal) ? path : ApiUrl + path);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         using var response = await SendAsync(request, cancellationToken);
         if (response.StatusCode == HttpStatusCode.Unauthorized)
@@ -434,4 +476,36 @@ internal sealed class PsnTrophyProgress
     public DateTimeOffset? EarnedDateTime { get; set; }
 
     public string? TrophyEarnedRate { get; set; }
+}
+
+/// <summary>The answer of the games-bought query.</summary>
+internal sealed class PsnPurchasedAnswer
+{
+    public PsnPurchasedData? Data { get; set; }
+}
+
+/// <summary>The data of the games-bought query.</summary>
+internal sealed class PsnPurchasedData
+{
+    public PsnPurchasedList? PurchasedTitlesRetrieve { get; set; }
+}
+
+/// <summary>The games bought.</summary>
+internal sealed class PsnPurchasedList
+{
+    public List<PsnPurchasedGame>? Games { get; set; }
+}
+
+/// <summary>A game bought.</summary>
+internal sealed class PsnPurchasedGame
+{
+    public string? ConceptId { get; set; }
+
+    public string? Name { get; set; }
+
+    public string? Platform { get; set; }
+
+    public string? TitleId { get; set; }
+
+    public bool? IsActive { get; set; }
 }
