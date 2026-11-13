@@ -19,7 +19,18 @@ BEGIN
            p.[AvatarVersion],
            p.[LastSeenAt],
            p.[SteamID],
-           p.[SteamSyncedAt]
+           p.[SteamSyncedAt],
+           p.[Accent],
+           p.[Banner],
+           p.[BannerGameID],
+           p.[Frame],
+           p.[Title],
+           p.[Tags],
+           p.[FavoriteNote],
+           p.[Showcases],
+           p.[PinnedCollectionID],
+           p.[LibraryVisibility],
+           p.[ShowPlaying]
     FROM [dbo].[User] u
     LEFT JOIN [dbo].[Profile] p ON p.[UserID] = u.[UserID]
     WHERE u.[UserUniqueID] = @UserUniqueID;

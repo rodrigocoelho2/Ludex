@@ -16,7 +16,7 @@
                 <b>@Model.UserName</b>
                 <small class="muted">@(Model.IsAdmin ? "Admin" : "Member") · friends find you by this name</small>
             </div>
-            <a class="btn ghost small push" href="/profile/edit">@Icons.Get("edit")Edit profile</a>
+            <a class="btn ghost small push" href="/profile/edit">@Icons.Get("edit")Customize profile</a>
             <form method="post" action="/sign-out">
                 @Html.AntiForgeryToken()
                 <button class="btn ghost small" type="submit">@Icons.Get("logout")Sign out</button>

@@ -107,18 +107,26 @@
 - **Wishlist prices** (IsThereAnyDeal, with a free key): the best PC price of each wishlisted game, checked once a
   day, with its cut and lowest ever; set "alert me under" on the game page and the **bell** tells you.
 
-**Profiles** (Steam style)
+**Profiles** (Steam style, yours to customize)
 
-- A **profile photo** (shrunk to 256 px on the device before it's sent), a **bio**, a **location** and a **favourite
-  game**, all in **Edit profile**.
+- **Customize profile**: a **profile photo** (shrunk to 256 px on the device before it's sent), your **colour** (the
+  profile's and the app's), a **banner** (artwork from a game in your library, your colour as a glow, or plain), a
+  **frame** for the photo, a **title** under your name (any badge you've earned), a **bio**, a **location**, up to five
+  **tags**, and your **favourite game** with a line about why. A live preview shows it as you go.
+- **Showcases**: pick up to six and drag them into order — favourite game, in numbers (with hours split by
+  PC / PlayStation / Xbox / Nintendo), rarest achievements (Steam and PlayStation, by % of players), my year in games
+  (a square for each day played), top 5, playing, every achievement (games at 100%), almost there, recently finished,
+  recent activity, a pinned collection and badges.
+- **Who sees what**: the library and showcases for friends (default), everyone signed in, or only you; and whether
+  others see what you're playing now.
 - **Level and XP** from the library: 100 XP per finished game, 50 per played one, 20 per rating, 5 per game, 2 per
   achievement, 1 per hour. Level L starts
   at 100·(L−1)² XP, and the ring changes colour every ten levels.
 - **22 badges** to earn: First finish, Finisher, Completionist, Hall of fame, 100-hour club, Marathoner, Thousand hours,
   Critic, Perfect ten, Tough crowd, Collector, Curator, Wishful thinking, Platform hopper, Retro soul, Day one, Good
   company, Year of play, Not for me, Platinum, Trophy cabinet, Achievement hunter — with progress on the ones still to get.
-- **Playing now** and **Last seen**; showcases for the favourite game, the numbers, the top rated and recent activity;
-  friends with what they're playing. Someone who isn't a friend sees the header and an **Add friend** button only.
+- **Playing now** and **Last seen**; friends with what they're playing. The design mocks are in
+  [docs/mockups/profile](docs/mockups/profile).
 
 **Friends**
 

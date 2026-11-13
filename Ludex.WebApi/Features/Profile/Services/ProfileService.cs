@@ -8,6 +8,10 @@ using Ludex.WebApi.Features.Games.Services;
 using Ludex.WebApi.Features.Library.Models.Entities;
 using Ludex.WebApi.Features.Library.Repositories;
 using Ludex.WebApi.Features.Library.Services;
+using Ludex.WebApi.Features.Collections.Repositories;
+using Ludex.WebApi.Features.Psn.Services;
+using Ludex.WebApi.Features.Steam.Services;
+using Microsoft.Extensions.Caching.Memory;
 using Ludex.WebApi.Features.Profile.Models.DTOs;
 using Ludex.WebApi.Features.Profile.Models.Entities;
 using Ludex.WebApi.Features.Profile.Repositories;
@@ -30,6 +34,11 @@ internal interface IProfileService
     /// <param name="item">The account and the values.</param>
     /// <returns>The profile, or validation problems.</returns>
     Task<ServiceApiResponse<ProfileDTO>> SaveAsync(ProfileSaveRequest item);
+
+    /// <summary>Saves everything Customize profile sets (bio, favourite, colour, banner, frame, title, tags, showcases, who sees what).</summary>
+    /// <param name="item">The account and the values.</param>
+    /// <returns>The profile, or validation problems.</returns>
+    Task<ServiceApiResponse<ProfileDTO>> CustomizeAsync(ProfileCustomizeRequest item);
 
     /// <summary>Makes a game of the library the favourite, or clears it.</summary>
     /// <param name="item">The account and the game.</param>
@@ -65,14 +74,24 @@ internal interface IProfileService
 /// <param name="libraryRepository">Libraries.</param>
 /// <param name="friendRepository">Friendships.</param>
 /// <param name="globalizationHelper">Messages.</param>
+/// <param name="collectionRepository">Collections (the pinned one).</param>
+/// <param name="steamService">Steam achievements (the rarest).</param>
+/// <param name="psnService">PlayStation trophies (the rarest).</param>
+/// <param name="cache">The rarest achievements, kept a few hours.</param>
 /// <param name="timeProvider">The clock (this year's numbers).</param>
+/// <param name="logger">Logger.</param>
 internal sealed class ProfileService(
     IProfileRepository profileRepository,
     IUserRepository userRepository,
     ILibraryRepository libraryRepository,
     IFriendRepository friendRepository,
     IGlobalizationHelper globalizationHelper,
-    TimeProvider timeProvider) : IProfileService
+    ICollectionRepository collectionRepository,
+    ISteamService steamService,
+    IPsnService psnService,
+    IMemoryCache cache,
+    TimeProvider timeProvider,
+    ILogger<ProfileService> logger) : IProfileService
 {
     /// <inheritdoc />
     public async Task<ServiceApiResponse<ProfileDTO>> GetAsync(string viewerId, string? userName)
@@ -132,6 +151,74 @@ internal sealed class ProfileService(
         }
 
         await profileRepository.SaveAsync(user, bio, location, item.FavoriteGameId);
+        var page = await PageAsync(user, user);
+        return page is null ? await NotFoundAsync(item.UserId) : ServiceApiResponse<ProfileDTO>.Success(page);
+    }
+
+    /// <inheritdoc />
+    public async Task<ServiceApiResponse<ProfileDTO>> CustomizeAsync(ProfileCustomizeRequest item)
+    {
+        if (!Guid.TryParse(item.UserId, out var user))
+        {
+            return await NotFoundAsync(item.UserId);
+        }
+
+        var bio = ProfileRules.Clean(item.Bio);
+        var location = ProfileRules.Clean(item.Location)?.Replace('\n', ' ');
+        var note = ProfileRules.Clean(item.FavoriteNote)?.Replace('\n', ' ');
+        var errors = new List<ApiValidationError>();
+        if (bio is { Length: > ProfileRules.MaxBioLength })
+        {
+            errors.Add(await globalizationHelper.ValidationErrorAsync("Bio", nameof(TranslationKeys.TooLong), ProfileRules.MaxBioLength));
+        }
+
+        if (location is { Length: > ProfileRules.MaxLocationLength })
+        {
+            errors.Add(await globalizationHelper.ValidationErrorAsync("Location", nameof(TranslationKeys.TooLong), ProfileRules.MaxLocationLength));
+        }
+
+        if (note is { Length: > ProfileRules.MaxFavoriteNote })
+        {
+            errors.Add(await globalizationHelper.ValidationErrorAsync("FavoriteNote", nameof(TranslationKeys.TooLong), ProfileRules.MaxFavoriteNote));
+        }
+
+        var rows = await libraryRepository.ListAsync(user);
+        if (item.FavoriteGameId is { } favorite && rows.All(r => r.GameID != favorite))
+        {
+            errors.Add(await globalizationHelper.ValidationErrorAsync("FavoriteGameId", nameof(TranslationKeys.FavoriteNotInLibrary)));
+        }
+
+        if (errors.Count > 0)
+        {
+            return ServiceApiResponse<ProfileDTO>.ValidationProblems(await globalizationHelper.TranslateAsync(nameof(TranslationKeys.ValidationProblems)))
+                .AddErrorRange(errors);
+        }
+
+        // A title is an earned badge; a banner game is one of the library's; anything else unknown goes back to the default.
+        var friends = await profileRepository.FriendsAsync(user);
+        var earned = ProfileRules.Badges(rows, friends.Count).Where(static b => b.Earned).Select(static b => b.Id).ToHashSet(StringComparer.Ordinal);
+        var showcases = ProfileRules.Showcases(item.Showcases);
+        var defaults = showcases.SequenceEqual(ProfileRules.DefaultShowcases);
+        var tags = ProfileRules.Tags(item.Tags);
+        var accent = Accents.Normalize(item.Accent);
+        var banner = ProfileRules.Banners.Contains(item.Banner) ? item.Banner : null;
+        var frame = ProfileRules.Frames.Contains(item.Frame) ? item.Frame : null;
+        await profileRepository.CustomizeAsync(user, new ProfileCustomization(
+            bio,
+            location,
+            item.FavoriteGameId,
+            note,
+            accent == Accents.Default ? null : accent,
+            banner is "art" ? null : banner,
+            item.BannerGameId is { } bannerGame && rows.Any(r => r.GameID == bannerGame) ? bannerGame : null,
+            frame is "ring" ? null : frame,
+            item.Title is { } title && earned.Contains(title) ? title : null,
+            tags.Count == 0 ? null : string.Join('|', tags),
+            defaults ? null : string.Join(',', showcases),
+            item.PinnedCollectionId,
+            Enum.IsDefined(item.LibraryVisibility) && item.LibraryVisibility != LibraryVisibility.Friends ? (byte)item.LibraryVisibility : null,
+            item.ShowPlaying ? null : false));
+        cache.Remove($"profile:rare:{user:N}");
         var page = await PageAsync(user, user);
         return page is null ? await NotFoundAsync(item.UserId) : ServiceApiResponse<ProfileDTO>.Success(page);
     }
@@ -256,7 +343,13 @@ internal sealed class ProfileService(
             : (await friendRepository.ListAsync(viewer)).FirstOrDefault(f => f.UserUniqueID == target) is { } link && Enum.IsDefined((FriendState)link.State)
                 ? (FriendState)link.State
                 : FriendState.None;
-        var canSee = isMe || state == FriendState.Friends;
+        var visibility = profile.LibraryVisibility is { } saved && Enum.IsDefined((LibraryVisibility)saved) ? (LibraryVisibility)saved : LibraryVisibility.Friends;
+        var canSee = isMe || visibility switch
+        {
+            LibraryVisibility.Everyone => true,
+            LibraryVisibility.OnlyMe => false,
+            _ => state == FriendState.Friends,
+        };
 
         var rows = await libraryRepository.ListAsync(target);
         var friends = await profileRepository.FriendsAsync(target);
@@ -277,7 +370,15 @@ internal sealed class ProfileService(
             Level = ProfileRules.Level(ProfileRules.Xp(rows)),
             Badges = ProfileRules.Badges(rows, friends.Count),
             Counts = LibraryRules.Counts(rows),
+            Accent = Accents.Normalize(profile.Accent),
+            Banner = profile.Banner is { } bannerKind && ProfileRules.Banners.Contains(bannerKind) ? bannerKind : "art",
+            Frame = profile.Frame is { } frameKind && ProfileRules.Frames.Contains(frameKind) ? frameKind : "ring",
+            Tags = ProfileRules.Tags(profile.Tags?.Split('|')),
+            Showcases = ProfileRules.Showcases(profile.Showcases?.Split(',')),
+            LibraryVisibility = visibility,
+            ShowPlaying = profile.ShowPlaying != false,
         };
+        page.Title = profile.Title is { } titleId ? page.Badges.FirstOrDefault(b => b.Earned && b.Id == titleId) : null;
 
         if (!canSee)
         {
@@ -288,7 +389,67 @@ internal sealed class ProfileService(
         var playing = rows.Where(static r => r.Status == (byte)GameStatus.Playing).OrderByDescending(static r => r.UpdatedAt).FirstOrDefault();
 
         page.Stats = LibraryRules.Stats(rows, timeProvider.GetUtcNow().Year);
-        page.Playing = playing is null ? null : LibraryRules.Entry(playing);
+        page.Playing = playing is null || (!isMe && !page.ShowPlaying) ? null : LibraryRules.Entry(playing);
+        page.FavoriteNote = profile.FavoriteNote;
+
+        // The banner: the game chosen, else the favourite.
+        var bannerRow = (profile.BannerGameID is { } bannerId ? rows.FirstOrDefault(r => r.GameID == bannerId) : null) ?? favorite;
+        if (bannerRow is not null)
+        {
+            page.BannerGame = GameMapper.Summary(bannerRow, null);
+            page.BannerImageId = bannerRow.HeroImageID;
+        }
+
+        page.PlatformHours = ProfileRules.PlatformHours(rows);
+        var complete = rows.Where(static r => r.AchievementsTotal is > 0 && r.AchievementsUnlocked >= r.AchievementsTotal).ToList();
+        page.Completed = complete.Count;
+        page.Platinums = [.. complete.OrderByDescending(static r => r.UpdatedAt).Take(12).Select(static r => LibraryRules.Entry(r))];
+        page.Closest = [.. rows
+            .Where(static r => r.AchievementsTotal is > 0 && r.AchievementsUnlocked is > 0 && r.AchievementsUnlocked < r.AchievementsTotal)
+            .OrderByDescending(static r => (double)r.AchievementsUnlocked!.Value / r.AchievementsTotal!.Value)
+            .Take(6)
+            .Select(static r => LibraryRules.Entry(r))];
+        page.Finished = [.. rows
+            .Where(static r => r.Status == (byte)GameStatus.Finished)
+            .OrderByDescending(static r => r.FinishedAt ?? r.UpdatedAt)
+            .Take(6)
+            .Select(static r => LibraryRules.Entry(r))];
+
+        // My year in games: the days played in the last 52 weeks (from the syncs' daily snapshots).
+        var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        if (page.Showcases.Contains("year"))
+        {
+            page.PlayDays = [.. (await profileRepository.PlayDaysAsync(target, today.AddDays(-363)))
+                .Select(static d => new PlayDayDTO { Day = new DateTimeOffset(DateTime.SpecifyKind(d.Day.Date, DateTimeKind.Utc)), Hours = d.Hours })];
+        }
+
+        if (page.Showcases.Contains("rare"))
+        {
+            page.Rare = await RareAsync(target, rows);
+        }
+
+        if (profile.PinnedCollectionID is { } pinnedId || isMe)
+        {
+            var collections = (await collectionRepository.ListAsync(target))
+                .GroupBy(static c => (c.CollectionID, c.Name))
+                .Select(g => new ProfileCollectionDTO
+                {
+                    Id = g.Key.CollectionID,
+                    Name = g.Key.Name,
+                    Count = g.Count(static c => c.GameID is not null),
+                    Games = [.. g.Where(static c => c.GameID is not null)
+                        .Select(c => rows.FirstOrDefault(r => r.GameID == c.GameID))
+                        .Where(static r => r is not null)
+                        .Take(4)
+                        .Select(static r => GameMapper.Summary(r!, null))],
+                })
+                .ToList();
+            page.Pinned = collections.FirstOrDefault(c => c.Id == profile.PinnedCollectionID);
+            if (isMe)
+            {
+                page.CollectionChoices = [.. collections.Select(static c => new ProfileCollectionDTO { Id = c.Id, Name = c.Name, Count = c.Count })];
+            }
+        }
         page.Favorite = favorite is null ? null : LibraryRules.Entry(favorite);
         page.FavoriteChosen = chosen;
         page.TopRated = [.. rows
@@ -324,6 +485,66 @@ internal sealed class ProfileService(
         }
 
         return page;
+    }
+
+    // The rarest achievements and trophies earned, from the games with the most of theirs earned (at most eight
+    // games read, kept six hours: Steam and PlayStation are asked only when the cache is empty).
+    private async Task<List<RareAchievementDTO>> RareAsync(Guid target, IReadOnlyCollection<LibraryRow> rows)
+    {
+        return await cache.GetOrCreateAsync($"profile:rare:{target:N}", async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(6);
+            var candidates = rows
+                .Where(static r => r.AchievementsUnlocked is > 0 && r.AchievementsTotal is > 0)
+                .OrderByDescending(static r => (double)r.AchievementsUnlocked!.Value / r.AchievementsTotal!.Value)
+                .ThenByDescending(static r => r.Hours ?? 0m)
+                .DistinctBy(static r => r.GameID)
+                .Take(8)
+                .ToList();
+            var user = target.ToString("N");
+            var found = new List<RareAchievementDTO>();
+            foreach (var row in candidates)
+            {
+                try
+                {
+                    if (row.SteamAppID is not null)
+                    {
+                        if ((await steamService.AchievementsAsync(user, row.GameID)).Result is { } steam)
+                        {
+                            found.AddRange(steam.Items.Where(static a => a.Unlocked && a.GlobalPercent is not null).Select(a => new RareAchievementDTO
+                            {
+                                Name = a.Name,
+                                GameId = row.GameID,
+                                GameName = row.Name,
+                                Source = "Steam",
+                                IconUrl = a.IconUrl,
+                                Percent = a.GlobalPercent!.Value,
+                            }));
+                        }
+                    }
+                    else if ((row.Platform ?? string.Empty).StartsWith("PS", StringComparison.OrdinalIgnoreCase)
+                             && (await psnService.TrophiesAsync(user, row.GameID)).Result is { } trophies)
+                    {
+                        found.AddRange(trophies.Items.Where(static t => t.Earned && t.Rarity is not null).Select(t => new RareAchievementDTO
+                        {
+                            Name = t.Name,
+                            GameId = row.GameID,
+                            GameName = row.Name,
+                            Source = row.Platform ?? "PlayStation",
+                            IconUrl = t.IconUrl,
+                            Percent = t.Rarity!.Value,
+                            Grade = t.Grade,
+                        }));
+                    }
+                }
+                catch (Exception exception) when (exception is not OperationCanceledException)
+                {
+                    logger.LogInformation("Profile: the achievements of one game couldn't be read ({Problem})", exception.Message);
+                }
+            }
+
+            return found.OrderBy(static a => a.Percent).Take(6).ToList();
+        }) ?? [];
     }
 
     private async Task<ServiceApiResponse<ProfileDTO>> NotFoundAsync(string? identifier) =>

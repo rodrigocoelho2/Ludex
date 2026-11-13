@@ -50,24 +50,51 @@ public sealed class ProfileController(LudexClient apiClient) : WebsiteBaseContro
         }
     }
 
-    /// <summary>The edit form: photo, bio, location and favourite game.</summary>
+    /// <summary>Customize profile: photo, colour, banner, frame, title, about, favourite, showcases, who sees what.</summary>
     /// <returns>The view.</returns>
     [HttpGet("/profile/edit")]
     public async Task<IActionResult> Edit() =>
         await ScreenAsync("Edit", Shell(new ProfileEditPageModel(), AppSection.Profile), async page => page.Profile = await Api.ProfileGetAsync(UserId));
 
-    /// <summary>Saves the bio, location and favourite game.</summary>
-    /// <param name="bio">The bio.</param>
-    /// <param name="location">The location.</param>
-    /// <param name="favoriteGameId">The favourite game (empty: the best rated is shown).</param>
-    /// <returns>Back to the profile.</returns>
+    /// <summary>Saves Customize profile (the colour is the app's too, so the session takes it at once).</summary>
+    /// <param name="form">The values.</param>
+    /// <returns>Back to the profile, or to the form with the problems.</returns>
     [HttpPost("/profile/edit")]
     [ValidateAntiForgeryToken]
-    public Task<IActionResult> Save([FromForm] string? bio, [FromForm] string? location, [FromForm] int? favoriteGameId) =>
-        FormAsync(
-            () => Api.ProfileSaveAsync(new ProfileSaveRequest { UserId = UserId, Bio = bio, Location = location, FavoriteGameId = favoriteGameId }),
+    public async Task<IActionResult> Save([FromForm] CustomizeForm form)
+    {
+        var result = await FormAsync(
+            () => Api.ProfileCustomizeAsync(new ProfileCustomizeRequest
+            {
+                UserId = UserId,
+                Bio = form.Bio,
+                Location = form.Location,
+                FavoriteGameId = form.FavoriteGameId,
+                FavoriteNote = form.FavoriteNote,
+                Accent = form.Accent,
+                Banner = form.Banner,
+                BannerGameId = form.BannerGameId,
+                Frame = form.Frame,
+                Title = string.IsNullOrWhiteSpace(form.Title) ? null : form.Title,
+                Tags = [.. (form.Tags ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)],
+                Showcases = form.Showcases,
+                PinnedCollectionId = form.PinnedCollectionId,
+                LibraryVisibility = form.LibraryVisibility,
+                ShowPlaying = form.ShowPlaying,
+            }),
             "Profile saved.",
             "/profile");
+        try
+        {
+            await LudexAuthentication.RefreshAsync(HttpContext, await Api.UserGetAsync(UserId));
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
+        {
+            // Saved; the colour catches up at the next check of the session.
+        }
+
+        return result;
+    }
 
     /// <summary>Sets the photo (the page sends it already shrunk), for the page script.</summary>
     /// <param name="photo">The image.</param>
@@ -177,4 +204,50 @@ public sealed class FavoriteForm
 {
     /// <summary>Gets or sets the game (null: clear the favourite).</summary>
     public int? GameId { get; set; }
+}
+
+/// <summary>What Customize profile posts.</summary>
+public sealed class CustomizeForm
+{
+    /// <summary>Gets or sets the bio.</summary>
+    public string? Bio { get; set; }
+
+    /// <summary>Gets or sets the location.</summary>
+    public string? Location { get; set; }
+
+    /// <summary>Gets or sets the favourite game (empty: the best rated).</summary>
+    public int? FavoriteGameId { get; set; }
+
+    /// <summary>Gets or sets a line about the favourite game.</summary>
+    public string? FavoriteNote { get; set; }
+
+    /// <summary>Gets or sets the colour.</summary>
+    public string? Accent { get; set; }
+
+    /// <summary>Gets or sets the banner: art, glow or plain.</summary>
+    public string? Banner { get; set; }
+
+    /// <summary>Gets or sets the banner's game (empty: the favourite).</summary>
+    public int? BannerGameId { get; set; }
+
+    /// <summary>Gets or sets the frame.</summary>
+    public string? Frame { get; set; }
+
+    /// <summary>Gets or sets the badge under the name (empty: none).</summary>
+    public string? Title { get; set; }
+
+    /// <summary>Gets or sets the tags, comma separated.</summary>
+    public string? Tags { get; set; }
+
+    /// <summary>Gets or sets the showcases ticked, in the order on the page.</summary>
+    public List<string> Showcases { get; set; } = [];
+
+    /// <summary>Gets or sets the pinned collection (empty: none).</summary>
+    public int? PinnedCollectionId { get; set; }
+
+    /// <summary>Gets or sets who sees the library.</summary>
+    public LibraryVisibility LibraryVisibility { get; set; } = LibraryVisibility.Friends;
+
+    /// <summary>Gets or sets a value indicating whether others see what is being played.</summary>
+    public bool ShowPlaying { get; set; }
 }

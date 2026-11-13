@@ -1144,6 +1144,97 @@
         paint();
     });
 
+    /* ---------- Profile: share the link ---------- */
+    document.addEventListener('click', async e => {
+        const button = e.target.closest('[data-share-profile]');
+        if (!button) return;
+        const url = new URL(button.dataset.shareProfile, location.origin).href;
+        try {
+            if (navigator.share && matchMedia('(pointer: coarse)').matches) { await navigator.share({ url }); return; }
+            await navigator.clipboard.writeText(url);
+            toast('Link copied.');
+        } catch (err) {
+            if (err && err.name === 'AbortError') return;
+            toast(url);
+        }
+    });
+
+    /* ---------- Customize profile: live preview, showcases in order (6 at most) ---------- */
+    const customize = $('[data-customize]');
+    if (customize) {
+        const preview = $('[data-cz-preview]', customize);
+        const list = $('[data-cz-showcases]', customize);
+        const max = Number(list.dataset.max) || 6;
+        const count = $('[data-cz-count]', customize);
+        const previewList = $('[data-cz-list]', customize);
+        const bannerGame = $('[data-cz-banner-game]', customize);
+
+        const paint = () => {
+            const on = $$('li', list).filter(li => $('input', li).checked);
+            $$('li', list).forEach(li => {
+                const input = $('input', li);
+                li.classList.toggle('on', input.checked);
+                input.disabled = !input.checked && on.length >= max;
+            });
+            count.textContent = `${on.length} of ${max} on`;
+            previewList.replaceChildren(...on.map(li => Object.assign(document.createElement('li'), { textContent: li.dataset.name })));
+        };
+
+        customize.addEventListener('change', e => {
+            const t = e.target;
+            if (t.matches('[data-cz-accent]')) preview.dataset.accent = t.value;
+            if (t.matches('[data-cz-banner-pick]')) {
+                const banner = $('[data-cz-banner]', preview);
+                banner.className = `cz-pv-banner banner-${t.value}`;
+                bannerGame.hidden = t.value !== 'art';
+            }
+            if (t.matches('[data-cz-frame-pick]')) {
+                const frame = $('[data-cz-frame]', preview);
+                frame.className = frame.className.replace(/frame-\w+/, `frame-${t.value}`);
+            }
+            if (t.matches('[data-cz-title-pick]')) {
+                const title = $('[data-cz-title]', preview);
+                title.textContent = t.value ? t.selectedOptions[0].textContent : '';
+                title.hidden = !t.value;
+            }
+            if (t.closest('[data-cz-showcases]')) paint();
+        });
+
+        list.addEventListener('click', e => {
+            const li = e.target.closest('li');
+            if (!li) return;
+            if (e.target.closest('[data-cz-up]') && li.previousElementSibling) li.previousElementSibling.before(li);
+            else if (e.target.closest('[data-cz-down]') && li.nextElementSibling) li.nextElementSibling.after(li);
+            else return;
+            paint();
+        });
+
+        let dragged = null;
+        list.addEventListener('dragstart', e => {
+            dragged = e.target.closest('li');
+            if (!dragged) return;
+            dragged.classList.add('is-dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', dragged.dataset.key);
+        });
+        list.addEventListener('dragover', e => {
+            if (!dragged) return;
+            e.preventDefault();
+            const over = e.target.closest('li');
+            if (!over || over === dragged) return;
+            const box = over.getBoundingClientRect();
+            if (e.clientY < box.top + box.height / 2) over.before(dragged); else over.after(dragged);
+        });
+        list.addEventListener('dragend', () => {
+            if (!dragged) return;
+            dragged.classList.remove('is-dragging');
+            dragged = null;
+            paint();
+        });
+
+        paint();
+    }
+
     /* ---------- Screenshots open full size ---------- */
     const lightbox = $('[data-lightbox]');
     if (lightbox) {

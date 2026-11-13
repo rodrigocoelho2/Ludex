@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Customize profile</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&amp;family=Barlow+Condensed:wght@600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#0F1923}
+a{color:#9FD8F5;text-decoration:none}a:hover{color:#D3EEFB}
+input,select,textarea,button{font:inherit}
+</style>
+</helmet>
+<div style="--acc: {{accent}}; min-height: 100%; background: #0F1923; color: #E6EDF3; font-family: Barlow, system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+  <div style="max-width: 1280px; margin: 0 auto; padding: 32px 32px 120px; box-sizing: border-box">
+
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-bottom: 24px">
+      <a href="Main.dc.html" style="display: inline-flex; align-items: center; gap: 6px; color: #C3D0DD; font-size: 15px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+        Profile
+      </a>
+      <h1 style="margin: 0; font: 800 40px/1 'Barlow Condensed', sans-serif">Customize your profile</h1>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start">
+
+      <!-- Live preview -->
+      <aside style="flex: 1 1 340px; min-width: 0; max-width: 420px; display: flex; flex-direction: column; gap: 12px">
+        <span style="color: #9FB0C3; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase">Preview</span>
+        <div style="border-radius: 12px; overflow: hidden; background: #15212E; border: 1px solid rgba(255,255,255,.08)">
+          <div style="height: 120px; background: linear-gradient(115deg, #2A2418 0%, #4A3A1E 38%, #1B2430 72%, #15212E 100%)"></div>
+          <div style="padding: 0 18px 18px; margin-top: -42px; display: flex; flex-direction: column; gap: 10px">
+            <div style="width: 76px; height: 76px; border-radius: 14px; padding: 3px; background: var(--acc)">
+              <div style="width: 100%; height: 100%; border-radius: 11px; background: linear-gradient(160deg, #3B4E66, #1C2838); display: flex; align-items: center; justify-content: center; font: 800 28px/1 'Barlow Condensed', sans-serif">RO</div>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+              <b style="font: 800 28px/1 'Barlow Condensed', sans-serif">Rodas</b>
+              <span style="padding: 3px 10px; border-radius: 999px; background: color-mix(in srgb, var(--acc) 18%, transparent); color: color-mix(in srgb, var(--acc) 55%, #fff); font-weight: 700; font-size: 13px">Platinum hunter</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <sc-for list="{{onShowcases}}" as="s" hint-placeholder-count="5">
+                <div style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 6px; background: #1C2A3A; color: #C3D0DD; font-size: 14px">
+                  <i style="width: 8px; height: 8px; border-radius: 4px; background: var(--acc)"></i>{{s.name}}
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <p style="margin: 0; color: #9FB0C3; font-size: 14px">Friends see exactly this. Showcases show in the order you set.</p>
+      </aside>
+
+      <!-- Settings -->
+      <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+        <!-- Colour -->
+        <section style="border-radius: 10px; background: #15212E; border: 1px solid rgba(255,255,255,.08); padding: 18px 20px">
+          <h2 style="margin: 0 0 4px; font: 700 22px/1.1 'Barlow Condensed', sans-serif">Colour</h2>
+          <p style="margin: 0 0 14px; color: #9FB0C3; font-size: 14px">Your profile's colour: the frame, the level bar, the highlights.</p>
+          <div role="radiogroup" aria-label="Profile colour" style="display: flex; flex-wrap: wrap; gap: 10px">
+            <sc-for list="{{swatches}}" as="w" hint-placeholder-count="8">
+              <button type="button" role="radio" aria-checked="{{w.checked}}" aria-label="{{w.name}}" onClick="{{w.pick}}" style="width: 44px; height: 44px; border-radius: 22px; border: 3px solid {{w.ring}}; background: {{w.hex}}; cursor: pointer; padding: 0"></button>
+            </sc-for>
+          </div>
+        </section>
+
+        <!-- Banner -->
+        <section style="border-radius: 10px; background: #15212E; border: 1px solid rgba(255,255,255,.08); padding: 18px 20px">
+          <h2 style="margin: 0 0 4px; font: 700 22px/1.1 'Barlow Condensed', sans-serif">Banner</h2>
+          <p style="margin: 0 0 14px; color: #9FB0C3; font-size: 14px">Artwork from a game in your library, your colour as a glow, or nothing at all.</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px">
+            <label style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 6px; background: color-mix(in srgb, var(--acc) 16%, #1C2A3A); border: 1px solid var(--acc); cursor: pointer"><input type="radio" name="banner" checked="checked" style="accent-color: var(--acc)">Game artwork</label>
+            <label style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 6px; background: #1C2A3A; border: 1px solid rgba(255,255,255,.1); cursor: pointer"><input type="radio" name="banner" style="accent-color: var(--acc)">Colour glow</label>
+            <label style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 6px; background: #1C2A3A; border: 1px solid rgba(255,255,255,.1); cursor: pointer"><input type="radio" name="banner" style="accent-color: var(--acc)">Plain</label>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+            <button type="button" aria-pressed="true" style="height: 84px; border-radius: 6px; border: 3px solid var(--acc); background: linear-gradient(115deg, #4A3A1E, #1B2430); color: #F2F5F8; font-weight: 700; display: flex; align-items: flex-end; padding: 8px; cursor: pointer">Elden Ring</button>
+            <button type="button" aria-pressed="false" style="height: 84px; border-radius: 6px; border: 3px solid transparent; background: linear-gradient(115deg, #5A3A20, #1A0F08); color: #F2F5F8; font-weight: 700; display: flex; align-items: flex-end; padding: 8px; cursor: pointer">God of War</button>
+            <button type="button" aria-pressed="false" style="height: 84px; border-radius: 6px; border: 3px solid transparent; background: linear-gradient(115deg, #2F3A4A, #0E1218); color: #F2F5F8; font-weight: 700; display: flex; align-items: flex-end; padding: 8px; cursor: pointer">Hollow Knight</button>
+            <button type="button" style="height: 84px; border-radius: 6px; border: 1px dashed rgba(255,255,255,.25); background: transparent; color: #C3D0DD; font-weight: 600; cursor: pointer">Choose a game…</button>
+          </div>
+        </section>
+
+        <!-- Avatar, title, about -->
+        <section style="border-radius: 10px; background: #15212E; border: 1px solid rgba(255,255,255,.08); padding: 18px 20px; display: flex; flex-direction: column; gap: 16px">
+          <h2 style="margin: 0; font: 700 22px/1.1 'Barlow Condensed', sans-serif">You</h2>
+          <div style="display: flex; flex-wrap: wrap; gap: 16px">
+            <label style="flex: 1 1 220px; display: flex; flex-direction: column; gap: 6px">
+              <span style="font-weight: 600; font-size: 14px">Avatar frame</span>
+              <select style="min-height: 44px; padding: 0 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,.14); background: #1C2A3A; color: #E6EDF3">
+                <option>Ring in my colour</option>
+                <option>Glow</option>
+                <option>Level frame (unlocks at level 25)</option>
+                <option>None</option>
+              </select>
+            </label>
+            <label style="flex: 1 1 220px; display: flex; flex-direction: column; gap: 6px">
+              <span style="font-weight: 600; font-size: 14px">Title under your name</span>
+              <select style="min-height: 44px; padding: 0 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,.14); background: #1C2A3A; color: #E6EDF3">
+                <option>Platinum hunter</option>
+                <option>Century (100 games)</option>
+                <option>Night owl</option>
+                <option>No title</option>
+              </select>
+              <small style="color: #9FB0C3">From the badges you've earned.</small>
+            </label>
+          </div>
+          <label style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-weight: 600; font-size: 14px">About</span>
+            <textarea rows="3" style="padding: 10px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,.14); background: #1C2A3A; color: #E6EDF3; resize: vertical">Souls-likes, long RPGs and anything with a platinum at the end. Currently clearing the backlog one Epic freebie at a time.</textarea>
+          </label>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-weight: 600; font-size: 14px">What I play (up to 5)</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: color-mix(in srgb, var(--acc) 16%, #1C2A3A); font-size: 14px">Souls-like</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: color-mix(in srgb, var(--acc) 16%, #1C2A3A); font-size: 14px">RPG</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; background: color-mix(in srgb, var(--acc) 16%, #1C2A3A); font-size: 14px">Completionist</span>
+              <button type="button" style="min-height: 34px; padding: 0 12px; border-radius: 999px; border: 1px dashed rgba(255,255,255,.25); background: transparent; color: #C3D0DD; cursor: pointer">+ Add</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Showcases -->
+        <section style="border-radius: 10px; background: #15212E; border: 1px solid rgba(255,255,255,.08); padding: 18px 20px">
+          <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 4px">
+            <h2 style="margin: 0; font: 700 22px/1.1 'Barlow Condensed', sans-serif">Showcases</h2>
+            <span style="margin-left: auto; color: #9FB0C3; font-size: 14px">{{onCount}} of 6 on</span>
+          </div>
+          <p style="margin: 0 0 14px; color: #9FB0C3; font-size: 14px">Turn on what you want to show off and drag to set the order.</p>
+          <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+            <sc-for list="{{showcases}}" as="s" hint-placeholder-count="10">
+              <li style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; background: #1C2A3A; border: 1px solid {{s.border}}">
+                <span aria-hidden="true" style="color: #7D8FA5; cursor: grab; display: flex">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+                </span>
+                <span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+                  <b style="font-size: 15px">{{s.name}}</b>
+                  <small style="color: #9FB0C3">{{s.hint}}</small>
+                </span>
+                <label style="display: inline-flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer">
+                  <span style="font-size: 14px; color: #C3D0DD">{{s.label}}</span>
+                  <input type="checkbox" checked="{{s.checked}}" onChange="{{s.toggle}}" aria-label="Show {{s.name}}" style="width: 20px; height: 20px; accent-color: var(--acc)">
+                </label>
+              </li>
+            </sc-for>
+          </ul>
+        </section>
+
+        <!-- Privacy -->
+        <section style="border-radius: 10px; background: #15212E; border: 1px solid rgba(255,255,255,.08); padding: 18px 20px; display: flex; flex-direction: column; gap: 12px">
+          <h2 style="margin: 0; font: 700 22px/1.1 'Barlow Condensed', sans-serif">Who sees what</h2>
+          <div style="display: flex; flex-wrap: wrap; gap: 16px">
+            <label style="flex: 1 1 200px; display: flex; flex-direction: column; gap: 6px">
+              <span style="font-weight: 600; font-size: 14px">Profile</span>
+              <select style="min-height: 44px; padding: 0 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,.14); background: #1C2A3A; color: #E6EDF3"><option>Everyone on this Ludex</option><option>Friends</option><option>Only me</option></select>
+            </label>
+            <label style="flex: 1 1 200px; display: flex; flex-direction: column; gap: 6px">
+              <span style="font-weight: 600; font-size: 14px">Library and hours</span>
+              <select style="min-height: 44px; padding: 0 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,.14); background: #1C2A3A; color: #E6EDF3"><option>Friends</option><option>Everyone on this Ludex</option><option>Only me</option></select>
+            </label>
+            <label style="flex: 1 1 200px; display: flex; flex-direction: column; gap: 6px">
+              <span style="font-weight: 600; font-size: 14px">Playing now</span>
+              <select style="min-height: 44px; padding: 0 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,.14); background: #1C2A3A; color: #E6EDF3"><option>Friends</option><option>Nobody</option></select>
+            </label>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Save bar -->
+  <div style="position: sticky; bottom: 0; background: rgba(9,15,22,.92); border-top: 1px solid rgba(255,255,255,.1)">
+    <div style="max-width: 1280px; margin: 0 auto; padding: 12px 32px; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+      <span style="color: #C3D0DD; font-size: 15px">Unsaved changes</span>
+      <span style="flex: 1"></span>
+      <a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 6px; border: 1px solid rgba(255,255,255,.16); color: #E6EDF3; font-weight: 600">Cancel</a>
+      <a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 6px; background: var(--acc); color: #0B1218; font-weight: 700">Save profile</a>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      accent: '#4FC3F7',
+      on: { favourite: true, numbers: true, rare: true, year: true, top: true, playing: false, platinums: false, closest: false, finished: false, collection: false }
+    };
+  }
+  renderVals() {
+    const colours = [
+      ['Sky', '#4FC3F7'], ['Blue', '#5A8DFF'], ['Violet', '#A78BFA'], ['Rose', '#F472B6'],
+      ['Crimson', '#F87171'], ['Ember', '#FB923C'], ['Gold', '#FBBF24'], ['Emerald', '#34D399']
+    ];
+    const list = [
+      ['favourite', 'Favourite game', 'One game, big: hours, achievements, your rating and a line about it'],
+      ['numbers', 'In numbers', 'Games, hours, finished, platinums, and your platforms'],
+      ['rare', 'Rarest achievements', 'Your six rarest, from Steam and PlayStation'],
+      ['year', 'My year in games', 'Every day you played this year'],
+      ['top', 'My top 5', 'The five games you rank highest'],
+      ['playing', 'Playing now', 'What you are on, with time and progress'],
+      ['platinums', 'Platinum trophies', 'Every game you got the platinum in'],
+      ['closest', 'Almost there', 'Games closest to 100% achievements'],
+      ['finished', 'Recently finished', 'The last games you finished'],
+      ['collection', 'Pinned collection', 'One of your collections']
+    ];
+    const on = this.state.on;
+    const onCount = list.filter(([key]) => on[key]).length;
+    return {
+      accent: this.state.accent,
+      swatches: colours.map(([name, hex]) => ({
+        name, hex,
+        checked: this.state.accent === hex ? 'true' : 'false',
+        ring: this.state.accent === hex ? '#E6EDF3' : 'transparent',
+        pick: () => this.setState({ accent: hex })
+      })),
+      onCount,
+      onShowcases: list.filter(([key]) => on[key]).map(([, name]) => ({ name })),
+      showcases: list.map(([key, name, hint]) => ({
+        name, hint,
+        checked: on[key],
+        label: on[key] ? 'On' : 'Off',
+        border: on[key] ? 'color-mix(in srgb, var(--acc) 45%, transparent)' : 'transparent',
+        toggle: () => {
+          if (!on[key] && onCount >= 6) return;
+          this.setState({ on: { ...on, [key]: !on[key] } });
+        }
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

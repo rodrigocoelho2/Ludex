@@ -5,312 +5,536 @@
     ViewData["Title"] = p.IsMe ? "Your profile" : p.UserName;
     var earned = Model.Earned;
     var level = p.Level;
-    const double ring = 301.6;   // 2πr for r = 48
-    var art = p.Favorite?.Game ?? p.Playing?.Game ?? p.TopRated.FirstOrDefault()?.Game;
+    var online = Fmt.Online(p.LastSeenAt);
+    var back = "/u/" + p.UserName;
     var sub = new List<string>();
     if (p.Location is { } location) { sub.Add(location); }
     sub.Add("member since " + Fmt.MonthYear(p.MemberSince));
-    var online = Fmt.Online(p.LastSeenAt);
-    var back = "/u/" + p.UserName;
+    var banner = p.BannerGame;
+    var levelPercent = (int)Math.Round(Model.LevelProgress * 100);
+    var familyColours = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["PC"] = "var(--accent)", ["PlayStation"] = "#5A8DFF", ["Xbox"] = "#34D399", ["Nintendo"] = "#F87171",
+    };
+    var totalPlatformHours = Math.Max(1m, p.PlatformHours.Sum(static f => f.Hours));
 }
 
-<div class="profile" style="--tint:@(art?.Tint ?? "#1C2838")">
-    <div class="profile-bg" aria-hidden="true">
-        @if (art?.CoverImageId is { } cover)
-        {
-            <img class="art-img art-from-cover drift" src="@Igdb.Url(cover, Igdb.CoverBig)" alt="" decoding="async" />
-        }
-    </div>
-
-    <section class="profile-head rise">
-        <div class="profile-av@(p.Playing is not null ? " is-playing" : online ? " is-online" : string.Empty)">
-            @Avatars.Get(p.Id, p.UserName, p.AvatarVersion, "huge")
-            @if (p.Playing is not null)
-            {
-                <span class="presence">Playing</span>
-            }
-            else if (online)
-            {
-                <span class="presence online">Online</span>
-            }
-        </div>
-
-        <div class="profile-id">
-            <h1>@p.UserName</h1>
-            <span class="profile-sub">@string.Join(" · ", sub)</span>
-            @if (p.Bio is { } bio)
-            {
-                <p class="bio">@bio</p>
-            }
-            else if (p.IsMe)
-            {
-                <p class="bio muted">No bio yet. <a href="/profile/edit">Write a line about what you play.</a></p>
-            }
-            @if (p.Playing is { } playing)
-            {
-                <a class="profile-playing" href="/games/@playing.Game.Id">@Icons.Get("pad")Playing @playing.Game.Name@(playing.Hours is { } h ? $" · {Fmt.Hours(h)}" : string.Empty)</a>
-            }
-            else if (p.CanSeeLibrary && !p.IsMe)
-            {
-                <span class="profile-seen@(online ? " on" : string.Empty)">@Fmt.Seen(p.LastSeenAt)</span>
-            }
-        </div>
-
-        <div class="level-card">
-            <div class="level-row">
-                <span class="level-ring" role="img" aria-label="Level @level.Level, @((int)Math.Round(Model.LevelProgress * 100))% of the way to @(level.Level + 1)">
-                    <svg width="74" height="74" viewBox="0 0 110 110" aria-hidden="true">
-                        <circle cx="55" cy="55" r="48" class="ring-track" />
-                        <circle cx="55" cy="55" r="48" class="ring-fill" style="--ring:@Model.LevelColour;--to:@((ring * (1 - Model.LevelProgress)).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture))" transform="rotate(-90 55 55)" />
-                    </svg>
-                    <b class="num" aria-hidden="true">@level.Level</b>
-                </span>
-                <div class="level-text">
-                    <b>Level @level.Level</b>
-                    <span>@Fmt.Count(level.Xp) XP · @Fmt.Count(level.NextLevelXp - level.Xp) to @(level.Level + 1)</span>
-                </div>
-            </div>
-            @if (earned.Count > 0)
-            {
-                <a class="badge-row" href="#badges" aria-label="@Fmt.Plural(earned.Count, "badge", "badges")">
-                    @foreach (var badge in earned.Take(4))
-                    {
-                        <partial name="_Badge" model="badge" />
-                    }
-                    @if (earned.Count > 4)
-                    {
-                        <span class="badge-more">+@(earned.Count - 4)</span>
-                    }
-                </a>
-            }
-            else
-            {
-                <span class="level-hint">Finish, rate and play games to earn XP and badges.</span>
-            }
-
-            @if (p.IsMe)
-            {
-                <a class="btn soft wide" href="/profile/edit">@Icons.Get("edit")Edit profile</a>
-            }
-            else if (p.FriendState == FriendState.None)
-            {
-                <form method="post" action="/friends/request">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="userName" value="@p.UserName" />
-                    <input type="hidden" name="back" value="@back" />
-                    <button class="btn wide" type="submit">@Icons.Get("user-plus")Add friend</button>
-                </form>
-            }
-            else if (p.FriendState == FriendState.RequestReceived)
-            {
-                <form method="post" action="/friends/accept">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="friendId" value="@p.Id" />
-                    <input type="hidden" name="name" value="@p.UserName" />
-                    <input type="hidden" name="back" value="@back" />
-                    <button class="btn wide" type="submit">@Icons.Get("check")Accept request</button>
-                </form>
-            }
-            else if (p.FriendState == FriendState.RequestSent)
-            {
-                <span class="btn soft wide is-static">@Icons.Get("clock")Request sent</span>
-            }
-            else
-            {
-                <span class="btn soft wide is-static">@Icons.Get("friends")Friends</span>
-            }
-        </div>
-    </section>
-
-    @if (!p.CanSeeLibrary)
+<div class="pf" data-accent="@p.Accent">
+    @* Banner: a game's artwork, the profile's colour as a glow, or plain *@
+    @if (p.Banner == "art" && banner is not null)
     {
-        <section class="panel glass rise d1 locked">
-            <span class="empty-ico">@Icons.Get("lock")</span>
-            <div>
-                <h2>@p.UserName's library is for friends</h2>
-                <p class="muted">@Fmt.Plural(p.Counts.All, "game", "games") in it. Once you're friends you'll see what they play, how they rated it and the games you share.</p>
-            </div>
-        </section>
+        <div class="pf-banner art" style="--tint:@banner.Tint" aria-hidden="true">
+            @if (p.BannerImageId is { } hero)
+            {
+                <img class="pf-banner-img" src="@Igdb.Url(hero, Igdb.Full)" alt="" decoding="async" />
+            }
+            else if (banner.CoverImageId is { } bannerCover)
+            {
+                <img class="pf-banner-img from-cover" src="@Igdb.Url(bannerCover, Igdb.CoverBig)" alt="" decoding="async" />
+            }
+        </div>
+    }
+    else if (p.Banner == "plain")
+    {
+        <div class="pf-banner plain" aria-hidden="true"></div>
     }
     else
     {
-        <div class="profile-body glass">
-            <div class="profile-main">
-                <section class="showcase rise d1">
-                    <h2 class="showcase-head">@(p.FavoriteChosen ? "Favourite game" : "Best rated")</h2>
-                    @if (p.Favorite is { } fav)
-                    {
-                        var g = fav.Game;
-                        var favLine = new List<string>();
-                        if (fav.Hours is { } favHours) { favLine.Add($"{Fmt.Hours(favHours)} on record"); }
-                        favLine.Add(fav.FinishedAt is { } favFinished ? $"finished {Fmt.ShortDate(favFinished)}" : Fmt.Status(fav.Status));
-                        <a class="fav" href="/games/@g.Id" style="--tint:@g.Tint">
-                            <span class="fav-art" aria-hidden="true">
-                                @if (g.CoverImageId is { } favCover)
-                                {
-                                    <img class="art-img art-from-cover" src="@Igdb.Url(favCover, Igdb.CoverBig)" alt="" loading="lazy" decoding="async" />
-                                }
-                            </span>
-                            <span class="fav-cover"><partial name="_Cover" model="new CoverView(g, Model.Transition(g.Id))" /></span>
-                            <span class="fav-text">
-                                <b>@g.Name</b>
-                                <span>@string.Join(" · ", favLine)</span>
-                                @if (fav.Rating is { } fr)
-                                {
-                                    <span class="pips" aria-label="Rated @fr out of 10">
-                                        @for (var n = 1; n <= 10; n++) { <i class="@(n <= fr ? "on" : null)"></i> }
-                                        <b class="num gold">@fr/10</b>
-                                    </span>
-                                }
-                            </span>
-                        </a>
-                    }
-                    else
-                    {
-                        <p class="showcase-empty muted">@(p.IsMe ? "Rate a game or pick one in Edit profile and it shows here." : "Nothing rated yet.")</p>
-                    }
-                </section>
+        <div class="pf-banner glow" aria-hidden="true"></div>
+    }
 
-                <section class="stat-strip rise d1">
-                    <div><b class="num" data-count="@p.Counts.All">@p.Counts.All</b><span>Games</span></div>
-                    <div><b class="num" data-count="@p.Counts.Finished">@p.Counts.Finished</b><span>Finished</span></div>
-                    <div><b class="num" data-count="@((int)p.Stats.TotalHours)">@Fmt.Count(p.Stats.TotalHours)</b><span>Hours on record</span></div>
-                    <div><b class="num gold">@Fmt.Average(p.Stats.AverageRating)</b><span>Average rating</span></div>
-                </section>
-
-                @if (p.TopRated.Count > 0)
-                {
-                    <section class="showcase rise d2">
-                        <div class="showcase-head"><h2>Top rated</h2></div>
-                        <div class="top-grid stagger">
-                            @foreach (var entry in p.TopRated)
-                            {
-                                <a class="card" href="/games/@entry.Game.Id">
-                                    <span class="card-cover">
-                                        <partial name="_Cover" model="new CoverView(entry.Game, Model.Transition(entry.Game.Id))" />
-                                        <span class="badge-rating">@Fmt.Rating(entry.Rating)</span>
-                                    </span>
-                                </a>
-                            }
-                        </div>
-                    </section>
-                }
-
-                @if (p.Recent.Count > 0)
-                {
-                    var most = Math.Max(1m, p.Recent.Max(static r => r.Hours ?? 0m));
-                    <section class="showcase rise d2">
-                        <div class="showcase-head"><h2>Recent activity</h2>@if (p.RecentHours > 0) { <span class="muted">@Fmt.Hours(p.RecentHours) in the last 2 weeks</span> }</div>
-                        <ul class="recent-list">
-                            @foreach (var entry in p.Recent)
-                            {
-                                var share = (int)Math.Round((entry.Hours ?? 0m) / most * 100m);
-                                <li>
-                                    <a class="recent row-soft" href="/games/@entry.Game.Id">
-                                        <span class="recent-art" style="--tint:@entry.Game.Tint">
-                                            @if (entry.Game.CoverImageId is { } rc)
-                                            {
-                                                <img src="@Igdb.Url(rc, Igdb.CoverBig)" alt="" loading="lazy" decoding="async" />
-                                            }
-                                            <span>@entry.Game.Name</span>
-                                        </span>
-                                        <span class="recent-text">
-                                            <b>@entry.Game.Name</b>
-                                            <small>@(entry.Hours is { } rh ? $"{Fmt.Hours(rh)} on record · " : string.Empty)@(entry.RecentHours is { } r2 ? $"{Fmt.Hours(r2)} in 2 weeks · " : string.Empty)@Fmt.Status(entry.Status)</small>
-                                            <span class="bar"><i style="width:@share%"></i></span>
-                                        </span>
-                                        <span class="recent-side">
-                                            <b class="num @(entry.Rating is null ? "muted" : "gold")">@Fmt.Rating(entry.Rating)</b>
-                                            <small>@Fmt.Ago(entry.UpdatedAt)</small>
-                                        </span>
-                                    </a>
-                                </li>
-                            }
-                        </ul>
-                    </section>
-                }
-
-                <section class="showcase rise d2" id="badges">
-                    <div class="showcase-head"><h2>Badges</h2><span class="muted">@earned.Count of @p.Badges.Count</span></div>
-                    <ul class="badge-grid">
-                        @foreach (var badge in p.Badges)
-                        {
-                            <li class="badge@(badge.Earned ? " earned" : string.Empty)">
-                                <partial name="_Badge" model="badge" />
-                                <span class="badge-text">
-                                    <b>@badge.Name</b>
-                                    <small>@badge.Description</small>
-                                    @if (!badge.Earned && badge.Target > 1)
-                                    {
-                                        <span class="bar" aria-label="@badge.Progress of @badge.Target"><i style="width:@((int)Math.Round(100.0 * badge.Progress / badge.Target))%;background:@badge.Color"></i></span>
-                                    }
-                                </span>
-                            </li>
-                        }
-                    </ul>
-                </section>
+    <div class="pf-wrap">
+        <section class="pf-head rise">
+            <div class="pf-av frame-@p.Frame@(p.Playing is not null ? " is-playing" : online ? " is-online" : string.Empty)">
+                @Avatars.Get(p.Id, p.UserName, p.AvatarVersion, "huge")
+                <span class="pf-lvl num" style="--ring:@Model.LevelColour" title="Level @level.Level">@level.Level</span>
             </div>
 
-            <aside class="profile-side">
-                <nav class="side-card counts rise d1" aria-label="Library">
-                    @{
-                        var link = p.IsMe;
-                    }
-                    <a class="row-soft" href="@(link ? "/library" : null)">Games <b>@p.Counts.All</b></a>
-                    <a class="row-soft" href="@(link ? "/library?status=playing" : null)">Playing <b>@p.Counts.Playing</b></a>
-                    <a class="row-soft" href="@(link ? "/library?status=wishlist" : null)">Wishlist <b>@p.Counts.Wishlist</b></a>
-                    <a class="row-soft" href="@(link ? "/friends" : "#friends")">Friends <b>@p.Friends.Count</b></a>
-                    @if (p.Achievements > 0)
+            <div class="pf-id">
+                <div class="pf-name-row">
+                    <h1>@p.UserName</h1>
+                    @if (p.Title is { } title)
                     {
-                        <a class="row-soft">Achievements <b>@Fmt.Count(p.Achievements)</b></a>
+                        <span class="pf-title">@Icons.Get(title.Icon)@title.Name</span>
                     }
-                </nav>
-
-                @if (earned.Count > 0)
-                {
-                    <section class="side-card rise d2">
-                        <h2 class="side-head">Badges</h2>
-                        <div class="badge-mini">
-                            @foreach (var badge in earned.Take(6))
-                            {
-                                <span><partial name="_Badge" model="badge" />@badge.Name</span>
-                            }
-                        </div>
-                    </section>
-                }
-
-                <section class="side-card rise d2" id="friends">
-                    <div class="side-head-row"><h2 class="side-head">Friends</h2>@if (p.IsMe) { <a href="/friends">See all</a> }</div>
-                    @if (p.Friends.Count == 0)
+                </div>
+                <p class="pf-sub">
+                    @string.Join(" · ", sub)
+                    @if (p.Playing is null && (p.IsMe || p.CanSeeLibrary))
                     {
-                        <p class="muted small-empty">@(p.IsMe ? "No friends yet." : "No friends here yet.")</p>
+                        <span class="pf-seen@(online ? " on" : string.Empty)"> · @(online ? "Online" : Fmt.Seen(p.LastSeenAt))</span>
                     }
-                    else
-                    {
-                        <ul class="friend-mini">
-                            @foreach (var f in p.Friends.Take(8))
-                            {
-                                var fOnline = Fmt.Online(f.LastSeenAt);
-                                var state = f.PlayingName is not null ? "playing" : fOnline ? "online" : "away";
-                                <li>
-                                    <a class="row-soft" href="@(f.Id == Model.MyId ? "/profile" : "/u/" + f.UserName)">
-                                        @Avatars.Get(f.Id, f.UserName, f.AvatarVersion, "state-" + state)
-                                        <span class="friend-mini-text">
-                                            <b>@f.UserName</b>
-                                            <small class="@state">@(f.PlayingName is { } playingName ? "Playing " + playingName : Fmt.Seen(f.LastSeenAt))</small>
-                                        </span>
-                                    </a>
-                                </li>
-                            }
-                        </ul>
-                    }
-                </section>
+                </p>
+                <div class="pf-xp" role="img" aria-label="Level @level.Level, @levelPercent% of the way to @(level.Level + 1)">
+                    <span>Level @level.Level</span>
+                    <span class="pf-xp-bar"><i style="width:@levelPercent%"></i></span>
+                    <span>@Fmt.Count(level.Xp) / @Fmt.Count(level.NextLevelXp) XP</span>
+                </div>
+            </div>
 
+            <div class="pf-acts">
                 @if (p.IsMe)
                 {
-                    <a class="side-link-quiet" href="/settings">@Icons.Get("settings")Settings</a>
+                    <a class="btn" href="/profile/edit">@Icons.Get("edit")Customize profile</a>
                 }
-            </aside>
-        </div>
-    }
+                else if (p.FriendState == FriendState.None)
+                {
+                    <form method="post" action="/friends/request">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="userName" value="@p.UserName" />
+                        <input type="hidden" name="back" value="@back" />
+                        <button class="btn" type="submit">@Icons.Get("user-plus")Add friend</button>
+                    </form>
+                }
+                else if (p.FriendState == FriendState.RequestReceived)
+                {
+                    <form method="post" action="/friends/accept">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="friendId" value="@p.Id" />
+                        <input type="hidden" name="name" value="@p.UserName" />
+                        <input type="hidden" name="back" value="@back" />
+                        <button class="btn" type="submit">@Icons.Get("check")Accept request</button>
+                    </form>
+                }
+                else if (p.FriendState == FriendState.RequestSent)
+                {
+                    <span class="btn soft is-static">@Icons.Get("clock")Request sent</span>
+                }
+                else
+                {
+                    <span class="btn soft is-static">@Icons.Get("friends")Friends</span>
+                }
+                <button type="button" class="btn ghost" data-share-profile="/u/@p.UserName">@Icons.Get("arrow")Share</button>
+            </div>
+        </section>
+
+        @if (p.Playing is { } playing)
+        {
+            <a class="pf-now rise d1" href="/games/@playing.Game.Id">
+                <span class="pf-now-cover"><partial name="_Cover" model='new CoverView(playing.Game, "none")' /></span>
+                <span class="pf-now-text">
+                    <small>Playing now@(playing.Platform is { } nowPlatform ? " · " + nowPlatform : string.Empty)</small>
+                    <b>@playing.Game.Name</b>
+                </span>
+                <span class="pf-now-side">@(playing.Hours is { } nowHours ? Fmt.Hours(nowHours) : string.Empty)@(playing.AchievementsTotal is > 0 ? $" · {playing.AchievementsUnlocked ?? 0}/{playing.AchievementsTotal} achievements" : string.Empty)</span>
+            </a>
+        }
+
+        @if (!p.CanSeeLibrary)
+        {
+            <section class="panel glass rise d1 locked">
+                <span class="empty-ico">@Icons.Get("lock")</span>
+                <div>
+                    <h2>@(p.LibraryVisibility == LibraryVisibility.OnlyMe ? $"{p.UserName} keeps their library to themselves" : $"{p.UserName}'s library is for friends")</h2>
+                    <p class="muted">@Fmt.Plural(p.Counts.All, "game", "games") in it.@(p.LibraryVisibility == LibraryVisibility.OnlyMe ? string.Empty : " Once you're friends you'll see what they play, how they rated it and the games you share.")</p>
+                </div>
+            </section>
+        }
+        else
+        {
+            <div class="pf-cols">
+                <main class="pf-main">
+                    @if (p.Showcases.Count == 0 && p.IsMe)
+                    {
+                        <section class="pf-card pf-empty">
+                            <p class="muted">No showcases on. <a href="/profile/edit#showcases">Pick what to show off.</a></p>
+                        </section>
+                    }
+
+                    @foreach (var key in p.Showcases)
+                    {
+                        switch (key)
+                        {
+                            case "favourite":
+                                <section class="pf-card rise d1">
+                                    <header class="pf-card-head"><h2>@(p.FavoriteChosen ? "Favourite game" : "Best rated")</h2></header>
+                                    @if (p.Favorite is { } fav)
+                                    {
+                                        var g = fav.Game;
+                                        <div class="pf-fav">
+                                            <a class="pf-fav-cover" href="/games/@g.Id"><partial name="_Cover" model="new CoverView(g, Model.Transition(g.Id))" /></a>
+                                            <div class="pf-fav-text">
+                                                <div>
+                                                    <h3><a href="/games/@g.Id">@g.Name</a></h3>
+                                                    <p class="muted">@string.Join(" · ", new[] { fav.Platform, fav.Store, fav.FinishedAt is { } favFinished ? "finished " + Fmt.MonthYear(favFinished) : Fmt.Status(fav.Status) }.Where(static s => !string.IsNullOrEmpty(s)))</p>
+                                                </div>
+                                                <div class="pf-tiles three">
+                                                    <div><b class="num">@(fav.Hours is { } favHours ? Fmt.Hours(favHours) : "—")</b><small>played</small></div>
+                                                    <div><b class="num">@(fav.AchievementsTotal is > 0 ? $"{fav.AchievementsUnlocked ?? 0} / {fav.AchievementsTotal}" : "—")</b><small>achievements</small></div>
+                                                    <div><b class="num gold">@(fav.Rating is { } favRating ? $"{favRating} / 10" : "—")</b><small>@(p.IsMe ? "my rating" : "rating")</small></div>
+                                                </div>
+                                                @if (p.FavoriteNote is { } note)
+                                                {
+                                                    <blockquote class="pf-quote">“@note”</blockquote>
+                                                }
+                                                else if (p.IsMe)
+                                                {
+                                                    <p class="muted small-empty"><a href="/profile/edit#favourite">Add a line about why it's your favourite.</a></p>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <p class="muted small-empty">@(p.IsMe ? "Rate a game or pick one in Customize profile and it shows here." : "Nothing rated yet.")</p>
+                                    }
+                                </section>
+                                break;
+
+                            case "numbers":
+                                <section class="pf-card rise d1">
+                                    <header class="pf-card-head"><h2>In numbers</h2></header>
+                                    <div class="pf-tiles four">
+                                        <div><b class="num" data-count="@p.Counts.All">@p.Counts.All</b><small>games</small></div>
+                                        <div><b class="num">@Fmt.Count(p.Stats.TotalHours) h</b><small>played</small></div>
+                                        <div><b class="num" data-count="@p.Counts.Finished">@p.Counts.Finished</b><small>finished</small></div>
+                                        <div><b class="num">@p.Completed</b><small>at 100%</small></div>
+                                    </div>
+                                    @if (p.PlatformHours.Count > 0)
+                                    {
+                                        <div class="pf-split" role="img" aria-label="@string.Join(", ", p.PlatformHours.Select(f => $"{f.Family} {Fmt.Hours(f.Hours)}"))">
+                                            @foreach (var family in p.PlatformHours)
+                                            {
+                                                <i style="width:@((int)Math.Max(1, Math.Round(family.Hours / totalPlatformHours * 100)))%;background:@(familyColours.GetValueOrDefault(family.Family) ?? "#7D8FA5")"></i>
+                                            }
+                                        </div>
+                                        <div class="pf-split-legend">
+                                            @foreach (var family in p.PlatformHours)
+                                            {
+                                                <span><i style="background:@(familyColours.GetValueOrDefault(family.Family) ?? "#7D8FA5")"></i><b>@family.Family</b> @((int)Math.Round(family.Hours / totalPlatformHours * 100))% · @Fmt.Hours(family.Hours)</span>
+                                            }
+                                        </div>
+                                    }
+                                </section>
+                                break;
+
+                            case "rare":
+                                <section class="pf-card rise d2">
+                                    <header class="pf-card-head"><h2>Rarest achievements</h2><span class="muted">Steam and PlayStation</span></header>
+                                    @if (p.Rare.Count == 0)
+                                    {
+                                        <p class="muted small-empty">They show once Steam or PlayStation achievements have been read: import from Steam or PlayStation, then open a game or sync.</p>
+                                    }
+                                    else
+                                    {
+                                        <div class="pf-rare">
+                                            @foreach (var r in p.Rare)
+                                            {
+                                                <a class="pf-rare-item" href="/games/@r.GameId">
+                                                    <span class="pf-rare-ico">
+                                                        @if (r.IconUrl is { } rareIcon)
+                                                        {
+                                                            <img src="@rareIcon" alt="" loading="lazy" decoding="async" />
+                                                        }
+                                                        else
+                                                        {
+                                                            @Icons.Get("trophy")
+                                                        }
+                                                        @if (r.Grade is { } grade)
+                                                        {
+                                                            <i class="grade grade-@grade.ToLowerInvariant()" title="@grade"></i>
+                                                        }
+                                                    </span>
+                                                    <span class="pf-rare-text">
+                                                        <b>@r.Name</b>
+                                                        <small>@r.GameName · @r.Source</small>
+                                                        <small class="pf-rare-pct">@r.Percent.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)% of players</small>
+                                                    </span>
+                                                </a>
+                                            }
+                                        </div>
+                                    }
+                                </section>
+                                break;
+
+                            case "year":
+                                {
+                                    var today = DateTime.UtcNow.Date;
+                                    var start = today.AddDays(-363);
+                                    while (start.DayOfWeek != DayOfWeek.Monday) { start = start.AddDays(-1); }
+                                    var byDay = p.PlayDays.ToDictionary(static d => d.Day.UtcDateTime.Date, static d => d.Hours);
+                                    var yearHours = p.PlayDays.Sum(static d => d.Hours);
+                                    var streak = 0;
+                                    var best = 0;
+                                    for (var day = start; day <= today; day = day.AddDays(1))
+                                    {
+                                        streak = byDay.ContainsKey(day) ? streak + 1 : 0;
+                                        best = Math.Max(best, streak);
+                                    }
+
+                                    <section class="pf-card rise d2">
+                                        <header class="pf-card-head"><h2>My year in games</h2>@if (p.PlayDays.Count > 0) { <span class="muted">@Fmt.Hours(yearHours) over @Fmt.Plural(p.PlayDays.Count, "day", "days") · longest streak @Fmt.Plural(best, "day", "days")</span> }</header>
+                                        @if (p.PlayDays.Count == 0)
+                                        {
+                                            <p class="muted small-empty">Fills in day by day from the Steam and PlayStation syncs.</p>
+                                        }
+                                        <div class="pf-heat-scroll">
+                                            <div class="pf-heat" role="img" aria-label="Days played in the last year">
+                                                @for (var day = start; day <= today; day = day.AddDays(1))
+                                                {
+                                                    var hours = byDay.GetValueOrDefault(day);
+                                                    var heat = hours <= 0 ? 0 : hours < 1 ? 1 : hours < 2 ? 2 : hours < 4 ? 3 : 4;
+                                                    <i class="h@(heat)" title="@day.ToString("d MMM", System.Globalization.CultureInfo.InvariantCulture)@(hours > 0 ? " · " + Fmt.Hours(hours) : string.Empty)"></i>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="pf-heat-key" aria-hidden="true"><span>Less</span><i class="h0"></i><i class="h1"></i><i class="h2"></i><i class="h3"></i><i class="h4"></i><span>More</span></div>
+                                    </section>
+                                }
+                                break;
+
+                            case "top":
+                                if (p.TopRated.Count > 0)
+                                {
+                                    <section class="pf-card rise d2">
+                                        <header class="pf-card-head"><h2>@(p.IsMe ? "My top 5" : "Top 5")</h2></header>
+                                        <div class="pf-shelf">
+                                            @for (var i = 0; i < Math.Min(5, p.TopRated.Count); i++)
+                                            {
+                                                var entry = p.TopRated[i];
+                                                <a class="pf-shelf-item" href="/games/@entry.Game.Id">
+                                                    <span class="pf-shelf-cover"><partial name="_Cover" model="new CoverView(entry.Game, Model.Transition(entry.Game.Id))" /><b class="pf-rank num">@(i + 1)</b></span>
+                                                    <small>@(entry.Hours is { } topHours ? Fmt.Hours(topHours) + " · " : string.Empty)@Fmt.Rating(entry.Rating)/10</small>
+                                                </a>
+                                            }
+                                        </div>
+                                    </section>
+                                }
+                                break;
+
+                            case "playing":
+                                if (p.Recent.Any(static r => r.Status == GameStatus.Playing))
+                                {
+                                    <section class="pf-card rise d2">
+                                        <header class="pf-card-head"><h2>Playing</h2></header>
+                                        <div class="pf-shelf">
+                                            @foreach (var entry in p.Recent.Where(static r => r.Status == GameStatus.Playing).Take(5))
+                                            {
+                                                <a class="pf-shelf-item" href="/games/@entry.Game.Id">
+                                                    <span class="pf-shelf-cover"><partial name="_Cover" model="new CoverView(entry.Game, Model.Transition(entry.Game.Id))" /></span>
+                                                    <small>@(entry.Hours is { } playingHours ? Fmt.Hours(playingHours) : "Just started")</small>
+                                                </a>
+                                            }
+                                        </div>
+                                    </section>
+                                }
+                                break;
+
+                            case "platinums":
+                                <section class="pf-card rise d2">
+                                    <header class="pf-card-head"><h2>Every achievement</h2><span class="muted">@Fmt.Plural(p.Completed, "game", "games") at 100%</span></header>
+                                    @if (p.Platinums.Count == 0)
+                                    {
+                                        <p class="muted small-empty">No game at 100% yet.</p>
+                                    }
+                                    else
+                                    {
+                                        <div class="pf-shelf six">
+                                            @foreach (var entry in p.Platinums.Take(6))
+                                            {
+                                                <a class="pf-shelf-item" href="/games/@entry.Game.Id">
+                                                    <span class="pf-shelf-cover"><partial name="_Cover" model="new CoverView(entry.Game, Model.Transition(entry.Game.Id))" /><b class="pf-rank pf-100">100%</b></span>
+                                                    <small>@entry.Platform</small>
+                                                </a>
+                                            }
+                                        </div>
+                                    }
+                                </section>
+                                break;
+
+                            case "closest":
+                                if (p.Closest.Count > 0)
+                                {
+                                    <section class="pf-card rise d2">
+                                        <header class="pf-card-head"><h2>Almost there</h2><span class="muted">Closest to every achievement</span></header>
+                                        <ul class="pf-closest">
+                                            @foreach (var entry in p.Closest)
+                                            {
+                                                var share = (int)Math.Round(100.0 * (entry.AchievementsUnlocked ?? 0) / Math.Max(1, entry.AchievementsTotal ?? 1));
+                                                <li>
+                                                    <a href="/games/@entry.Game.Id">
+                                                        <b>@entry.Game.Name</b>
+                                                        <span class="pf-xp-bar"><i style="width:@share%"></i></span>
+                                                        <small>@entry.AchievementsUnlocked / @entry.AchievementsTotal · @share%</small>
+                                                    </a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </section>
+                                }
+                                break;
+
+                            case "finished":
+                                if (p.Finished.Count > 0)
+                                {
+                                    <section class="pf-card rise d2">
+                                        <header class="pf-card-head"><h2>Recently finished</h2></header>
+                                        <div class="pf-shelf six">
+                                            @foreach (var entry in p.Finished)
+                                            {
+                                                <a class="pf-shelf-item" href="/games/@entry.Game.Id">
+                                                    <span class="pf-shelf-cover"><partial name="_Cover" model="new CoverView(entry.Game, Model.Transition(entry.Game.Id))" /></span>
+                                                    <small>@(entry.FinishedAt is { } done ? Fmt.MonthYear(done) : "Finished")</small>
+                                                </a>
+                                            }
+                                        </div>
+                                    </section>
+                                }
+                                break;
+
+                            case "recent":
+                                if (p.Recent.Count > 0)
+                                {
+                                    var most = Math.Max(1m, p.Recent.Max(static r => r.Hours ?? 0m));
+                                    <section class="pf-card rise d2">
+                                        <header class="pf-card-head"><h2>Recent activity</h2>@if (p.RecentHours > 0) { <span class="muted">@Fmt.Hours(p.RecentHours) in the last 2 weeks</span> }</header>
+                                        <ul class="recent-list">
+                                            @foreach (var entry in p.Recent)
+                                            {
+                                                var share = (int)Math.Round((entry.Hours ?? 0m) / most * 100m);
+                                                <li>
+                                                    <a class="recent row-soft" href="/games/@entry.Game.Id">
+                                                        <span class="recent-art" style="--tint:@entry.Game.Tint">
+                                                            @if (entry.Game.CoverImageId is { } rc)
+                                                            {
+                                                                <img src="@Igdb.Url(rc, Igdb.CoverBig)" alt="" loading="lazy" decoding="async" />
+                                                            }
+                                                            <span>@entry.Game.Name</span>
+                                                        </span>
+                                                        <span class="recent-text">
+                                                            <b>@entry.Game.Name</b>
+                                                            <small>@(entry.Hours is { } rh ? $"{Fmt.Hours(rh)} on record · " : string.Empty)@(entry.RecentHours is { } r2 ? $"{Fmt.Hours(r2)} in 2 weeks · " : string.Empty)@Fmt.Status(entry.Status)</small>
+                                                            <span class="bar"><i style="width:@share%"></i></span>
+                                                        </span>
+                                                        <span class="recent-side">
+                                                            <b class="num @(entry.Rating is null ? "muted" : "gold")">@Fmt.Rating(entry.Rating)</b>
+                                                            <small>@Fmt.Ago(entry.UpdatedAt)</small>
+                                                        </span>
+                                                    </a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </section>
+                                }
+                                break;
+
+                            case "collection":
+                                if (p.Pinned is { } pinnedMain)
+                                {
+                                    <section class="pf-card rise d2">
+                                        <header class="pf-card-head"><h2>@pinnedMain.Name</h2><span class="muted">@Fmt.Plural(pinnedMain.Count, "game", "games")</span></header>
+                                        <div class="pf-shelf">
+                                            @foreach (var game in pinnedMain.Games)
+                                            {
+                                                <a class="pf-shelf-item" href="/games/@game.Id"><span class="pf-shelf-cover"><partial name="_Cover" model="new CoverView(game, Model.Transition(game.Id))" /></span></a>
+                                            }
+                                        </div>
+                                    </section>
+                                }
+                                break;
+
+                            case "badges":
+                                <section class="pf-card rise d2" id="badges">
+                                    <header class="pf-card-head"><h2>Badges</h2><span class="muted">@earned.Count of @p.Badges.Count</span></header>
+                                    <ul class="badge-grid">
+                                        @foreach (var badge in p.Badges)
+                                        {
+                                            <li class="badge@(badge.Earned ? " earned" : string.Empty)">
+                                                <partial name="_Badge" model="badge" />
+                                                <span class="badge-text">
+                                                    <b>@badge.Name</b>
+                                                    <small>@badge.Description</small>
+                                                    @if (!badge.Earned && badge.Target > 1)
+                                                    {
+                                                        <span class="bar" aria-label="@badge.Progress of @badge.Target"><i style="width:@((int)Math.Round(100.0 * badge.Progress / badge.Target))%;background:@badge.Color"></i></span>
+                                                    }
+                                                </span>
+                                            </li>
+                                        }
+                                    </ul>
+                                </section>
+                                break;
+                        }
+                    }
+                </main>
+
+                <aside class="pf-side">
+                    <section class="pf-card rise d1">
+                        <h2 class="pf-side-head">About</h2>
+                        @if (p.Bio is { } bio)
+                        {
+                            <p class="pf-bio">@bio</p>
+                        }
+                        else if (p.IsMe)
+                        {
+                            <p class="muted"><a href="/profile/edit#about">Write a line about what you play.</a></p>
+                        }
+                        @if (p.Tags.Count > 0)
+                        {
+                            <div class="pf-tags">
+                                @foreach (var tag in p.Tags)
+                                {
+                                    <span>@tag</span>
+                                }
+                            </div>
+                        }
+                    </section>
+
+                    @if (earned.Count > 0)
+                    {
+                        <section class="pf-card rise d2">
+                            <div class="pf-side-row"><h2 class="pf-side-head">Badges</h2>@if (p.Showcases.Contains("badges")) { <a href="#badges">@earned.Count of @p.Badges.Count</a> } else { <span class="muted">@earned.Count of @p.Badges.Count</span> }</div>
+                            <div class="pf-badges">
+                                @foreach (var badge in earned.Take(8))
+                                {
+                                    <span title="@badge.Name"><partial name="_Badge" model="badge" /></span>
+                                }
+                            </div>
+                        </section>
+                    }
+
+                    @if (p.Pinned is { } pinned && !p.Showcases.Contains("collection"))
+                    {
+                        <section class="pf-card rise d2">
+                            <h2 class="pf-side-head">@pinned.Name</h2>
+                            <p class="muted pf-side-note">@Fmt.Plural(pinned.Count, "game", "games")</p>
+                            <div class="pf-mini-covers">
+                                @foreach (var game in pinned.Games)
+                                {
+                                    <a href="/games/@game.Id" title="@game.Name"><partial name="_Cover" model='new CoverView(game, "none")' /></a>
+                                }
+                            </div>
+                        </section>
+                    }
+
+                    <section class="pf-card rise d2" id="friends">
+                        <div class="pf-side-row"><h2 class="pf-side-head">Friends</h2>@if (p.IsMe) { <a href="/friends">See all</a> }</div>
+                        @if (p.Friends.Count == 0)
+                        {
+                            <p class="muted small-empty">@(p.IsMe ? "No friends yet." : "No friends here yet.")</p>
+                        }
+                        else
+                        {
+                            <ul class="friend-mini">
+                                @foreach (var f in p.Friends.Take(8))
+                                {
+                                    var fOnline = Fmt.Online(f.LastSeenAt);
+                                    var state = f.PlayingName is not null ? "playing" : fOnline ? "online" : "away";
+                                    <li>
+                                        <a class="row-soft" href="@(f.Id == Model.MyId ? "/profile" : "/u/" + f.UserName)">
+                                            @Avatars.Get(f.Id, f.UserName, f.AvatarVersion, "state-" + state)
+                                            <span class="friend-mini-text">
+                                                <b>@f.UserName</b>
+                                                <small class="@state">@(f.PlayingName is { } playingName ? "Playing " + playingName : Fmt.Seen(f.LastSeenAt))</small>
+                                            </span>
+                                        </a>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </section>
+                </aside>
+            </div>
+        }
+    </div>
 </div>

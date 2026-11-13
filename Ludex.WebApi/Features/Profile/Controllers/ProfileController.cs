@@ -44,6 +44,15 @@ internal sealed class ProfileController(IProfileService profileService) : Intern
     [SwaggerOperation(Summary = "ProfileSave", OperationId = "ProfileSave")]
     public async Task<ActionResult<ProfileDTO>> ProfileSaveAsync(ProfileSaveRequest item) => (await profileService.SaveAsync(item)).ToActionResult();
 
+    /// <summary>Saves everything Customize profile sets.</summary>
+    /// <param name="item">The account and the values.</param>
+    /// <returns>The profile.</returns>
+    [HttpPost("customize")]
+    [Consumes(MediaTypeNames.Application.Json)]
+    [ProducesResponseType<ProfileDTO>((int)HttpStatusCode.OK)]
+    [SwaggerOperation(Summary = "ProfileCustomize", OperationId = "ProfileCustomize")]
+    public async Task<ActionResult<ProfileDTO>> ProfileCustomizeAsync(ProfileCustomizeRequest item) => (await profileService.CustomizeAsync(item)).ToActionResult();
+
     /// <summary>Makes a game the favourite, or clears it.</summary>
     /// <param name="item">The account and the game.</param>
     /// <returns>The favourite now.</returns>

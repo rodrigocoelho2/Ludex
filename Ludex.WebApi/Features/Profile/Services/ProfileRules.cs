@@ -192,6 +192,73 @@ internal static class ProfileRules
         return text.Length == 0 ? null : text;
     }
 
+    /// <summary>The showcases a profile can show, in the order offered.</summary>
+    public static readonly IReadOnlyList<string> ShowcaseKeys =
+        ["favourite", "numbers", "rare", "year", "top", "playing", "platinums", "closest", "finished", "recent", "collection", "badges"];
+
+    /// <summary>The showcases a profile shows until its owner picks.</summary>
+    public static readonly IReadOnlyList<string> DefaultShowcases = ["favourite", "numbers", "rare", "year", "top", "badges"];
+
+    /// <summary>Most showcases on a profile.</summary>
+    public const int MaxShowcases = 6;
+
+    /// <summary>Most tags.</summary>
+    public const int MaxTags = 5;
+
+    /// <summary>Longest tag.</summary>
+    public const int MaxTagLength = 24;
+
+    /// <summary>Longest line about the favourite game.</summary>
+    public const int MaxFavoriteNote = 200;
+
+    /// <summary>The banners.</summary>
+    public static readonly IReadOnlyList<string> Banners = ["art", "glow", "plain"];
+
+    /// <summary>The frames round the photo.</summary>
+    public static readonly IReadOnlyList<string> Frames = ["ring", "glow", "none"];
+
+    /// <summary>
+    /// The showcases saved, as a list: known keys only, each once, at most six; nothing saved is the default.
+    /// </summary>
+    /// <param name="saved">The saved list (comma separated) or the keys sent.</param>
+    /// <returns>The showcases, in order.</returns>
+    public static List<string> Showcases(IEnumerable<string>? saved) =>
+        saved is null
+            ? [.. DefaultShowcases]
+            : [.. saved.Select(static s => s.Trim().ToLowerInvariant()).Where(ShowcaseKeys.Contains).Distinct().Take(MaxShowcases)];
+
+    /// <summary>
+    /// Tags as saved: trimmed, at most 24 characters, no "|", each once (ignoring case), at most five.
+    /// </summary>
+    /// <param name="tags">The tags typed.</param>
+    /// <returns>The tags.</returns>
+    public static List<string> Tags(IEnumerable<string>? tags) =>
+        [.. (tags ?? Enumerable.Empty<string>())
+            .SelectMany(static t => t.Split([',', '|'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            .Select(static t => t.Length > MaxTagLength ? t[..MaxTagLength].Trim() : t)
+            .Where(static t => t.Length > 0)
+            .DistinctBy(static t => t.ToLowerInvariant())
+            .Take(MaxTags)];
+
+    /// <summary>
+    /// The hours of a library by platform family (a copy with no platform counts as PC), most first.
+    /// </summary>
+    /// <param name="rows">The library.</param>
+    /// <returns>The families with hours.</returns>
+    public static List<PlatformHoursDTO> PlatformHours(IEnumerable<LibraryRow> rows) =>
+        [.. rows
+            .Where(static r => (r.Hours ?? 0m) > 0m)
+            .GroupBy(static r => FamilyOf(r.Platform))
+            .Select(static g => new PlatformHoursDTO { Family = g.Key, Hours = Math.Round(g.Sum(static r => r.Hours ?? 0m), 1) })
+            .OrderByDescending(static f => f.Hours)];
+
+    // The family a copy counts in: PC for a copy with no platform; a platform of no family is its own.
+    private static string FamilyOf(string? platform)
+    {
+        var family = PlatformNames.Family(platform ?? "PC");
+        return family == "Other" ? platform ?? "Other" : family;
+    }
+
     private const string Bronze = "#C98B5B";
     private const string Silver = "#B8C4D6";
     private const string Gold = "#F5B841";

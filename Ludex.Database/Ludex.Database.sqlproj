@@ -60,6 +60,8 @@
     <Build Include="StoredProcedures\Profile\dbo.ProfileAvatarSave.sql" />
     <Build Include="StoredProcedures\Profile\dbo.ProfileFriends.sql" />
     <Build Include="StoredProcedures\Profile\dbo.ProfileGet.sql" />
+    <Build Include="StoredProcedures\Profile\dbo.ProfileCustomize.sql" />
+    <Build Include="StoredProcedures\Profile\dbo.ProfilePlayDays.sql" />
     <Build Include="StoredProcedures\Profile\dbo.ProfileSave.sql" />
     <Build Include="StoredProcedures\Profile\dbo.ProfileSetAccent.sql" />
     <Build Include="StoredProcedures\Profile\dbo.ProfileSetFavorite.sql" />

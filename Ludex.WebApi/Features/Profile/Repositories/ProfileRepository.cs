@@ -75,7 +75,36 @@ internal interface IProfileRepository
     /// <param name="userId">The account.</param>
     /// <returns>The friends, playing first.</returns>
     Task<List<ProfileFriendRow>> FriendsAsync(Guid userId);
+
+    /// <summary>Saves everything Customize profile sets.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="profile">The values (already checked).</param>
+    /// <returns>A task.</returns>
+    Task CustomizeAsync(Guid userId, ProfileCustomization profile);
+
+    /// <summary>How long the account played each day since a day.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="from">The first day.</param>
+    /// <returns>The days played.</returns>
+    Task<List<PlayDayRow>> PlayDaysAsync(Guid userId, DateOnly from);
 }
+
+/// <summary>What Customize profile saves (checked by the service).</summary>
+internal sealed record ProfileCustomization(
+    string? Bio,
+    string? Location,
+    int? FavoriteGameID,
+    string? FavoriteNote,
+    string? Accent,
+    string? Banner,
+    int? BannerGameID,
+    string? Frame,
+    string? Title,
+    string? Tags,
+    string? Showcases,
+    int? PinnedCollectionID,
+    byte? LibraryVisibility,
+    bool? ShowPlaying);
 
 /// <summary>
 /// Profiles in SQL Server (stored procedures in Ludex.Database/StoredProcedures/Profile).
@@ -123,4 +152,29 @@ internal sealed class ProfileRepository(ISqlConnectionFactory connectionFactory)
 
     /// <inheritdoc />
     public Task<List<ProfileFriendRow>> FriendsAsync(Guid userId) => QueryAsync<ProfileFriendRow>("[dbo].[ProfileFriends]", new { UserUniqueID = userId });
+
+    /// <inheritdoc />
+    public Task CustomizeAsync(Guid userId, ProfileCustomization profile) =>
+        ExecuteAsync("[dbo].[ProfileCustomize]", new
+        {
+            UserUniqueID = userId,
+            profile.Bio,
+            profile.Location,
+            profile.FavoriteGameID,
+            profile.FavoriteNote,
+            profile.Accent,
+            profile.Banner,
+            profile.BannerGameID,
+            profile.Frame,
+            profile.Title,
+            profile.Tags,
+            profile.Showcases,
+            profile.PinnedCollectionID,
+            profile.LibraryVisibility,
+            profile.ShowPlaying,
+        });
+
+    /// <inheritdoc />
+    public Task<List<PlayDayRow>> PlayDaysAsync(Guid userId, DateOnly from) =>
+        QueryAsync<PlayDayRow>("[dbo].[ProfilePlayDays]", new { UserUniqueID = userId, From = from.ToDateTime(TimeOnly.MinValue) });
 }

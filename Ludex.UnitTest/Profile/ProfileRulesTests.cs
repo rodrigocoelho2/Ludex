@@ -119,6 +119,47 @@ public sealed class ProfileRulesTests
     [InlineData("  Souls-likes \r\n and Balatro  ", "Souls-likes \n and Balatro")]
     public void TextIsTrimmedAndEmptyBecomesNull(string? typed, string? saved) => Assert.Equal(saved, ProfileRules.Clean(typed));
 
+    [Fact]
+    public void NoShowcasesSavedShowsTheDefaults() =>
+        Assert.Equal(ProfileRules.DefaultShowcases.ToArray(), ProfileRules.Showcases(null));
+
+    [Fact]
+    public void ShowcasesKeepTheirOrderDropUnknownAndRepeatsAndStopAtSix()
+    {
+        var result = ProfileRules.Showcases(["year", " TOP ", "nonsense", "year", "rare", "badges", "recent", "playing", "finished"]);
+
+        Assert.Equal(new[] { "year", "top", "rare", "badges", "recent", "playing" }, result);
+    }
+
+    [Fact]
+    public void AnEmptyListOfShowcasesStaysEmpty() => Assert.Empty(ProfileRules.Showcases([]));
+
+    [Fact]
+    public void TagsAreSplitTrimmedCutShortAndKeptOnceUpToFive()
+    {
+        var result = ProfileRules.Tags(["Soulslike, trophy hunter", "SOULSLIKE|JRPG", "  ", "A tag that is far longer than twenty-four", "Indie", "Retro", "One too many"]);
+
+        Assert.Equal(new[] { "Soulslike", "trophy hunter", "JRPG", "A tag that is far longer", "Indie" }, result);
+    }
+
+    [Fact]
+    public void HoursAreSplitByPlatformFamilyMostFirst()
+    {
+        LibraryRow[] rows =
+        [
+            Row(1, GameStatus.Playing, hours: 10m, platform: "PS5"),
+            Row(2, GameStatus.Playing, hours: 5.3m, platform: "PS4"),
+            Row(3, GameStatus.Finished, hours: 40m),
+            Row(4, GameStatus.Finished, hours: 2m, platform: "Switch"),
+            Row(5, GameStatus.Backlog, platform: "Xbox Series X|S"),
+        ];
+
+        var result = ProfileRules.PlatformHours(rows);
+
+        Assert.Equal(new[] { "PC", "PlayStation", "Nintendo" }, result.Select(static f => f.Family));
+        Assert.Equal(new[] { 40m, 15.3m, 2m }, result.Select(static f => f.Hours));
+    }
+
     private static (int, bool) Pick((LibraryRow? Row, bool Chosen) favorite) => (favorite.Row?.GameID ?? 0, favorite.Chosen);
 
     private static LibraryRow Row(

@@ -162,6 +162,11 @@ public sealed class LudexClient(HttpClient httpClient)
     /// <returns>The profile.</returns>
     public Task<ProfileDTO> ProfileSaveAsync(ProfileSaveRequest item) => PostAsync<ProfileDTO>("profile/save", item);
 
+    /// <summary>Saves everything Customize profile sets.</summary>
+    /// <param name="item">The account and the values.</param>
+    /// <returns>The profile.</returns>
+    public Task<ProfileDTO> ProfileCustomizeAsync(ProfileCustomizeRequest item) => PostAsync<ProfileDTO>("profile/customize", item);
+
     /// <summary>Makes a game the favourite, or clears it.</summary>
     /// <param name="item">The account and the game (null: clear).</param>
     /// <returns>The favourite now.</returns>

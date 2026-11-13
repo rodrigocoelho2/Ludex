@@ -1,68 +1,256 @@
 @model ProfileEditPageModel
 @{
     Layout = "_App";
-    ViewData["Title"] = "Edit profile";
+    ViewData["Title"] = "Customize profile";
     var p = Model.Profile;
     var chosen = p.FavoriteChosen ? p.Favorite?.Game.Id : null;
+    var bannerChosen = p.BannerGame is { } bg && bg.Id != p.Favorite?.Game.Id ? bg.Id : (int?)null;
+    const int max = 6;
+    var earned = p.Badges.Where(static b => b.Earned).ToList();
+    var showcaseNames = new Dictionary<string, (string Name, string Hint)>
+    {
+        ["favourite"] = ("Favourite game", "Its cover, your hours and a line about it"),
+        ["numbers"] = ("In numbers", "Games, hours, finished, and where you play"),
+        ["rare"] = ("Rarest achievements", "Your rarest Steam achievements and PlayStation trophies"),
+        ["year"] = ("My year in games", "A square for every day you played"),
+        ["top"] = ("Top 5", "Your best rated games"),
+        ["playing"] = ("Playing", "What you're in the middle of"),
+        ["platinums"] = ("Every achievement", "The games you took to 100%"),
+        ["closest"] = ("Almost there", "The games closest to 100%"),
+        ["finished"] = ("Recently finished", "The last games you finished"),
+        ["recent"] = ("Recent activity", "What you played lately, with the hours"),
+        ["collection"] = ("Pinned collection", "One of your collections, with its covers"),
+        ["badges"] = ("Badges", "Every badge, earned or not"),
+    };
+    var order = p.Showcases.Concat(showcaseNames.Keys.Where(k => !p.Showcases.Contains(k))).ToList();
+    var visibility = new[]
+    {
+        (LibraryVisibility.Friends, "Friends"),
+        (LibraryVisibility.Everyone, "Everyone signed in"),
+        (LibraryVisibility.OnlyMe, "Only me"),
+    };
 }
 
-<div class="edit-profile">
+<div class="cz" data-customize>
     <a class="back rise" href="/profile">@Icons.Get("left")Your profile</a>
-    <h1 class="rise">Edit profile</h1>
+    <h1 class="rise">Customize profile</h1>
+    <p class="muted rise">Pick your colour, your banner and what your profile shows off. Friends see it the way the preview does.</p>
 
-    <section class="panel glass rise d1">
-        <h2>Photo</h2>
-        <div class="photo-row" data-photo>
-            <span class="photo-preview" data-photo-preview>@Avatars.Get(p.Id, p.UserName, p.AvatarVersion, "huge")</span>
-            <div class="photo-acts">
-                <p class="muted">A square photo works best. It's shrunk to 256 px on this device before it's sent.</p>
-                <div class="actions">
-                    <label class="btn small">
-                        @Icons.Get("camera")<span data-photo-label>@(p.AvatarVersion is null ? "Upload photo" : "Change photo")</span>
-                        <input class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" data-photo-input />
-                    </label>
-                    @if (p.AvatarVersion is not null)
+    <div class="cz-cols">
+        <aside class="cz-preview-wrap rise d1">
+            <div class="cz-preview" data-accent="@p.Accent" data-cz-preview>
+                <div class="cz-pv-banner banner-@p.Banner" data-cz-banner style="--tint:@(p.BannerGame?.Tint ?? "#2B3550")">
+                    @if (p.BannerImageId is { } hero)
                     {
-                        <form method="post" action="/profile/photo/remove" data-confirm="Remove your photo? Your initials come back.">
-                            @Html.AntiForgeryToken()
-                            <button class="btn small ghost" type="submit">@Icons.Get("trash")Remove</button>
-                        </form>
+                        <img src="@Igdb.Url(hero, Igdb.ScreenshotMed)" alt="" decoding="async" />
                     }
                 </div>
+                <div class="cz-pv-body">
+                    <div class="cz-pv-head">
+                        <span class="pf-av small frame-@p.Frame" data-cz-frame>@Avatars.Get(p.Id, p.UserName, p.AvatarVersion, "huge")</span>
+                        <div>
+                            <b class="cz-pv-name">@p.UserName</b>
+                            <span class="pf-title" data-cz-title @(p.Title is null ? "hidden" : null)>@(p.Title?.Name)</span>
+                        </div>
+                    </div>
+                    <ol class="cz-pv-list" data-cz-list>
+                        @foreach (var key in p.Showcases)
+                        {
+                            <li>@showcaseNames.GetValueOrDefault(key).Name</li>
+                        }
+                    </ol>
+                </div>
             </div>
+            <p class="muted cz-note">Showcases show in the order you set.</p>
+        </aside>
+
+        <div class="cz-main">
+            <section class="pf-card cz-sec rise d1">
+                <h2>Photo</h2>
+                <div class="photo-row" data-photo>
+                    <span class="photo-preview" data-photo-preview>@Avatars.Get(p.Id, p.UserName, p.AvatarVersion, "huge")</span>
+                    <div class="photo-acts">
+                        <p class="muted">A square photo works best. It's shrunk to 256 px on this device before it's sent.</p>
+                        <div class="actions">
+                            <label class="btn small">
+                                @Icons.Get("camera")<span data-photo-label>@(p.AvatarVersion is null ? "Upload photo" : "Change photo")</span>
+                                <input class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" data-photo-input />
+                            </label>
+                            @if (p.AvatarVersion is not null)
+                            {
+                                <form method="post" action="/profile/photo/remove" data-confirm="Remove your photo? Your initials come back.">
+                                    @Html.AntiForgeryToken()
+                                    <button class="btn small ghost" type="submit">@Icons.Get("trash")Remove</button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <form class="cz-form" method="post" action="/profile/edit" autocomplete="off">
+                @Html.AntiForgeryToken()
+
+                <section class="pf-card cz-sec rise d1">
+                    <h2>Colour</h2>
+                    <p class="muted">Your profile's colour, and the app's: buttons, bars, the frame and the highlights.</p>
+                    <div class="cz-swatches" role="radiogroup" aria-label="Colour">
+                        @foreach (var theme in Ludex.Library.Themes.Accents.All)
+                        {
+                            <label class="cz-swatch" style="--sw:@theme.Color" title="@theme.Name">
+                                <input class="sr-only" type="radio" name="accent" value="@theme.Key" checked="@(theme.Key == p.Accent ? "checked" : null)" data-cz-accent />
+                                <span aria-hidden="true"></span><b class="sr-only">@theme.Name</b>
+                            </label>
+                        }
+                    </div>
+                </section>
+
+                <section class="pf-card cz-sec rise d1">
+                    <h2>Banner</h2>
+                    <p class="muted">Artwork from a game in your library, your colour as a glow, or nothing at all.</p>
+                    <div class="cz-options">
+                        @foreach (var (key, name) in new[] { ("art", "Game artwork"), ("glow", "Colour glow"), ("plain", "Plain") })
+                        {
+                            <label class="cz-option"><input type="radio" name="banner" value="@key" checked="@(p.Banner == key ? "checked" : null)" data-cz-banner-pick />@name</label>
+                        }
+                    </div>
+                    <label class="field" data-cz-banner-game @(p.Banner == "art" ? null : "hidden")>
+                        <span class="label">Artwork from</span>
+                        <select name="bannerGameId">
+                            <option value="">Your favourite game</option>
+                            @foreach (var entry in p.FavoriteChoices)
+                            {
+                                <option value="@entry.Game.Id" selected="@(bannerChosen == entry.Game.Id ? "selected" : null)">@entry.Game.Name</option>
+                            }
+                        </select>
+                    </label>
+                </section>
+
+                <section class="pf-card cz-sec rise d1">
+                    <h2>Look</h2>
+                    <div class="cz-grid">
+                        <label class="field">
+                            <span class="label">Photo frame</span>
+                            <select name="frame" data-cz-frame-pick>
+                                <option value="ring" selected="@(p.Frame == "ring" ? "selected" : null)">Ring in your colour</option>
+                                <option value="glow" selected="@(p.Frame == "glow" ? "selected" : null)">Glow</option>
+                                <option value="none" selected="@(p.Frame == "none" ? "selected" : null)">None</option>
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span class="label">Title under your name</span>
+                            <select name="title" data-cz-title-pick>
+                                <option value="">No title</option>
+                                @foreach (var badge in earned)
+                                {
+                                    <option value="@badge.Id" selected="@(p.Title?.Id == badge.Id ? "selected" : null)">@badge.Name</option>
+                                }
+                            </select>
+                            <span class="hint">@(earned.Count == 0 ? "Earn a badge and it can be your title." : "Any badge you've earned.")</span>
+                        </label>
+                    </div>
+                </section>
+
+                <section class="pf-card cz-sec rise d2" id="about">
+                    <h2>About you</h2>
+                    <label class="field">
+                        <span class="label">Bio</span>
+                        <textarea name="bio" rows="3" maxlength="300" placeholder="What do you play? What are you hunting for?" data-count-chars="300">@p.Bio</textarea>
+                        <span class="hint" data-chars-left>@(300 - (p.Bio?.Length ?? 0)) characters left</span>
+                    </label>
+                    <div class="cz-grid">
+                        <label class="field">
+                            <span class="label">Location</span>
+                            <span class="in">@Icons.Get("pin")<input name="location" type="text" maxlength="80" value="@p.Location" placeholder="Lisbon, Portugal" /></span>
+                        </label>
+                        <label class="field">
+                            <span class="label">Tags</span>
+                            <span class="in">@Icons.Get("tag")<input name="tags" type="text" maxlength="140" value="@string.Join(", ", p.Tags)" placeholder="Soulslike, Trophy hunter, JRPG" /></span>
+                            <span class="hint">Up to 5, separated by commas.</span>
+                        </label>
+                    </div>
+                </section>
+
+                <section class="pf-card cz-sec rise d2" id="favourite">
+                    <h2>Favourite game</h2>
+                    <label class="field">
+                        <span class="label">Game</span>
+                        <select name="favoriteGameId">
+                            <option value="">Best rated (picked for you)</option>
+                            @foreach (var entry in p.FavoriteChoices)
+                            {
+                                <option value="@entry.Game.Id" selected="@(chosen == entry.Game.Id ? "selected" : null)">@entry.Game.Name@(entry.Rating is { } r ? $" · {r}/10" : string.Empty)</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="field">
+                        <span class="label">Why it's your favourite</span>
+                        <input name="favoriteNote" type="text" maxlength="200" value="@p.FavoriteNote" placeholder="Three playthroughs and I still find new corners." />
+                    </label>
+                </section>
+
+                <section class="pf-card cz-sec rise d2" id="showcases">
+                    <div class="cz-sec-head">
+                        <h2>Showcases</h2>
+                        <span class="muted" data-cz-count>@p.Showcases.Count of @max on</span>
+                    </div>
+                    <p class="muted">Tick up to @max. Drag them, or use the arrows, to set the order.</p>
+                    <ul class="cz-showcases" data-cz-showcases data-max="@max">
+                        @foreach (var key in order)
+                        {
+                            var (name, hint) = showcaseNames[key];
+                            var on = p.Showcases.Contains(key);
+                            <li class="cz-showcase@(on ? " on" : string.Empty)" draggable="true" data-key="@key" data-name="@name">
+                                <span class="cz-grip" aria-hidden="true"><i></i><i></i><i></i></span>
+                                <label>
+                                    <input type="checkbox" name="showcases" value="@key" checked="@(on ? "checked" : null)" />
+                                    <span><b>@name</b><small>@hint</small></span>
+                                </label>
+                                <span class="cz-move">
+                                    <button type="button" class="icon-btn" data-cz-up aria-label="Move @name up">@Icons.Get("left")</button>
+                                    <button type="button" class="icon-btn" data-cz-down aria-label="Move @name down">@Icons.Get("right")</button>
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                    <label class="field">
+                        <span class="label">Pinned collection</span>
+                        <select name="pinnedCollectionId">
+                            <option value="">None</option>
+                            @foreach (var collection in p.CollectionChoices)
+                            {
+                                <option value="@collection.Id" selected="@(p.Pinned?.Id == collection.Id ? "selected" : null)">@collection.Name (@collection.Count)</option>
+                            }
+                        </select>
+                        <span class="hint">@(p.CollectionChoices.Count == 0 ? "Make a collection in your library and you can pin it here." : "In the side column, or as a showcase if you tick Pinned collection.")</span>
+                    </label>
+                </section>
+
+                <section class="pf-card cz-sec rise d2">
+                    <h2>Who sees what</h2>
+                    <div class="cz-grid">
+                        <label class="field">
+                            <span class="label">Your library, hours and showcases</span>
+                            <select name="libraryVisibility">
+                                @foreach (var (value, name) in visibility)
+                                {
+                                    <option value="@value" selected="@(p.LibraryVisibility == value ? "selected" : null)">@name</option>
+                                }
+                            </select>
+                        </label>
+                        <label class="cz-check">
+                            <input type="checkbox" name="showPlaying" value="true" checked="@(p.ShowPlaying ? "checked" : null)" />
+                            <span><b>Show what I'm playing</b><small>The “Playing now” line on your profile.</small></span>
+                        </label>
+                    </div>
+                </section>
+
+                <div class="cz-save">
+                    <span class="muted">Your colour changes the whole app too.</span>
+                    <a class="btn ghost" href="/profile">Cancel</a>
+                    <button class="btn" type="submit">@Icons.Get("check")Save</button>
+                </div>
+            </form>
         </div>
-    </section>
-
-    <form class="panel glass rise d2" method="post" action="/profile/edit" autocomplete="off">
-        @Html.AntiForgeryToken()
-        <h2>About you</h2>
-
-        <label class="field">
-            <span class="label">Bio</span>
-            <textarea name="bio" rows="3" maxlength="300" placeholder="What do you play? What are you hunting for?" data-count-chars="300">@p.Bio</textarea>
-            <span class="hint" data-chars-left>@(300 - (p.Bio?.Length ?? 0)) characters left</span>
-        </label>
-
-        <label class="field">
-            <span class="label">Location</span>
-            <span class="in">@Icons.Get("pin")<input name="location" type="text" maxlength="80" value="@p.Location" placeholder="Lisbon, Portugal" /></span>
-        </label>
-
-        <label class="field">
-            <span class="label">Favourite game</span>
-            <select name="favoriteGameId">
-                <option value="">Best rated (picked for you)</option>
-                @foreach (var entry in p.FavoriteChoices)
-                {
-                    <option value="@entry.Game.Id" selected="@(chosen == entry.Game.Id ? "selected" : null)">@entry.Game.Name@(entry.Rating is { } r ? $" · {r}/10" : string.Empty)</option>
-                }
-            </select>
-            <span class="hint">Shown at the top of your profile. You can also pick it from a game's page.</span>
-        </label>
-
-        <div class="actions">
-            <button class="btn" type="submit">@Icons.Get("check")Save</button>
-            <a class="btn ghost" href="/profile">Cancel</a>
-        </div>
-    </form>
+    </div>
 </div>
