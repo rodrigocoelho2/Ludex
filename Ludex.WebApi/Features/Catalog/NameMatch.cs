@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Ludex.WebApi.Features.Catalog;
 
@@ -8,7 +9,7 @@ namespace Ludex.WebApi.Features.Catalog;
 /// folded the same way ("Marvel's Spider-Man™ 2" and "Marvel’s Spider-Man 2" agree), and only a confident match is
 /// taken — a wrong game in the library is worse than one left for the person to add.
 /// </summary>
-internal static class NameMatch
+internal static partial class NameMatch
 {
     // Words a store adds to a name that don't make it another game.
     private static readonly string[] Editions =
@@ -27,7 +28,8 @@ internal static class NameMatch
     /// <returns>The folded name ("" for nothing).</returns>
     public static string Key(string? name)
     {
-        var text = (name ?? string.Empty).Normalize(NormalizationForm.FormD);
+        // A year a store adds in brackets ("Mass Effect 2 (2010)") isn't part of the name.
+        var text = YearSuffix().Replace(name ?? string.Empty, string.Empty).Normalize(NormalizationForm.FormD);
         var builder = new StringBuilder(text.Length);
         var space = false;
         foreach (var raw in text)
@@ -80,6 +82,13 @@ internal static class NameMatch
                     changed = true;
                 }
             }
+        }
+
+        // Any other "… Edition" a store names ("Celebration Edition", "Eldritch Edition"): one word before it goes too.
+        var words = text.Split(' ');
+        if (words.Length >= 3 && words[^1] == "edition")
+        {
+            text = string.Join(' ', words[..^2]);
         }
 
         return text;
@@ -137,4 +146,7 @@ internal static class NameMatch
     }
 
     private static bool IsRoman(string word) => word.Length is > 0 and <= 4 && word.All(static c => c is 'i' or 'v' or 'x');
+
+    [GeneratedRegex(@"\s*[\(\[](19|20)\d\d[\)\]]\s*$")]
+    private static partial Regex YearSuffix();
 }

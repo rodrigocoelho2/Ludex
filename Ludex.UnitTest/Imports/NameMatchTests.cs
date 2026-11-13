@@ -14,6 +14,8 @@ public sealed class NameMatchTests
     [InlineData("God of War Ragnarök", "god of war ragnarok")]
     [InlineData("  DOOM: Eternal ", "doom eternal")]
     [InlineData("Tom Clancy's Rainbow Six® Siege", "tom clancys rainbow six siege")]
+    [InlineData("Mass Effect 2 (2010)", "mass effect 2")]
+    [InlineData("Football Manager 2020", "football manager 2020")]
     public void NamesAreFoldedTheSameWay(string name, string key) => Assert.Equal(key, NameMatch.Key(name));
 
     [Theory]
@@ -21,6 +23,8 @@ public sealed class NameMatchTests
     [InlineData("control ultimate edition", "control")]
     [InlineData("death stranding director s cut", "death stranding")]
     [InlineData("hades", "hades")]
+    [InlineData("star wars battlefront ii celebration edition", "star wars battlefront ii")]
+    [InlineData("sundered eldritch edition", "sundered")]
     public void EditionsArePutAside(string key, string stem) => Assert.Equal(stem, NameMatch.Base(key));
 
     [Fact]

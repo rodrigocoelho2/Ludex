@@ -10,7 +10,8 @@ namespace Ludex.WebApi.Features.Catalog;
 /// </summary>
 /// <param name="catalog">The catalog.</param>
 /// <param name="gameRepository">Games (the matched ones are saved).</param>
-internal sealed class GameMatcher(IGameCatalog catalog, IGameRepository gameRepository)
+/// <param name="logger">Logger (what wasn't matched, and the closest candidates, to see why).</param>
+internal sealed class GameMatcher(IGameCatalog catalog, IGameRepository gameRepository, ILogger<GameMatcher> logger)
 {
     /// <summary>
     /// The game of each name, when known with confidence.
@@ -70,12 +71,28 @@ internal sealed class GameMatcher(IGameCatalog catalog, IGameRepository gameRepo
 
         var candidates = await catalog.SearchManyAsync([.. rest.Select(n => Query(n.Name)).Distinct(StringComparer.Ordinal)], 8, cancellationToken);
         var chosen = new Dictionary<string, int>(StringComparer.Ordinal);
+        var missed = new List<string>();
         foreach (var (name, platform) in rest)
         {
             if (candidates.TryGetValue(Query(name), out var list) && NameMatch.Best(name, list, platform) is { } game)
             {
                 chosen[name] = game.Id;
             }
+            else if (missed.Count < 30)
+            {
+                missed.Add(list is { Count: > 0 } ? $"{name} → {string.Join(" | ", list.Take(3).Select(static g => g.Name))}" : $"{name} → nothing");
+            }
+        }
+
+        logger.LogInformation(
+            "Matching: {Names} names, {Library} from the library, {Catalog} from IGDB, {Missed} not matched",
+            wanted.Count,
+            wanted.Count - rest.Count,
+            chosen.Count,
+            rest.Count - chosen.Count);
+        if (missed.Count > 0)
+        {
+            logger.LogInformation("Not matched (name → IGDB's closest): {Missed}", string.Join(" ;; ", missed));
         }
 
         // Fetch the games chosen with everything the game page shows, and keep them.
