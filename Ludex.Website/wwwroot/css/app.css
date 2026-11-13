@@ -164,7 +164,8 @@ option, optgroup { background-color: #16202C; color: var(--text); }
 .avatar.state-away { box-shadow: 0 0 0 2px #3A4656; }
 
 /* ---------- Covers: the tint and the name underneath, the tiny cover blurred, the sharp one fading in ---------- */
-.cover { --tint: #2B3550; position: relative; aspect-ratio: 2 / 3; background: var(--tint); overflow: hidden; contain: paint; border-radius: var(--r-sm); }
+/* IGDB covers are 264×374 (a bit wider than 2:3): the box takes their shape so nothing is cropped off the sides. */
+.cover { --tint: #2B3550; position: relative; aspect-ratio: 264 / 374; background: var(--tint); overflow: hidden; contain: paint; border-radius: var(--r-sm); }
 .cover-title { position: absolute; inset: auto 0 0 0; padding: 12px; font-family: var(--display); font-weight: 800; font-size: clamp(15px, 1.5vw, 21px); line-height: 1; text-transform: uppercase; color: rgba(255, 255, 255, .92); overflow-wrap: break-word; hyphens: auto; }
 .cover-lq, .cover-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .cover-lq { filter: blur(14px) saturate(1.1); transform: scale(1.12); }
@@ -237,7 +238,7 @@ option, optgroup { background-color: #16202C; color: var(--text); }
 .wall { position: absolute; top: -30%; bottom: -30%; left: -15%; right: -15%; display: flex; justify-content: center; gap: 14px; transform: rotate(-8deg); }
 .wall-col { --speed: 80s; flex: none; width: clamp(110px, 10vw, 190px); display: flex; flex-direction: column; animation: wall-up var(--speed) linear infinite; will-change: transform; }
 .wall-col.down { animation-name: wall-down; }
-.wall-tile { --tint: #2B3550; flex: none; aspect-ratio: 2 / 3; margin-bottom: 14px; background: var(--tint); display: flex; align-items: flex-end; padding: 12px; overflow: hidden; position: relative; }
+.wall-tile { --tint: #2B3550; flex: none; aspect-ratio: 264 / 374; margin-bottom: 14px; background: var(--tint); display: flex; align-items: flex-end; padding: 12px; overflow: hidden; position: relative; }
 .wall-tile .cover-img { filter: none; transform: none; transition: opacity .9s var(--ease); }
 .wall-tile span { font-family: var(--display); font-weight: 800; font-size: clamp(14px, 1.4vw, 20px); line-height: 1; text-transform: uppercase; color: rgba(255, 255, 255, .85); }
 .au-veil { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(11, 16, 22, .94) 0%, rgba(11, 16, 22, .82) 38%, rgba(11, 16, 22, .5) 75%, rgba(11, 16, 22, .62) 100%), linear-gradient(to top, rgba(11, 16, 22, .7), transparent 30%); }
@@ -648,7 +649,7 @@ a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 25
 .capsule > .art-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .capsule > .art-from-cover.is-loaded { opacity: .6; filter: blur(22px) saturate(1.2); transform: scale(1.3); }
 .capsule::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0, 0, 0, .45), transparent 55%); pointer-events: none; }
-.capsule-cover { position: absolute; z-index: 1; left: 12px; bottom: 12px; top: 12px; aspect-ratio: 2 / 3; }
+.capsule-cover { position: absolute; z-index: 1; left: 12px; bottom: 12px; top: 12px; aspect-ratio: 264 / 374; }
 .capsule-cover .cover { height: 100%; box-shadow: 0 8px 20px rgba(0, 0, 0, .55); }
 .capsule-cover .cover-title { font-size: 12px; padding: 6px; }
 .g-summary { font-size: 14.5px; line-height: 1.55; color: var(--soft); display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
@@ -840,7 +841,7 @@ a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 25
 .next-picks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; min-height: 120px; }
 .next-pick { display: flex; flex-direction: column; gap: 6px; color: var(--text); }
 .next-pick:hover { color: var(--text); }
-.next-cover { --tint: #2B3550; aspect-ratio: 2 / 3; border-radius: var(--r-sm); overflow: hidden; background: var(--tint); display: flex; align-items: flex-end; padding: 8px; transition: transform .25s var(--ease), box-shadow .25s ease; }
+.next-cover { --tint: #2B3550; aspect-ratio: 264 / 374; border-radius: var(--r-sm); overflow: hidden; background: var(--tint); display: flex; align-items: flex-end; padding: 8px; transition: transform .25s var(--ease), box-shadow .25s ease; }
 .next-cover img { width: calc(100% + 16px); height: calc(100% + 16px); margin: -8px; object-fit: cover; }
 .next-cover span { font-family: var(--display); font-weight: 700; text-transform: uppercase; }
 .next-pick:hover .next-cover { transform: translateY(-4px); box-shadow: 0 0 0 2px var(--accent); }
