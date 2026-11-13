@@ -44,44 +44,44 @@ public sealed class LibraryActionController(LudexClient apiClient) : WebsiteBase
         return Json(await CallAsync(async () =>
         {
             var library = await Api.LibraryListAsync(UserId);
-            var entries = library.Entries.Where(e => ids.Contains(e.Game.Id)).ToDictionary(static e => e.Game.Id);
+
+            // The copies picked (a game on two platforms is two cards); without copies, every copy of the games.
+            var entryIds = form.EntryIds.Where(static e => e > 0).ToHashSet();
+            var entries = library.Entries
+                .Where(e => entryIds.Count > 0 ? entryIds.Contains(e.EntryId) : ids.Contains(e.Game.Id))
+                .Take(MaxGames)
+                .ToList();
             var result = new BulkResult();
             switch (form.Action)
             {
                 case BulkAction.Status when form.Status is { } status:
-                    foreach (var id in ids)
+                    foreach (var before in entries.Where(e => e.Status != status))
                     {
-                        if (entries.TryGetValue(id, out var before) && before.Status == status)
-                        {
-                            continue;
-                        }
+                        result.Before.Add(Snapshot(before));
+                        await Api.LibraryStatusAsync(new LibraryStatusRequest { UserId = UserId, GameId = before.Game.Id, EntryId = before.EntryId, Status = status, Quiet = true });
+                        result.Done++;
+                    }
 
-                        if (before is not null)
-                        {
-                            result.Before.Add(Snapshot(before));
-                        }
-                        else
-                        {
-                            result.Added.Add(id);
-                        }
-
+                    foreach (var id in entryIds.Count > 0 ? Enumerable.Empty<int>() : ids.Where(id => entries.All(e => e.Game.Id != id)))
+                    {
+                        result.Added.Add(id);
                         await Api.LibraryStatusAsync(new LibraryStatusRequest { UserId = UserId, GameId = id, Status = status, Quiet = true });
                         result.Done++;
                     }
 
                     break;
                 case BulkAction.Remove:
-                    foreach (var entry in entries.Values)
+                    foreach (var entry in entries)
                     {
                         result.Before.Add(Snapshot(entry));
-                        await Api.LibraryDeleteAsync(UserId, entry.Game.Id);
+                        await Api.LibraryDeleteAsync(UserId, entry.Game.Id, entry.EntryId);
                         result.Done++;
                     }
 
                     break;
                 case BulkAction.AddTo or BulkAction.TakeOut when form.CollectionId is { } collectionId:
                     var putIn = form.Action == BulkAction.AddTo;
-                    foreach (var entry in entries.Values.Where(e => e.CollectionIds.Contains(collectionId) != putIn))
+                    foreach (var entry in entries.DistinctBy(static e => e.Game.Id).Where(e => e.CollectionIds.Contains(collectionId) != putIn))
                     {
                         await Api.CollectionsGameAsync(new CollectionGameRequest { UserId = UserId, CollectionId = collectionId, GameId = entry.Game.Id, In = putIn });
                         result.Changed.Add(entry.Game.Id);
@@ -109,6 +109,7 @@ public sealed class LibraryActionController(LudexClient apiClient) : WebsiteBase
             {
                 UserId = UserId,
                 GameId = entry.GameId,
+                EntryId = entry.EntryId,
                 Status = entry.Status,
                 Rating = entry.Rating,
                 Hours = entry.Hours,
@@ -135,9 +136,33 @@ public sealed class LibraryActionController(LudexClient apiClient) : WebsiteBase
         return done;
     }));
 
+    /// <summary>Empties the library (Settings), to import everything again.</summary>
+    /// <param name="confirm">The user name typed to confirm.</param>
+    /// <returns>Back to Settings, with how many games went.</returns>
+    [HttpPost("/library/clear")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Clear(string? confirm)
+    {
+        if (!string.Equals(confirm?.Trim(), User.Identity?.Name, StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["problem"] = "The library wasn't cleared: type your user name exactly to confirm.";
+            return LocalRedirect("/settings#clear");
+        }
+
+        var removed = 0;
+        var result = await FormAsync(async () => removed = (await Api.LibraryClearAsync(UserId, confirm)).Removed, null, "/settings");
+        if (removed > 0 || TempData.Peek("problem") is null)
+        {
+            TempData["notice"] = $"Your library is empty ({removed} {(removed == 1 ? "game" : "games")} taken out). Import from Steam, PlayStation or Playnite again.";
+        }
+
+        return result;
+    }
+
     private static EntrySnapshot Snapshot(LibraryEntryDTO entry) => new()
     {
         GameId = entry.Game.Id,
+        EntryId = entry.EntryId,
         Status = entry.Status,
         Rating = entry.Rating,
         Hours = entry.Hours,
@@ -174,6 +199,9 @@ public sealed class BulkForm
     /// <summary>Gets or sets the games.</summary>
     public List<int> GameIds { get; set; } = [];
 
+    /// <summary>Gets or sets the copies picked (a game on two platforms is two cards); empty: every copy of the games.</summary>
+    public List<long> EntryIds { get; set; } = [];
+
     /// <summary>Gets or sets what to do.</summary>
     public BulkAction Action { get; set; }
 
@@ -205,6 +233,9 @@ public sealed class EntrySnapshot
 {
     /// <summary>Gets or sets the game.</summary>
     public int GameId { get; set; }
+
+    /// <summary>Gets or sets the copy (taken out meanwhile: it comes back as a new one).</summary>
+    public long? EntryId { get; set; }
 
     /// <summary>Gets or sets the status.</summary>
     public GameStatus Status { get; set; }

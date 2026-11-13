@@ -392,10 +392,12 @@
         let selectMode = false;
         let anchor = null;
         const shown = () => cards.filter(c => !c.classList.contains('is-hidden'));
-        const chosen = () => shown().filter(c => selected.has(c.dataset.game));
+        // A card is one copy (a game on two platforms is two cards), so the selection keeps copies.
+        const keyOf = c => c.dataset.entry || c.dataset.game;
+        const chosen = () => shown().filter(c => selected.has(keyOf(c)));
         const paintSel = () => {
             const n = chosen().length;
-            cards.forEach(c => c.classList.toggle('is-selected', selected.has(c.dataset.game) && !c.classList.contains('is-hidden')));
+            cards.forEach(c => c.classList.toggle('is-selected', selected.has(keyOf(c)) && !c.classList.contains('is-hidden')));
             const open = n > 0 || selectMode;
             if (bar) {
                 bar.hidden = !open;
@@ -416,12 +418,12 @@
             const multi = e.ctrlKey || e.metaKey || e.shiftKey;
             if (!multi && !selectMode && selected.size === 0) return;   // a plain click opens the game
             e.preventDefault();
-            const id = card.dataset.game;
+            const id = keyOf(card);
             if (e.shiftKey && anchor) {
                 const list = shown();
-                const from = list.findIndex(c => c.dataset.game === anchor);
+                const from = list.findIndex(c => keyOf(c) === anchor);
                 const to = list.indexOf(card);
-                if (from >= 0 && to >= 0) list.slice(Math.min(from, to), Math.max(from, to) + 1).forEach(c => selected.add(c.dataset.game));
+                if (from >= 0 && to >= 0) list.slice(Math.min(from, to), Math.max(from, to) + 1).forEach(c => selected.add(keyOf(c)));
             } else {
                 if (selected.has(id)) selected.delete(id); else selected.add(id);
                 anchor = id;
@@ -433,10 +435,12 @@
             if (e.key === 'Escape' && (selected.size || selectMode) && !document.querySelector('dialog[open]')) clearSel();
         });
         if (bar) {
-            const ids = () => chosen().map(c => Number(c.dataset.game));
+            const ids = () => [...new Set(chosen().map(c => Number(c.dataset.game)))];
+            const entryIds = () => chosen().map(c => Number(c.dataset.entry || 0)).filter(Boolean);
             const what = list => list.length === 1 ? (cards.find(c => c.dataset.game === String(list[0]))?.dataset.title || '1 game') : `${list.length} games`;
             const bulk = async body => {
                 if (!body.gameIds.length) return null;
+                body.entryIds = entryIds();
                 bar.classList.add('is-busy');
                 const result = await post('/library/bulk', body);
                 bar.classList.remove('is-busy');
@@ -482,7 +486,7 @@
                 const result = await bulk({ gameIds, action: 'Remove' });
                 if (result) toastNext(`${what(gameIds)} taken out of your library`, { entries: result.before });
             });
-            $('[data-sel-all]', bar)?.addEventListener('click', () => { shown().forEach(c => selected.add(c.dataset.game)); paintSel(); });
+            $('[data-sel-all]', bar)?.addEventListener('click', () => { shown().forEach(c => selected.add(keyOf(c))); paintSel(); });
             $('[data-sel-clear]', bar)?.addEventListener('click', clearSel);
         }
 
@@ -695,6 +699,7 @@
             if (!status) { status = rating ? 'Finished' : 'Playing'; paint(); }
             const hours = form.elements.hours.value.trim();
             const entry = await post(`/games/${game}/save`, {
+                entryId: form.dataset.entry ? Number(form.dataset.entry) : null,
                 status,
                 rating,
                 hours: hours === '' ? null : Number(hours.replace(',', '.')),
@@ -707,6 +712,7 @@
             if (!entry) return;
             const added = form.dataset.inLibrary !== 'true';
             form.dataset.inLibrary = 'true';
+            if (entry.entryId) form.dataset.entry = String(entry.entryId);
             const pill = $('[data-lib-pill]');
             if (pill) {
                 pill.classList.remove('out');
@@ -915,7 +921,8 @@
         }));
         $('[data-steam-import]', steam)?.addEventListener('click', async e => {
             const button = e.currentTarget;
-            const games = boxes().filter(x => x.box.checked).map(({ row }) => ({
+            const picked = boxes().filter(x => x.box.checked).map(x => x.row);
+            const games = picked.map(row => ({
                 gameId: Number(row.dataset.game),
                 status: $('.steam-status', row)?.value || 'Finished',
                 hours: row.dataset.hours === '' ? null : Number(row.dataset.hours),
@@ -927,9 +934,8 @@
             // Playnite and PlayStation send the copy too (platform, store or format) and PlayStation its trophies.
             const other = steam.dataset.importUrl;
             if (other) {
-                const rowOf = g => boxes().find(x => Number(x.row.dataset.game) === g.gameId).row;
-                games.forEach(g => {
-                    const d = rowOf(g).dataset;
+                games.forEach((g, i) => {
+                    const d = picked[i].dataset;
                     Object.assign(g, {
                         key: d.key || null,
                         platform: d.platform || null,
@@ -1074,9 +1080,10 @@
     $$('form[data-remove-game]').forEach(removeForm => removeForm.addEventListener('submit', async e => {
         e.preventDefault();
         const gameId = Number(removeForm.dataset.removeGame);
+        const entryId = Number(removeForm.dataset.removeEntry || 0);
         const button = $('button', removeForm);
         if (button) button.disabled = true;
-        const result = await post('/library/bulk', { gameIds: [gameId], action: 'Remove' });
+        const result = await post('/library/bulk', { gameIds: [gameId], entryIds: entryId ? [entryId] : [], action: 'Remove' });
         if (button) button.disabled = false;
         if (!result) return;
         toastNext(`${removeForm.dataset.name || 'The game'} taken out of your library`, { entries: result.before }, '/library');

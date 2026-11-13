@@ -3,10 +3,13 @@ using Ludex.WebApi.Features.Games.Models.Entities;
 namespace Ludex.WebApi.Features.Library.Models.Entities;
 
 /// <summary>
-/// One game in an account's library (dbo.LibraryEntry joined with dbo.Game).
+/// One entry (copy) of a game in an account's library (dbo.LibraryEntry joined with dbo.Game).
 /// </summary>
-public sealed class LibraryRow : GameRow
+public sealed class LibraryRow : GameRow, ILibraryCopy
 {
+    /// <summary>Gets or sets the entry (a game owned on two platforms has two).</summary>
+    public long EntryID { get; set; }
+
     /// <summary>Gets or sets the status (<see cref="Ludex.Library.Enums.GameStatus"/>).</summary>
     public byte Status { get; set; }
 
@@ -78,4 +81,57 @@ public sealed class LibraryRow : GameRow
 
     /// <summary>Gets or sets when the price was checked (UTC; null: never).</summary>
     public DateTime? PriceCheckedAt { get; set; }
+}
+
+/// <summary>An entry's copy: what the imports look at to pick the entry a game goes into.</summary>
+public interface ILibraryCopy
+{
+    /// <summary>Gets the entry.</summary>
+    long EntryID { get; }
+
+    /// <summary>Gets the platform (null: not said).</summary>
+    string? Platform { get; }
+
+    /// <summary>Gets its Steam app (null: not a Steam copy).</summary>
+    int? SteamAppID { get; }
+}
+
+/// <summary>One entry of a game, without the game's data (dbo.LibraryCopyList).</summary>
+public sealed class LibraryCopyRow : ILibraryCopy
+{
+    /// <summary>Gets or sets the entry.</summary>
+    public long EntryID { get; set; }
+
+    /// <summary>Gets or sets the game.</summary>
+    public int GameID { get; set; }
+
+    /// <summary>Gets or sets the status.</summary>
+    public byte Status { get; set; }
+
+    /// <summary>Gets or sets the rating.</summary>
+    public byte? Rating { get; set; }
+
+    /// <summary>Gets or sets the hours.</summary>
+    public decimal? Hours { get; set; }
+
+    /// <summary>Gets or sets the platform.</summary>
+    public string? Platform { get; set; }
+
+    /// <summary>Gets or sets the PC store.</summary>
+    public string? Store { get; set; }
+
+    /// <summary>Gets or sets the format (1 Physical, 2 Digital).</summary>
+    public byte? Format { get; set; }
+
+    /// <summary>Gets or sets its Steam app.</summary>
+    public int? SteamAppID { get; set; }
+
+    /// <summary>Gets or sets the achievements or trophies earned.</summary>
+    public short? AchievementsUnlocked { get; set; }
+
+    /// <summary>Gets or sets the achievements or trophies the game has.</summary>
+    public short? AchievementsTotal { get; set; }
+
+    /// <summary>Gets or sets when it last changed (UTC).</summary>
+    public DateTime UpdatedAt { get; set; }
 }

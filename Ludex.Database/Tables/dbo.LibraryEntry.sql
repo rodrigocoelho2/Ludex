@@ -2,6 +2,7 @@ CREATE TABLE [dbo].[LibraryEntry]
 (
     [UserID]     BIGINT          NOT NULL,
     [GameID]     INT             NOT NULL,
+    [EntryID]    BIGINT          IDENTITY (1, 1) NOT NULL,
     [Status]     TINYINT         NOT NULL,
     [Rating]     TINYINT         NULL,
     [Hours]      DECIMAL (7, 1)  NULL,
@@ -19,7 +20,8 @@ CREATE TABLE [dbo].[LibraryEntry]
     [AddedAt]    DATETIME2 (3)   NOT NULL CONSTRAINT [DF_LibraryEntry_AddedAt] DEFAULT (SYSUTCDATETIME()),
     [UpdatedAt]  DATETIME2 (3)   NOT NULL CONSTRAINT [DF_LibraryEntry_UpdatedAt] DEFAULT (SYSUTCDATETIME()),
     [FinishedAt] DATETIME2 (3)   NULL,
-    CONSTRAINT [PK_LibraryEntry] PRIMARY KEY CLUSTERED ([UserID] ASC, [GameID] ASC),
+    CONSTRAINT [PK_LibraryEntry] PRIMARY KEY CLUSTERED ([UserID] ASC, [GameID] ASC, [EntryID] ASC),
+    CONSTRAINT [UQ_LibraryEntry_EntryID] UNIQUE NONCLUSTERED ([EntryID] ASC),
     CONSTRAINT [FK_LibraryEntry_User] FOREIGN KEY ([UserID]) REFERENCES [dbo].[User] ([UserID]) ON DELETE CASCADE,
     CONSTRAINT [FK_LibraryEntry_Game] FOREIGN KEY ([GameID]) REFERENCES [dbo].[Game] ([GameID]),
     CONSTRAINT [CK_LibraryEntry_Status] CHECK ([Status] BETWEEN 1 AND 6),
@@ -34,5 +36,5 @@ CREATE NONCLUSTERED INDEX [IX_LibraryEntry_GameID]
     INCLUDE ([Status], [Rating]);
 GO
 
-EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'One game in one account''s library. Status: 1 Playing, 2 Finished, 3 Wishlist, 4 Dropped, 5 Backlog, 6 Played (owned, not started). Rating 1–10. FinishedAt is set the first time the status becomes Finished. Store: where a PC copy was bought (Steam, Epic Games, GOG…). Format: 1 Physical, 2 Digital (the WebApi checks it against the platform). SteamAppID and RecentMinutes (Steam''s last two weeks) come from the Steam sync; the achievement counts from Steam, or PlayStation trophies for games that aren''t Steam games. PriceTarget: alert when the best price is at or under it; PriceAlerted: the price last alerted.',
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'One copy of a game in one account''s library: a game owned on two platforms (Steam and PS5) is two entries, each with its own status, hours and achievements or trophies (EntryID tells them apart; the first one is the game''s main entry). Status: 1 Playing, 2 Finished, 3 Wishlist, 4 Dropped, 5 Backlog, 6 Played (owned, not started). Rating 1–10. FinishedAt is set the first time the status becomes Finished. Store: where a PC copy was bought (Steam, Epic Games, GOG…). Format: 1 Physical, 2 Digital (the WebApi checks it against the platform). SteamAppID and RecentMinutes (Steam''s last two weeks) come from the Steam sync; the achievement counts from Steam, or PlayStation trophies for games that aren''t Steam games. PriceTarget: alert when the best price is at or under it; PriceAlerted: the price last alerted.',
     @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'LibraryEntry';

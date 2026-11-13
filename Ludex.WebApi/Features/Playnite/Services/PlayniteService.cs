@@ -5,6 +5,7 @@ using Ludex.WebApi.Features.Catalog;
 using Ludex.WebApi.Features.Imports.Models.DTOs;
 using Ludex.WebApi.Features.Imports.Services;
 using Ludex.WebApi.Features.Library.Repositories;
+using Ludex.WebApi.Features.Library.Services;
 using Ludex.WebApi.Features.Playnite.Models.DTOs;
 using Ludex.WebApi.Features.Profile.Repositories;
 
@@ -84,20 +85,21 @@ internal sealed class PlayniteService(
         {
             var library = await libraryRepository.ListAsync(user);
             var matched = await matcher.MatchAsync([.. games.Select(static g => (g.Name, (string?)g.Platform))], library);
-            var mine = library.ToDictionary(static r => r.GameID);
+            var mine = library.ToLookup(static r => r.GameID);
             var now = timeProvider.GetUtcNow();
 
-            // The same game twice (two launchers, or a game and its edition): one row, the one with most time.
+            // The same game twice on one platform family (two launchers, or a game and its edition): one row, the one
+            // with most time. On two families (PC and Switch) it is two copies, so two rows.
             page.Games = [.. games
                 .Where(g => matched.ContainsKey(g.Name))
-                .GroupBy(g => matched[g.Name].GameID)
+                .GroupBy(g => (matched[g.Name].GameID, CopyRules.Family(g.Platform)))
                 .Select(group =>
                 {
                     var g = group.OrderByDescending(static x => x.Minutes).First();
                     var game = matched[g.Name];
                     var last = group.Select(static x => x.LastPlayed).Max();
                     var status = group.Select(static x => x.Status).FirstOrDefault(static s => s is not null);
-                    return ImportRules.Row(g.Name, g.Source, game, mine.GetValueOrDefault(game.GameID), g.Platform, g.Store, g.Format, g.Minutes, last, status, now);
+                    return ImportRules.Row(g.Name, g.Source, game, CopyRules.Pick(mine[game.GameID], g.Platform), g.Platform, g.Store, g.Format, g.Minutes, last, status, now);
                 })
                 .OrderByDescending(static g => g.LastPlayedAt ?? DateTimeOffset.MinValue)
                 .ThenByDescending(static g => g.Hours)

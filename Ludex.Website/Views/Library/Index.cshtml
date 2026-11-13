@@ -5,6 +5,7 @@
     ViewData["Wide"] = true;
     var counts = Model.Library.Counts;
     var entries = Model.Library.Entries;
+    var copiesOf = entries.GroupBy(static e => e.Game.Id).ToDictionary(static g => g.Key, static g => g.Count());
     var statuses = new (GameStatus? Status, string Label, int Count)[]
     {
         (null, "All games", counts.All),
@@ -167,7 +168,9 @@
                     var achievementPercent = Fmt.AchievementPercent(entry.AchievementsUnlocked, entry.AchievementsTotal);
                     var inCollections = string.Join(",", byGame[game.Id]);
                     var achievementText = entry.AchievementsTotal is > 0 ? $"{entry.AchievementsUnlocked ?? 0}/{entry.AchievementsTotal}" : string.Empty;
-                    <a class="lib-card" href="/games/@game.Id" aria-label="@game.Name" draggable="true" data-drag-game="@game.Id"
+                    var several = copiesOf[game.Id] > 1;
+                    var platformTag = several ? $" · {entry.Platform ?? "copy"}" : string.Empty;
+                    <a class="lib-card" href="/games/@game.Id?entry=@entry.EntryId" aria-label="@game.Name@platformTag" draggable="true" data-drag-game="@game.Id" data-entry="@entry.EntryId"
                        data-collections=",@inCollections," data-achievements="@(achievementPercent ?? -1)" data-critic="@(game.CriticScore ?? 0)"
                        data-ttb="@Fmt.Input(game.TimeToBeatMain ?? 0)" data-recent="@Fmt.Input(entry.RecentHours ?? 0)" data-cover="@(game.CoverImageId is { } dc ? Igdb.Url(dc, Igdb.CoverBig) : string.Empty)" data-tint="@game.Tint"
                        data-name="@game.Name.ToLowerInvariant()" data-status="@entry.Status" data-family="@entry.PlatformFamily"
@@ -197,7 +200,7 @@
                         }
                         <span class="lib-meta">
                             <span class="lib-name">@game.Name</span>
-                            <span class="lib-line"><i class="dot-@Fmt.StatusCss(entry.Status)" aria-hidden="true"></i>@Fmt.Status(entry.Status)@(entry.Hours is { } h && h > 0 ? " · " + Fmt.Hours(h) : string.Empty)</span>
+                            <span class="lib-line"><i class="dot-@Fmt.StatusCss(entry.Status)" aria-hidden="true"></i>@Fmt.Status(entry.Status)@(entry.Hours is { } h && h > 0 ? " · " + Fmt.Hours(h) : string.Empty)@platformTag</span>
                         </span>
                         <span class="lib-row" aria-hidden="true">
                             <span class="c-name"><b>@game.Name</b><small>@(string.Join(" · ", new[] { entry.Platform, copy }.Where(static s => s is not null).Distinct()))</small></span>

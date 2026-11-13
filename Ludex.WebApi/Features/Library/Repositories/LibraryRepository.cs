@@ -1,5 +1,6 @@
 using Ludex.WebApi.Extensions.Data;
 using Ludex.WebApi.Features.Library.Models.Entities;
+using Ludex.WebApi.Features.Library.Services;
 
 namespace Ludex.WebApi.Features.Library.Repositories;
 
@@ -8,18 +9,30 @@ namespace Ludex.WebApi.Features.Library.Repositories;
 /// </summary>
 internal interface ILibraryRepository
 {
-    /// <summary>Every game of a library, most recently changed first.</summary>
+    /// <summary>Every entry of a library (a game on two platforms is two), most recently changed first.</summary>
     /// <param name="userId">The account.</param>
-    /// <returns>The games.</returns>
+    /// <returns>The entries.</returns>
     Task<List<LibraryRow>> ListAsync(Guid userId);
 
-    /// <summary>One game of a library.</summary>
+    /// <summary>One entry of a game in a library.</summary>
     /// <param name="userId">The account.</param>
     /// <param name="gameId">The game.</param>
+    /// <param name="entryId">The entry (null, or one taken out: the game's first entry).</param>
     /// <returns>The entry, or null when the game isn't there.</returns>
-    Task<LibraryRow?> GetAsync(Guid userId, int gameId);
+    Task<LibraryRow?> GetAsync(Guid userId, int gameId, long? entryId = null);
 
-    /// <summary>Adds a game or changes it (the game must be in dbo.Game).</summary>
+    /// <summary>The entries of one game, or of every game, without the games' data.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="gameId">The game (null: every game).</param>
+    /// <returns>The entries, by game and then oldest first.</returns>
+    Task<List<LibraryCopyRow>> CopiesAsync(Guid userId, int? gameId = null);
+
+    /// <summary>Empties the library (entries, activity, hours history, collections' contents, what imports remembered).</summary>
+    /// <param name="userId">The account.</param>
+    /// <returns>How many entries went.</returns>
+    Task<int> ClearAsync(Guid userId);
+
+    /// <summary>Adds a game or changes one of its entries (the game must be in dbo.Game).</summary>
     /// <param name="userId">The account.</param>
     /// <param name="gameId">The game.</param>
     /// <param name="status">The status.</param>
@@ -29,14 +42,17 @@ internal interface ILibraryRepository
     /// <param name="notes">The notes.</param>
     /// <param name="store">The PC store.</param>
     /// <param name="format">The kind of copy (1 physical, 2 digital).</param>
-    /// <returns>A task.</returns>
-    Task SaveAsync(Guid userId, int gameId, byte status, byte? rating, decimal? hours, string? platform, string? notes, string? store, byte? format);
+    /// <param name="entryId">The entry (null: the game's first one, or a new one).</param>
+    /// <param name="newCopy">Whether to add another entry (the game on another platform).</param>
+    /// <returns>The entry's id.</returns>
+    Task<long> SaveAsync(Guid userId, int gameId, byte status, byte? rating, decimal? hours, string? platform, string? notes, string? store, byte? format, long? entryId = null, bool newCopy = false);
 
-    /// <summary>Takes a game out of a library.</summary>
+    /// <summary>Takes a game, or one of its entries, out of a library.</summary>
     /// <param name="userId">The account.</param>
     /// <param name="gameId">The game.</param>
+    /// <param name="entryId">The entry (null: every entry of the game).</param>
     /// <returns>A task.</returns>
-    Task DeleteAsync(Guid userId, int gameId);
+    Task DeleteAsync(Guid userId, int gameId, long? entryId = null);
 
     /// <summary>Records something the account did.</summary>
     /// <param name="userId">The account.</param>
@@ -47,11 +63,12 @@ internal interface ILibraryRepository
     Task AddActivityAsync(Guid userId, int gameId, byte kind, byte? rating);
 
     /// <summary>
-    /// Adds many games at once (the Steam import): new ones with their status, hours and platform PC; ones already
-    /// there only get more hours. Nothing goes into the friends' feed.
+    /// Adds many games at once (the imports and syncs): each goes into the entry of the same platform family (or the
+    /// one with no platform), otherwise into a new entry; entries already there only get more hours (and a copy,
+    /// trophies). Nothing goes into the friends' feed.
     /// </summary>
     /// <param name="userId">The account.</param>
-    /// <param name="games">The games (each once; already in dbo.Game).</param>
+    /// <param name="games">The games (already in dbo.Game).</param>
     /// <returns>How many were added and how many got more hours.</returns>
     Task<LibraryImportCounts> ImportAsync(Guid userId, IReadOnlyCollection<LibraryImportRow> games);
 
@@ -109,7 +126,14 @@ internal sealed record LibraryImportRow(
     string? Store = null,
     byte? Format = null,
     short? AchUnlocked = null,
-    short? AchTotal = null);
+    short? AchTotal = null)
+{
+    /// <summary>Gets the entry it goes into (null: a new one); set by the repository.</summary>
+    public long? EntryID { get; init; }
+
+    /// <summary>Gets the platform family, which tells new entries of one game apart.</summary>
+    public string? Slot { get; init; }
+}
 
 /// <summary>What dbo.LibraryImport did.</summary>
 public sealed class LibraryImportCounts
@@ -131,12 +155,19 @@ internal sealed class LibraryRepository(ISqlConnectionFactory connectionFactory)
     public Task<List<LibraryRow>> ListAsync(Guid userId) => QueryAsync<LibraryRow>("[dbo].[LibraryList]", new { UserUniqueID = userId });
 
     /// <inheritdoc />
-    public Task<LibraryRow?> GetAsync(Guid userId, int gameId) =>
-        QuerySingleOrDefaultAsync<LibraryRow>("[dbo].[LibraryGet]", new { UserUniqueID = userId, GameID = gameId });
+    public Task<LibraryRow?> GetAsync(Guid userId, int gameId, long? entryId = null) =>
+        QuerySingleOrDefaultAsync<LibraryRow>("[dbo].[LibraryGet]", new { UserUniqueID = userId, GameID = gameId, EntryID = entryId });
 
     /// <inheritdoc />
-    public Task SaveAsync(Guid userId, int gameId, byte status, byte? rating, decimal? hours, string? platform, string? notes, string? store, byte? format) =>
-        ExecuteAsync("[dbo].[LibrarySave]", new
+    public Task<List<LibraryCopyRow>> CopiesAsync(Guid userId, int? gameId = null) =>
+        QueryAsync<LibraryCopyRow>("[dbo].[LibraryCopyList]", new { UserUniqueID = userId, GameID = gameId });
+
+    /// <inheritdoc />
+    public Task<int> ClearAsync(Guid userId) => ExecuteScalarAsync<int>("[dbo].[LibraryClear]", new { UserUniqueID = userId });
+
+    /// <inheritdoc />
+    public Task<long> SaveAsync(Guid userId, int gameId, byte status, byte? rating, decimal? hours, string? platform, string? notes, string? store, byte? format, long? entryId = null, bool newCopy = false) =>
+        ExecuteScalarAsync<long>("[dbo].[LibrarySave]", new
         {
             UserUniqueID = userId,
             GameID = gameId,
@@ -147,20 +178,35 @@ internal sealed class LibraryRepository(ISqlConnectionFactory connectionFactory)
             Notes = notes,
             Store = store,
             Format = format,
+            EntryID = entryId,
+            NewCopy = newCopy,
         });
 
     /// <inheritdoc />
-    public Task DeleteAsync(Guid userId, int gameId) => ExecuteAsync("[dbo].[LibraryDelete]", new { UserUniqueID = userId, GameID = gameId });
+    public Task DeleteAsync(Guid userId, int gameId, long? entryId = null) =>
+        ExecuteAsync("[dbo].[LibraryDelete]", new { UserUniqueID = userId, GameID = gameId, EntryID = entryId });
 
     /// <inheritdoc />
     public Task AddActivityAsync(Guid userId, int gameId, byte kind, byte? rating) =>
         ExecuteAsync("[dbo].[ActivityAdd]", new { UserUniqueID = userId, GameID = gameId, Kind = kind, Rating = rating });
 
     /// <inheritdoc />
-    public async Task<LibraryImportCounts> ImportAsync(Guid userId, IReadOnlyCollection<LibraryImportRow> games) =>
-        games.Count == 0
-            ? new LibraryImportCounts()
-            : await QuerySingleOrDefaultAsync<LibraryImportCounts>("[dbo].[LibraryImport]", new { UserUniqueID = userId, Games = Json(games) }) ?? new LibraryImportCounts();
+    public async Task<LibraryImportCounts> ImportAsync(Guid userId, IReadOnlyCollection<LibraryImportRow> games)
+    {
+        if (games.Count == 0)
+        {
+            return new LibraryImportCounts();
+        }
+
+        // Each game goes into its copy on the same platform family (Steam → PC, PlayStation → PlayStation).
+        var copies = (await CopiesAsync(userId)).ToLookup(static c => c.GameID);
+        var rows = games.Select(row =>
+        {
+            var platform = row.Platform ?? "PC";
+            return row with { EntryID = CopyRules.Pick(copies[row.GameID], platform, row.AppID)?.EntryID, Slot = CopyRules.Family(platform) };
+        }).ToList();
+        return await QuerySingleOrDefaultAsync<LibraryImportCounts>("[dbo].[LibraryImport]", new { UserUniqueID = userId, Games = Json(rows) }) ?? new LibraryImportCounts();
+    }
 
     /// <inheritdoc />
     public Task SetPriceTargetAsync(Guid userId, int gameId, decimal? target) =>

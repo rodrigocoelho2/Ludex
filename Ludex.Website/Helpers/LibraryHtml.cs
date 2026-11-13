@@ -15,7 +15,7 @@ public static class LibraryHtml
     /// <param name="entry">The game.</param>
     /// <param name="current">The game open (it is highlighted).</param>
     /// <returns>The list item.</returns>
-    public static IHtmlContent SideItem(LibraryEntryDTO entry, int? current)
+    public static IHtmlContent SideItem(LibraryEntryDTO entry, int? current, bool showPlatform = false)
     {
         var game = entry.Game;
         var name = WebUtility.HtmlEncode(game.Name);
@@ -25,8 +25,8 @@ public static class LibraryHtml
         var here = current == game.Id ? " aria-current=\"page\"" : string.Empty;
         return new HtmlString(
             $"<li data-side-name=\"{WebUtility.HtmlEncode(game.Name.ToLowerInvariant())}\">"
-            + $"<a href=\"/games/{game.Id}\"{here} draggable=\"true\" data-drag-game=\"{game.Id}\">"
+            + $"<a href=\"/games/{game.Id}?entry={entry.EntryId}\"{here} draggable=\"true\" data-drag-game=\"{game.Id}\">"
             + $"<span class=\"lib-thumb\" style=\"--tint:{WebUtility.HtmlEncode(game.Tint)}\">{thumb}</span>"
-            + $"<span class=\"lib-side-name\">{name}</span></a></li>");
+            + $"<span class=\"lib-side-name\">{name}{(showPlatform ? $" <small>{WebUtility.HtmlEncode(entry.Platform ?? "copy")}</small>" : string.Empty)}</span></a></li>");
     }
 }

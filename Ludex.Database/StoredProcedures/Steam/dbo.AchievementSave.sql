@@ -16,5 +16,5 @@ BEGIN
 
     UPDATE [dbo].[LibraryEntry]
     SET [AchievementsUnlocked] = @Unlocked, [AchievementsTotal] = @Total, [AchievementsAt] = SYSUTCDATETIME()
-    WHERE [UserID] = @UserID AND [GameID] = @GameID;
+    WHERE [UserID] = @UserID AND [GameID] = @GameID AND [SteamAppID] IS NOT NULL;
 END

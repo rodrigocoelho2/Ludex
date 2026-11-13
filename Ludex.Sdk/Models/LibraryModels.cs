@@ -5,6 +5,9 @@ namespace Ludex.Sdk.Models;
 /// <summary>One game of the library.</summary>
 public sealed class LibraryEntryDTO
 {
+    /// <summary>Gets or sets the entry (a game owned on two platforms is two entries).</summary>
+    public long EntryId { get; set; }
+
     /// <summary>Gets or sets the game.</summary>
     public GameSummaryDTO Game { get; set; } = new();
 
@@ -157,6 +160,12 @@ public sealed class LibrarySaveRequest
     /// <summary>Gets or sets the account.</summary>
     public string? UserId { get; set; }
 
+    /// <summary>Gets or sets the entry to change (null: the game's first entry, or a new one).</summary>
+    public long? EntryId { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether to add another entry (the game on another platform).</summary>
+    public bool NewCopy { get; set; }
+
     /// <summary>Gets or sets the game.</summary>
     public int GameId { get; set; }
 
@@ -190,6 +199,9 @@ public sealed class LibraryStatusRequest
 {
     /// <summary>Gets or sets the account.</summary>
     public string? UserId { get; set; }
+
+    /// <summary>Gets or sets the entry (null: the game's first entry, or a new one).</summary>
+    public long? EntryId { get; set; }
 
     /// <summary>Gets or sets the game.</summary>
     public int GameId { get; set; }
@@ -295,4 +307,21 @@ public sealed class PriceTargetRequest
 
     /// <summary>Gets or sets the price (null: no alert).</summary>
     public decimal? Target { get; set; }
+}
+
+/// <summary>What emptying a library did.</summary>
+public sealed class LibraryClearDTO
+{
+    /// <summary>Gets or sets how many entries went.</summary>
+    public int Removed { get; set; }
+}
+
+/// <summary>Empties a library.</summary>
+public sealed class LibraryClearRequest
+{
+    /// <summary>Gets or sets the account.</summary>
+    public string? UserId { get; set; }
+
+    /// <summary>Gets or sets the account's user name, typed to confirm.</summary>
+    public string? Confirm { get; set; }
 }

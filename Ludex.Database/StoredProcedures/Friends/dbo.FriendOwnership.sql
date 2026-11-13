@@ -13,7 +13,7 @@ BEGIN
 
     DECLARE @UserID BIGINT = (SELECT [UserID] FROM [dbo].[User] WHERE [UserUniqueID] = @UserUniqueID);
 
-    SELECT e.[GameID], u.[Username]
+    SELECT DISTINCT e.[GameID], u.[Username]
     FROM OPENJSON(@GameIDs) WITH ([GameID] INT '$') ids
     INNER JOIN [dbo].[LibraryEntry] e ON e.[GameID] = ids.[GameID]
     INNER JOIN [dbo].[Friendship] f ON f.[UserID] = @UserID AND f.[FriendUserID] = e.[UserID] AND f.[AcceptedAt] IS NOT NULL

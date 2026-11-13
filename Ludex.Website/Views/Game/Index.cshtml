@@ -70,7 +70,7 @@
     </header>
 
     @* Your game: status, rating and favourite save as you tap (Steam's Play bar). *@
-    <form id="game-form" class="your-game rise d1" data-game-form data-game="@game.Id" data-in-library="@(mine is null ? "false" : "true")" autocomplete="off">
+    <form id="game-form" class="your-game rise d1" data-game-form data-game="@game.Id" data-entry="@mine?.EntryId" data-in-library="@(mine is null ? "false" : "true")" autocomplete="off">
         <div class="yg-title">
             <span class="eyebrow">Your game</span>
             <span class="muted" data-your-line>@(yourLine.Count == 0 ? "Not in your library yet: pick a status or a rating" : string.Join(" · ", yourLine))</span>
@@ -98,6 +98,45 @@
             </button>
         </div>
     </form>
+
+    @* Your copies: a game owned on two platforms is two entries, each with its own status, hours and achievements. *@
+    @if (mine is not null)
+    {
+        var otherPlatforms = Model.PlatformChoices.Where(p => mine.Copies.All(c => !string.Equals(c.Platform, p, StringComparison.OrdinalIgnoreCase))).ToList();
+        <section class="copies rise d1" aria-label="Your copies">
+            @if (mine.Copies.Count > 1)
+            {
+                <span class="copies-label">Your copies</span>
+                @foreach (var c in mine.Copies)
+                {
+                    var trophies = c.AchievementsTotal is > 0 ? $" · {c.AchievementsUnlocked ?? 0}/{c.AchievementsTotal}" : string.Empty;
+                    <a class="copy-chip@(c.EntryId == mine.EntryId ? " on" : string.Empty)" href="/games/@game.Id?entry=@c.EntryId" aria-current="@(c.EntryId == mine.EntryId ? "page" : null)">
+                        <i class="dot-@Fmt.StatusCss(c.Status)" aria-hidden="true"></i>
+                        <b>@(c.Platform ?? "No platform")</b>
+                        <small>@Fmt.Status(c.Status)@(c.Hours is { } ch && ch > 0 ? $" · {Fmt.Hours(ch)}" : string.Empty)@trophies</small>
+                    </a>
+                }
+            }
+            <details class="copy-add">
+                <summary>@Icons.Get("plus")<span>@(mine.Copies.Count > 1 ? "Another copy" : "Own it on another platform too?")</span></summary>
+                <form method="post" action="/games/@game.Id/copy">
+                    @Html.AntiForgeryToken()
+                    <label class="inline-field">
+                        <span>Copy on</span>
+                        <select name="platform">
+                            @foreach (var platform in otherPlatforms)
+                            {
+                                <option value="@platform">@platform</option>
+                            }
+                            <option value="Other">Other</option>
+                        </select>
+                    </label>
+                    <button class="btn small soft" type="submit">@Icons.Get("plus")Add copy</button>
+                    <small class="muted">Its own status, hours and achievements or trophies; the library shows it as a game of its own.</small>
+                </form>
+            </details>
+        </section>
+    }
 
     @* Two columns on a usual screen (media and text, details beside); on a wide or ultrawide one the screenshots,
        the text and the details sit side by side, and the screenshots never get taller than the screen allows. *@
@@ -403,9 +442,10 @@
                         }
                     </dl>
                 </section>
-                <form method="post" action="/games/@game.Id/remove" class="remove" data-remove-game="@game.Id" data-name="@game.Name" data-confirm="Take @game.Name out of your library? Its rating, hours and notes go too.">
+                <form method="post" action="/games/@game.Id/remove?entry=@mine.EntryId" class="remove" data-remove-game="@game.Id" data-remove-entry="@mine.EntryId" data-name="@game.Name@(mine.Copies.Count > 1 ? $" ({mine.Platform ?? "copy"})" : string.Empty)"
+                      data-confirm="@(mine.Copies.Count > 1 ? $"Take this copy of {game.Name} ({mine.Platform ?? "no platform"}) out of your library? Its rating, hours and notes go too; your other copies stay." : $"Take {game.Name} out of your library? Its rating, hours and notes go too.")">
                     @Html.AntiForgeryToken()
-                    <button type="submit" class="link-btn danger">@Icons.Get("trash")Remove from library</button>
+                    <button type="submit" class="link-btn danger">@Icons.Get("trash")@(mine.Copies.Count > 1 ? "Remove this copy" : "Remove from library")</button>
                 </form>
             }
         </aside>

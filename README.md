@@ -91,6 +91,10 @@
   it from the grid or the sidebar, filter the library by it; put a game in or out from its page too.
 - **Steam syncs on its own every day**: more hours, the hours of the last two weeks (on the profile and the cards),
   and games bought since come in as **Backlog** (games left out at the import stay out). "Sync now" on the Steam page.
+- **One game, several copies**: own a game on Steam and on PS5 and it is two entries, each with its own status,
+  hours and achievements or trophies (the game page switches between them, and adds another copy). Each import goes
+  into its own platform's copy.
+- **Clear library** (Settings) empties the library to import everything again; account, friends and connections stay.
 - **PlayStation syncs every day too**: PS5 and PS4 games with their hours, PS3 and PS Vita games through their
   trophies, trophy counts on the cards; games played for the first time come in on their own.
 - **Playnite**: every other launcher (Epic, GOG, EA app, Ubisoft Connect, Battle.net, Xbox, itch.io, emulators) from

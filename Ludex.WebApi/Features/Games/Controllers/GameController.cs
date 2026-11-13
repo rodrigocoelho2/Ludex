@@ -37,13 +37,14 @@ internal sealed class GameController(IGameService gameService) : InternalControl
     /// <summary>Everything the game page shows.</summary>
     /// <param name="userId">The account.</param>
     /// <param name="gameId">The game.</param>
+    /// <param name="entryId">The account's copy to show (null: the first one).</param>
     /// <returns>The game.</returns>
     [HttpGet("detail")]
     [ProducesResponseType<GameDetailDTO>((int)HttpStatusCode.OK)]
     [ProducesResponseType((int)HttpStatusCode.NotFound)]
     [SwaggerOperation(Summary = "GamesDetail", OperationId = "GamesDetail")]
-    public async Task<ActionResult<GameDetailDTO>> GamesDetailAsync(string userId, int gameId) =>
-        (await gameService.DetailAsync(userId, gameId)).ToActionResult();
+    public async Task<ActionResult<GameDetailDTO>> GamesDetailAsync(string userId, int gameId, long? entryId = null) =>
+        (await gameService.DetailAsync(userId, gameId, entryId)).ToActionResult();
 
     /// <summary>Covers for the sign-in page (no account data).</summary>
     /// <returns>The covers.</returns>

@@ -38,12 +38,13 @@ BEGIN
         SELECT e.[UserID], @GameID, 1,
                LEFT(CONCAT(@Name, N' is ', FORMAT(@Amount, N'0.00'), N' ', @Currency, N' at ', @Shop,
                            CASE WHEN @Cut > 0 THEN CONCAT(N' (−', @Cut, N'%)') ELSE N'' END,
-                           N': under your ', FORMAT(e.[PriceTarget], N'0.00'), N' target.'), 300),
+                           N': under your ', FORMAT(MAX(e.[PriceTarget]), N'0.00'), N' target.'), 300),
                CONCAT(N'/games/', @GameID)
         FROM [dbo].[LibraryEntry] e
         WHERE e.[GameID] = @GameID AND e.[Status] = 3 AND e.[PriceTarget] IS NOT NULL
           AND @Amount <= e.[PriceTarget]
-          AND (e.[PriceAlerted] IS NULL OR @Amount < e.[PriceAlerted]);
+          AND (e.[PriceAlerted] IS NULL OR @Amount < e.[PriceAlerted])
+        GROUP BY e.[UserID];
 
         UPDATE [dbo].[LibraryEntry]
         SET [PriceAlerted] = CASE WHEN @Amount <= [PriceTarget] THEN @Amount ELSE NULL END

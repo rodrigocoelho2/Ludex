@@ -129,13 +129,14 @@ public sealed class GameController(LudexClient apiClient) : WebsiteBaseControlle
 {
     /// <summary>The game page.</summary>
     /// <param name="id">The game.</param>
+    /// <param name="entry">Which of your copies (a game owned on two platforms has two; null: the first).</param>
     /// <returns>The view.</returns>
     [HttpGet("/games/{id:int}")]
-    public async Task<IActionResult> Index(int id)
+    public async Task<IActionResult> Index(int id, long? entry = null)
     {
         try
         {
-            var detail = await Api.GamesDetailAsync(UserId, id);
+            var detail = await Api.GamesDetailAsync(UserId, id, entry);
             var page = Shell(new GamePageModel { Detail = detail }, AppSection.Library);
             try
             {
@@ -185,6 +186,7 @@ public sealed class GameController(LudexClient apiClient) : WebsiteBaseControlle
     {
         UserId = UserId,
         GameId = id,
+        EntryId = form.EntryId,
         Status = form.Status,
         Rating = form.Rating,
         Hours = form.Hours,
@@ -202,7 +204,31 @@ public sealed class GameController(LudexClient apiClient) : WebsiteBaseControlle
     [HttpPost("/games/{id:int}/status")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SetStatus(int id, [FromBody] GameStatusForm form) =>
-        Json(await CallAsync(() => Api.LibraryStatusAsync(new LibraryStatusRequest { UserId = UserId, GameId = id, Status = form.Status })));
+        Json(await CallAsync(() => Api.LibraryStatusAsync(new LibraryStatusRequest { UserId = UserId, GameId = id, EntryId = form.EntryId, Status = form.Status })));
+
+    /// <summary>Adds another copy of the game (the same game on another platform: its own status, hours and achievements).</summary>
+    /// <param name="id">The game.</param>
+    /// <param name="platform">The platform of the new copy.</param>
+    /// <returns>The new copy's page.</returns>
+    [HttpPost("/games/{id:int}/copy")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddCopy(int id, string? platform)
+    {
+        long? created = null;
+        var result = await FormAsync(
+            async () => created = (await Api.LibrarySaveAsync(new LibrarySaveRequest
+            {
+                UserId = UserId,
+                GameId = id,
+                NewCopy = true,
+                Status = GameStatus.Backlog,
+                Platform = string.IsNullOrWhiteSpace(platform) ? null : platform.Trim(),
+                Quiet = true,
+            })).EntryId,
+            "Another copy added: set its status, hours and copy here.",
+            $"/games/{id}");
+        return created is { } entry ? LocalRedirect($"/games/{id}?entry={entry}") : result;
+    }
 
     /// <summary>Sets the price under which a wishlisted game raises an alert.</summary>
     /// <param name="id">The game.</param>
@@ -213,17 +239,21 @@ public sealed class GameController(LudexClient apiClient) : WebsiteBaseControlle
     public async Task<IActionResult> PriceTarget(int id, [FromBody] PriceTargetForm form) =>
         Json(await CallAsync(() => Api.LibraryPriceTargetAsync(new PriceTargetRequest { UserId = UserId, GameId = id, Target = form.Target })));
 
-    /// <summary>Takes the game out of the library.</summary>
+    /// <summary>Takes the game, or one of its copies, out of the library.</summary>
     /// <param name="id">The game.</param>
+    /// <param name="entry">The copy (null: every copy).</param>
     /// <returns>Back to the library.</returns>
     [HttpPost("/games/{id:int}/remove")]
     [ValidateAntiForgeryToken]
-    public Task<IActionResult> Remove(int id) => FormAsync(() => Api.LibraryDeleteAsync(UserId, id), "Taken out of your library.", "/library");
+    public Task<IActionResult> Remove(int id, long? entry = null) => FormAsync(() => Api.LibraryDeleteAsync(UserId, id, entry), "Taken out of your library.", "/library");
 }
 
 /// <summary>The game page's values.</summary>
 public sealed class GameSaveForm
 {
+    /// <summary>Gets or sets the copy (null: the game's first copy, or a new one).</summary>
+    public long? EntryId { get; set; }
+
     /// <summary>Gets or sets the status.</summary>
     public GameStatus Status { get; set; } = GameStatus.Playing;
 
@@ -259,6 +289,9 @@ public sealed class PriceTargetForm
 /// <summary>A status from a button.</summary>
 public sealed class GameStatusForm
 {
+    /// <summary>Gets or sets the copy (null: the game's first copy, or a new one).</summary>
+    public long? EntryId { get; set; }
+
     /// <summary>Gets or sets the status.</summary>
     public GameStatus Status { get; set; } = GameStatus.Playing;
 }

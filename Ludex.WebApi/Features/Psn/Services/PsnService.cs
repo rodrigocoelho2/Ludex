@@ -7,6 +7,7 @@ using Ludex.WebApi.Features.Games.Services;
 using Ludex.WebApi.Features.Imports.Models.DTOs;
 using Ludex.WebApi.Features.Imports.Services;
 using Ludex.WebApi.Features.Library.Repositories;
+using Ludex.WebApi.Features.Library.Services;
 using Ludex.WebApi.Features.Notifications.Repositories;
 using Ludex.WebApi.Features.Psn.Models.DTOs;
 using Ludex.WebApi.Features.Psn.Repositories;
@@ -150,13 +151,13 @@ internal sealed class PsnService(
             page.GameCount = games.Count;
             var known = (await psnRepository.TitlesAsync(user)).ToDictionary(static t => t.TitleKey, StringComparer.Ordinal);
             var library = await libraryRepository.ListAsync(user);
-            var mine = library.ToDictionary(static r => r.GameID);
+            var mine = library.ToLookup(static r => r.GameID);
 
             // A title matched before keeps its game; the rest are matched by name (the library first).
             var resolved = new Dictionary<string, GameRow>(StringComparer.Ordinal);
             foreach (var game in games)
             {
-                if (known.TryGetValue(game.Key, out var title) && title.GameID is { } id && mine.TryGetValue(id, out var row))
+                if (known.TryGetValue(game.Key, out var title) && title.GameID is { } id && mine[id].FirstOrDefault() is { } row)
                 {
                     resolved[game.Key] = row;
                 }
@@ -180,11 +181,12 @@ internal sealed class PsnService(
                 {
                     var g = group.OrderByDescending(static x => x.Minutes).ThenByDescending(static x => x.TrophiesEarned ?? 0).First();
                     var game = resolved[g.Key];
-                    var dto = ImportRules.Row(g.Name, g.Platform, game, mine.GetValueOrDefault(game.GameID), g.Platform, null, null, g.Minutes, group.Max(static x => x.LastPlayed), PsnRules.Status(g, now), now);
+                    var copy = CopyRules.Pick(mine[game.GameID], g.Platform);   // the PlayStation copy; one on Steam doesn't count
+                    var dto = ImportRules.Row(g.Name, g.Platform, game, copy, g.Platform, null, null, g.Minutes, group.Max(static x => x.LastPlayed), PsnRules.Status(g, now), now);
                     dto.Key = g.Key;
                     dto.TrophiesEarned = g.TrophiesEarned;
                     dto.TrophiesTotal = g.TrophiesTotal;
-                    if (mine.TryGetValue(game.GameID, out var entry) && g.TrophiesTotal is > 0 && entry.SteamAppID is null
+                    if (copy is { } entry && g.TrophiesTotal is > 0 && entry.SteamAppID is null
                         && (entry.AchievementsUnlocked ?? -1) != g.TrophiesEarned)
                     {
                         dto.Selected = true;   // new trophies are worth an update too
@@ -347,7 +349,7 @@ internal sealed class PsnService(
         var games = await GamesAsync(account, cancellationToken);
         var known = (await psnRepository.TitlesAsync(user)).ToDictionary(static t => t.TitleKey, StringComparer.Ordinal);
         var library = await libraryRepository.ListAsync(user);
-        var inLibrary = library.Select(static r => r.GameID).ToHashSet();
+        var copies = library.ToLookup(static r => r.GameID);
         var fresh = games.Where(g => !known.ContainsKey(g.Key)).ToList();
         var matched = fresh.Count == 0
             ? new Dictionary<string, GameRow>(StringComparer.Ordinal)
@@ -362,9 +364,9 @@ internal sealed class PsnService(
             GameStatus status;
             if (known.TryGetValue(game.Key, out var title))
             {
-                if (title.GameID is not { } id || !inLibrary.Contains(id))
+                if (title.GameID is not { } id || CopyRules.Pick(copies[id], game.Platform) is null)
                 {
-                    continue;   // left out at the import, or taken out of the library since
+                    continue;   // left out at the import, or its PlayStation copy taken out of the library since
                 }
 
                 gameId = id;

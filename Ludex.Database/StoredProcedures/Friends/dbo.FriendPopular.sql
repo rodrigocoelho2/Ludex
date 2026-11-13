@@ -15,7 +15,7 @@ BEGIN
     WITH [Owned] AS
     (
         SELECT e.[GameID],
-               COUNT(*) AS [FriendCount],
+               COUNT(DISTINCT e.[UserID]) AS [FriendCount],
                AVG(CAST(e.[Rating] AS DECIMAL (5, 2))) AS [AverageRating],
                MAX(e.[UpdatedAt]) AS [LastAt]
         FROM [dbo].[Friendship] f

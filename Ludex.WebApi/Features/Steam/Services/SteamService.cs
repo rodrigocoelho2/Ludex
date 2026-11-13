@@ -6,6 +6,7 @@ using Ludex.WebApi.Features.Games.Models.Entities;
 using Ludex.WebApi.Features.Games.Repositories;
 using Ludex.WebApi.Features.Games.Services;
 using Ludex.WebApi.Features.Library.Repositories;
+using Ludex.WebApi.Features.Library.Services;
 using Ludex.WebApi.Features.Profile.Repositories;
 using Ludex.WebApi.Features.Library.Models.Entities;
 using Ludex.WebApi.Features.Notifications.Repositories;
@@ -158,7 +159,7 @@ internal sealed class SteamService(
                 await gameRepository.UpsertAsync(GameRow.From(game));
             }
 
-            var library = (await libraryRepository.ListAsync(user)).ToDictionary(static r => r.GameID);
+            var library = (await libraryRepository.ListAsync(user)).ToLookup(static r => r.GameID);
             var now = timeProvider.GetUtcNow();
 
             // Two apps can be the same game (an old version and a remaster): one row, with the most hours.
@@ -168,14 +169,15 @@ internal sealed class SteamService(
                 .Select(group =>
                 {
                     var game = matched[group.First().AppId];
+                    var appId = group.OrderByDescending(static g => g.PlaytimeForever).First().AppId;
                     var minutes = group.Max(static g => g.PlaytimeForever);
                     var last = group.Select(static g => SteamRules.LastPlayed(g.LastPlayed)).Max();
                     var hours = SteamRules.Hours(minutes);
                     var (status, selected) = SteamRules.Suggest(minutes, last, now);
-                    var mine = library.GetValueOrDefault(game.Id);
+                    var mine = CopyRules.Pick(library[game.Id], "PC", appId);   // the PC copy; one on a console doesn't count
                     return new SteamGameDTO
                     {
-                        AppId = group.OrderByDescending(static g => g.PlaytimeForever).First().AppId,
+                        AppId = appId,
                         Game = GameMapper.Summary(game, mine is null ? null : GameMapper.Status(mine.Status)),
                         Hours = hours,
                         RecentHours = SteamRules.Hours(group.Max(static g => g.Playtime2Weeks ?? 0)),
@@ -297,11 +299,11 @@ internal sealed class SteamService(
         // Before Ludex remembered what was owned (an import from an older version), nothing counts as bought since:
         // this first sync only learns, so games left out on purpose aren't added.
         var addNew = known.Count > 0;
-        var library = await libraryRepository.ListAsync(user);
+        var library = await libraryRepository.CopiesAsync(user);
         var gameByApp = library.Where(static r => r.SteamAppID is not null)
             .GroupBy(static r => r.SteamAppID!.Value)
             .ToDictionary(static g => g.Key, static g => g.First().GameID);
-        var inLibrary = library.Select(static r => r.GameID).ToHashSet();
+        var copies = library.ToLookup(static r => r.GameID);
 
         // Match to the catalog only what isn't matched yet and could matter: everything the first time, then new apps.
         var toMatch = owned.Select(static g => g.AppId).Where(app => !gameByApp.ContainsKey(app) && (!addNew || !known.Contains(app))).ToList();
@@ -329,7 +331,7 @@ internal sealed class SteamService(
                 continue;
             }
 
-            var isNew = !inLibrary.Contains(gameId);
+            var isNew = CopyRules.Pick(copies[gameId], "PC", app.AppId) is null;   // no PC copy yet (one on a console doesn't count)
             if (isNew && (!addNew || known.Contains(app.AppId)))
             {
                 continue;   // left out at the import, or the first sync: not added
@@ -371,7 +373,7 @@ internal sealed class SteamService(
             return await AchievementsNotFoundAsync(userId);
         }
 
-        var entry = await libraryRepository.GetAsync(user, gameId);
+        var entry = (await libraryRepository.CopiesAsync(user, gameId)).FirstOrDefault(static c => c.SteamAppID is not null);
         var steamId = (await profileRepository.GetAsync(user))?.SteamID;
         if (entry?.SteamAppID is not { } appId || steamId is null)
         {

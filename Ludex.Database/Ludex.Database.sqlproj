@@ -52,6 +52,8 @@
     <Build Include="StoredProcedures\Games\dbo.GameUpsert.sql" />
     <Build Include="StoredProcedures\Library\dbo.LibraryDelete.sql" />
     <Build Include="StoredProcedures\Library\dbo.LibraryGet.sql" />
+    <Build Include="StoredProcedures\Library\dbo.LibraryCopyList.sql" />
+    <Build Include="StoredProcedures\Library\dbo.LibraryClear.sql" />
     <Build Include="StoredProcedures\Library\dbo.LibraryList.sql" />
     <Build Include="StoredProcedures\Library\dbo.LibrarySave.sql" />
     <Build Include="StoredProcedures\Profile\dbo.ProfileAvatarGet.sql" />

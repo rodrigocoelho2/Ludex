@@ -8,6 +8,7 @@ using Ludex.WebApi.Features.Friends.Repositories;
 using Ludex.WebApi.Features.Games.Models.DTOs;
 using Ludex.WebApi.Features.Games.Models.Entities;
 using Ludex.WebApi.Features.Games.Repositories;
+using Ludex.WebApi.Features.Library.Models.Entities;
 using Ludex.WebApi.Features.Library.Repositories;
 using Ludex.WebApi.Features.Library.Services;
 using Ludex.WebApi.Features.Profile.Repositories;
@@ -29,7 +30,8 @@ internal interface IGameService
     /// <param name="userId">The account.</param>
     /// <param name="gameId">The game.</param>
     /// <returns>The game, or not found.</returns>
-    Task<ServiceApiResponse<GameDetailDTO>> DetailAsync(string userId, int gameId);
+    /// <param name="entryId">The account's copy to show (null: the first one).</param>
+    Task<ServiceApiResponse<GameDetailDTO>> DetailAsync(string userId, int gameId, long? entryId = null);
 
     /// <summary>Covers for the sign-in page.</summary>
     /// <returns>The covers.</returns>
@@ -97,7 +99,7 @@ internal sealed class GameService(
             return ServiceApiResponse<SearchResultDTO>.ValidationProblems(message).AddError("Query", message);
         }
 
-        var mine = (await libraryRepository.ListAsync(user)).ToDictionary(static row => row.GameID, static row => GameMapper.Status(row.Status));
+        var mine = (await libraryRepository.CopiesAsync(user)).GroupBy(static row => row.GameID).ToDictionary(static g => g.Key, static g => GameMapper.Status(g.First().Status));
         var friends = await FriendNamesAsync(user, games.Select(static g => g.Id).ToList());
         result.Results = [.. games.Select(game => GameMapper.Summary(
             game,
@@ -107,7 +109,7 @@ internal sealed class GameService(
     }
 
     /// <inheritdoc />
-    public async Task<ServiceApiResponse<GameDetailDTO>> DetailAsync(string userId, int gameId)
+    public async Task<ServiceApiResponse<GameDetailDTO>> DetailAsync(string userId, int gameId, long? entryId = null)
     {
         if (!Guid.TryParse(userId, out var user))
         {
@@ -130,7 +132,8 @@ internal sealed class GameService(
             return ServiceApiResponse<GameDetailDTO>.NotFound(await globalizationHelper.TranslateAsync(nameof(TranslationKeys.GameNotFound)));
         }
 
-        var mine = await libraryRepository.GetAsync(user, gameId);
+        var mine = await libraryRepository.GetAsync(user, gameId, entryId);
+        var copies = mine is null ? new List<LibraryCopyRow>() : await libraryRepository.CopiesAsync(user, gameId);
         var friends = await friendRepository.GameAsync(user, gameId);
         var favorite = mine is null ? null : (await profileRepository.GetAsync(user))?.FavoriteGameID;
         var collections = CollectionService.ToDtos(await collectionRepository.ListAsync(user));
@@ -148,6 +151,17 @@ internal sealed class GameService(
             Modes = GameRow.Split(game.Modes),
             Mine = mine is null ? null : new MyGameDTO
             {
+                EntryId = mine.EntryID,
+                Copies = [.. copies.Select(static c => new MyCopyDTO
+                {
+                    EntryId = c.EntryID,
+                    Platform = c.Platform,
+                    Store = c.Store,
+                    Status = GameMapper.Status(c.Status) ?? GameStatus.Playing,
+                    Hours = c.Hours,
+                    AchievementsUnlocked = c.AchievementsUnlocked,
+                    AchievementsTotal = c.AchievementsTotal,
+                })],
                 Status = GameMapper.Status(mine.Status) ?? GameStatus.Playing,
                 Rating = mine.Rating,
                 Hours = mine.Hours,

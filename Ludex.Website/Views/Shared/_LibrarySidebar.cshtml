@@ -4,7 +4,8 @@
    the ones you open. Stays put between the library and the game pages (app.js keeps its scroll position). *@
 @{
     var groups = new[] { GameStatus.Playing, GameStatus.Backlog, GameStatus.Finished, GameStatus.Played, GameStatus.Wishlist, GameStatus.Dropped };
-    var byId = Model.Entries.ToDictionary(static e => e.Game.Id);
+    var byId = Model.Entries.GroupBy(static e => e.Game.Id).ToDictionary(static g => g.Key, static g => g.First());
+    var several = Model.Entries.GroupBy(static e => e.Game.Id).Where(static g => g.Count() > 1).Select(static g => g.Key).ToHashSet();
 }
 <aside class="lib-side" data-lib-side aria-label="Your library">
     <a class="lib-side-home" href="/library" aria-current="@(Model.Current is null && !Model.AtHome ? "page" : null)">
@@ -37,7 +38,7 @@
                 <ul>
                     @foreach (var entry in games)
                     {
-                        @LibraryHtml.SideItem(entry, Model.Current)
+                        @LibraryHtml.SideItem(entry, Model.Current, several.Contains(entry.Game.Id))
                     }
                 </ul>
             </details>
@@ -57,7 +58,7 @@
                 <ul>
                     @foreach (var entry in games)
                     {
-                        @LibraryHtml.SideItem(entry, Model.Current)
+                        @LibraryHtml.SideItem(entry, Model.Current, several.Contains(entry.Game.Id))
                     }
                 </ul>
             </details>

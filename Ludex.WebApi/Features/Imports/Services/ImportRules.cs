@@ -5,6 +5,7 @@ using Ludex.WebApi.Features.Games.Services;
 using Ludex.WebApi.Features.Imports.Models.DTOs;
 using Ludex.WebApi.Features.Library.Models.Entities;
 using Ludex.WebApi.Features.Library.Repositories;
+using Ludex.WebApi.Features.Library.Services;
 using Ludex.WebApi.Features.Steam.Services;
 
 namespace Ludex.WebApi.Features.Imports.Services;
@@ -27,7 +28,7 @@ internal static class ImportRules
     /// <param name="name">The name in the other library.</param>
     /// <param name="source">Where it came from there.</param>
     /// <param name="game">The game matched.</param>
-    /// <param name="mine">The library's entry of that game (null: not in the library).</param>
+    /// <param name="mine">The library's entry of that game on the same platform family (null: a new copy).</param>
     /// <param name="platform">The platform of the copy.</param>
     /// <param name="store">The PC store.</param>
     /// <param name="format">Physical or digital.</param>
@@ -75,8 +76,8 @@ internal static class ImportRules
     }
 
     /// <summary>
-    /// The rows for dbo.LibraryImport from the games ticked: one per game (the one with most hours), hours to one
-    /// decimal, a copy only as the platform allows.
+    /// The rows for dbo.LibraryImport from the games ticked: one per game and platform family (the one with most
+    /// hours), hours to one decimal, a copy only as the platform allows. The repository picks the entry each goes into.
     /// </summary>
     /// <param name="games">The games sent.</param>
     /// <param name="withTrophies">Whether trophy counts are kept (PlayStation).</param>
@@ -85,7 +86,7 @@ internal static class ImportRules
     [
         .. games
             .Where(static g => g.GameId > 0 && Enum.IsDefined(g.Status) && g.Hours is null or (>= 0 and <= MaxHours))
-            .GroupBy(static g => g.GameId)
+            .GroupBy(static g => (g.GameId, CopyRules.Family(string.IsNullOrWhiteSpace(g.Platform) ? "PC" : g.Platform)))
             .Select(group =>
             {
                 var game = group.OrderByDescending(static g => g.Hours ?? 0m).First();

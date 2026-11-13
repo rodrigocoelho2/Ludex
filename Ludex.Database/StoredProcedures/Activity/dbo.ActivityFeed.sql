@@ -22,7 +22,10 @@ BEGIN
     INNER JOIN [dbo].[User] u ON u.[UserID] = a.[UserID]
     LEFT JOIN [dbo].[Profile] p ON p.[UserID] = u.[UserID]
     INNER JOIN [dbo].[Game] g ON g.[GameID] = a.[GameID]
-    LEFT JOIN [dbo].[LibraryEntry] mine ON mine.[UserID] = @UserID AND mine.[GameID] = a.[GameID]
+    OUTER APPLY (SELECT TOP (1) me.[Status]
+                 FROM [dbo].[LibraryEntry] me
+                 WHERE me.[UserID] = @UserID AND me.[GameID] = a.[GameID]
+                 ORDER BY me.[EntryID]) mine
     WHERE f.[UserID] = @UserID AND f.[AcceptedAt] IS NOT NULL
     ORDER BY a.[At] DESC, a.[ActivityID] DESC;
 END

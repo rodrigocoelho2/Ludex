@@ -104,6 +104,7 @@ internal static class LibraryRules
         var status = GameMapper.Status(row.Status) ?? GameStatus.Playing;
         return new LibraryEntryDTO
         {
+            EntryId = row.EntryID,
             Game = GameMapper.Summary(row, status, friendNames),
             Status = status,
             Rating = row.Rating,

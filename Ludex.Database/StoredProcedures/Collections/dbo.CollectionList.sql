@@ -12,7 +12,7 @@ BEGIN
 
     DECLARE @UserID BIGINT = (SELECT [UserID] FROM [dbo].[User] WHERE [UserUniqueID] = @UserUniqueID);
 
-    SELECT c.[CollectionID], c.[Name], e.[GameID]
+    SELECT DISTINCT c.[CollectionID], c.[Name], e.[GameID]
     FROM [dbo].[Collection] c
     LEFT JOIN [dbo].[CollectionGame] cg ON cg.[CollectionID] = c.[CollectionID]
     LEFT JOIN [dbo].[LibraryEntry] e ON e.[UserID] = @UserID AND e.[GameID] = cg.[GameID]

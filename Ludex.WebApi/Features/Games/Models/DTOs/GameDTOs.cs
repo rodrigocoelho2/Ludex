@@ -117,9 +117,15 @@ public sealed class GameDetailDTO
     public PriceDTO? Price { get; set; }
 }
 
-/// <summary>The signed-in account's own entry for a game.</summary>
+/// <summary>The signed-in account's own entry for a game (one copy, when the game is owned on several platforms).</summary>
 public sealed class MyGameDTO
 {
+    /// <summary>Gets or sets the entry.</summary>
+    public long EntryId { get; set; }
+
+    /// <summary>Gets or sets the account's entries of this game (every copy, this one included), oldest first.</summary>
+    public List<MyCopyDTO> Copies { get; set; } = [];
+
     /// <summary>Gets or sets the status.</summary>
     public GameStatus Status { get; set; }
 
@@ -167,6 +173,31 @@ public sealed class MyGameDTO
 
     /// <summary>Gets or sets a value indicating whether it is the favourite game on the account's profile.</summary>
     public bool IsFavorite { get; set; }
+}
+
+/// <summary>One of the account's copies of a game.</summary>
+public sealed class MyCopyDTO
+{
+    /// <summary>Gets or sets the entry.</summary>
+    public long EntryId { get; set; }
+
+    /// <summary>Gets or sets the platform.</summary>
+    public string? Platform { get; set; }
+
+    /// <summary>Gets or sets the PC store.</summary>
+    public string? Store { get; set; }
+
+    /// <summary>Gets or sets the status.</summary>
+    public GameStatus Status { get; set; }
+
+    /// <summary>Gets or sets the hours.</summary>
+    public decimal? Hours { get; set; }
+
+    /// <summary>Gets or sets the achievements or trophies earned.</summary>
+    public int? AchievementsUnlocked { get; set; }
+
+    /// <summary>Gets or sets the achievements or trophies the game has.</summary>
+    public int? AchievementsTotal { get; set; }
 }
 
 /// <summary>The answer to a search.</summary>

@@ -36,11 +36,17 @@ internal interface ILibraryService
     /// <returns>The entry, or validation problems.</returns>
     Task<ServiceApiResponse<LibraryEntryDTO>> SetStatusAsync(LibraryStatusRequest item);
 
-    /// <summary>Takes a game out of the library.</summary>
+    /// <summary>Takes a game, or one of its copies, out of the library.</summary>
     /// <param name="userId">The account.</param>
     /// <param name="gameId">The game.</param>
+    /// <param name="entryId">The copy (null: every copy).</param>
     /// <returns>The game id.</returns>
-    Task<ServiceApiResponse<int>> DeleteAsync(string userId, int gameId);
+    Task<ServiceApiResponse<int>> DeleteAsync(string userId, int gameId, long? entryId = null);
+
+    /// <summary>Empties the library (the account, friends, profile and connections stay).</summary>
+    /// <param name="item">The account and its user name typed to confirm.</param>
+    /// <returns>How many entries went, or a problem.</returns>
+    Task<ServiceApiResponse<LibraryClearDTO>> ClearAsync(LibraryClearRequest item);
 
     /// <summary>Sets the price under which a wishlisted game raises an alert.</summary>
     /// <param name="item">The account, the game and the price.</param>
@@ -154,7 +160,7 @@ internal sealed class LibraryService(
         }
 
         var hours = item.Hours is { } value ? Math.Round(value, 1, MidpointRounding.AwayFromZero) : (decimal?)null;
-        return await StoreAsync(user, item.GameId, item.Status, item.Rating, hours, platform, notes, store, format, keepDetails: false, quiet: item.Quiet);
+        return await StoreAsync(user, item.GameId, item.EntryId, item.NewCopy, item.Status, item.Rating, hours, platform, notes, store, format, keepDetails: false, quiet: item.Quiet);
     }
 
     /// <inheritdoc />
@@ -171,7 +177,7 @@ internal sealed class LibraryService(
                 .AddError("Status", (await globalizationHelper.ValidationErrorAsync("Status", nameof(TranslationKeys.RequiredField))).Message);
         }
 
-        return await StoreAsync(user, item.GameId, item.Status, null, null, null, null, null, null, keepDetails: true, quiet: item.Quiet);
+        return await StoreAsync(user, item.GameId, item.EntryId, false, item.Status, null, null, null, null, null, null, keepDetails: true, quiet: item.Quiet);
     }
 
     /// <inheritdoc />
@@ -194,15 +200,32 @@ internal sealed class LibraryService(
     }
 
     /// <inheritdoc />
-    public async Task<ServiceApiResponse<int>> DeleteAsync(string userId, int gameId)
+    public async Task<ServiceApiResponse<int>> DeleteAsync(string userId, int gameId, long? entryId = null)
     {
         if (!Guid.TryParse(userId, out var user))
         {
             return await NotFoundAsync<int>(userId);
         }
 
-        await libraryRepository.DeleteAsync(user, gameId);
+        await libraryRepository.DeleteAsync(user, gameId, entryId);
         return ServiceApiResponse<int>.Success(gameId);
+    }
+
+    /// <inheritdoc />
+    public async Task<ServiceApiResponse<LibraryClearDTO>> ClearAsync(LibraryClearRequest item)
+    {
+        if (!Guid.TryParse(item.UserId, out var user))
+        {
+            return await NotFoundAsync<LibraryClearDTO>(item.UserId);
+        }
+
+        if (string.IsNullOrWhiteSpace(item.Confirm))
+        {
+            const string message = "Type your user name to confirm.";
+            return ServiceApiResponse<LibraryClearDTO>.ValidationProblems(message).AddError("Confirm", message);
+        }
+
+        return ServiceApiResponse<LibraryClearDTO>.Success(new LibraryClearDTO { Removed = await libraryRepository.ClearAsync(user) });
     }
 
     /// <inheritdoc />
@@ -247,7 +270,7 @@ internal sealed class LibraryService(
     }
 
     private async Task<ServiceApiResponse<LibraryEntryDTO>> StoreAsync(
-        Guid user, int gameId, GameStatus status, int? rating, decimal? hours, string? platform, string? notes, string? store, GameFormat? format, bool keepDetails, bool quiet = false)
+        Guid user, int gameId, long? entryId, bool newCopy, GameStatus status, int? rating, decimal? hours, string? platform, string? notes, string? store, GameFormat? format, bool keepDetails, bool quiet = false)
     {
         GameRow? game;
         try
@@ -266,7 +289,12 @@ internal sealed class LibraryService(
             return ServiceApiResponse<LibraryEntryDTO>.NotFound(message);
         }
 
-        var before = await libraryRepository.GetAsync(user, gameId);
+        var before = newCopy ? null : await libraryRepository.GetAsync(user, gameId, entryId);
+        if (before is not null && entryId is not null && before.EntryID != entryId)
+        {
+            before = null;   // that copy was taken out meanwhile: it comes back as a new entry
+        }
+
         if (keepDetails && before is not null)
         {
             rating = before.Rating;
@@ -277,14 +305,14 @@ internal sealed class LibraryService(
             format = before.Format is 1 or 2 ? (GameFormat)before.Format.Value : null;
         }
 
-        await libraryRepository.SaveAsync(user, gameId, (byte)status, (byte?)rating, hours, platform, notes, store, (byte?)format);
+        var saved = await libraryRepository.SaveAsync(user, gameId, (byte)status, (byte?)rating, hours, platform, notes, store, (byte?)format, before?.EntryID ?? entryId, newCopy);
         var lines = LibraryRules.Activities(GameMapper.Status(before?.Status), before?.Rating, status, rating);
         foreach (var (kind, lineRating) in quiet ? lines.Take(0) : lines)
         {
             await libraryRepository.AddActivityAsync(user, gameId, (byte)kind, (byte?)lineRating);
         }
 
-        var after = await libraryRepository.GetAsync(user, gameId);
+        var after = await libraryRepository.GetAsync(user, gameId, saved);
         if (after is null)
         {
             return await NotFoundAsync<LibraryEntryDTO>(user.ToString("N"));

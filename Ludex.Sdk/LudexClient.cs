@@ -78,9 +78,11 @@ public sealed class LudexClient(HttpClient httpClient)
     /// <summary>Everything the game page shows.</summary>
     /// <param name="userId">The account.</param>
     /// <param name="gameId">The game.</param>
+    /// <param name="entryId">The account's copy to show (null: the first one).</param>
     /// <returns>The game.</returns>
-    public Task<GameDetailDTO> GamesDetailAsync(string userId, int gameId) =>
-        GetAsync<GameDetailDTO>($"games/detail?userId={Uri.EscapeDataString(userId)}&gameId={gameId.ToString(CultureInfo.InvariantCulture)}");
+    public Task<GameDetailDTO> GamesDetailAsync(string userId, int gameId, long? entryId = null) =>
+        GetAsync<GameDetailDTO>($"games/detail?userId={Uri.EscapeDataString(userId)}&gameId={gameId.ToString(CultureInfo.InvariantCulture)}"
+                                + (entryId is { } entry ? $"&entryId={entry.ToString(CultureInfo.InvariantCulture)}" : string.Empty));
 
     /// <summary>Covers for the sign-in page.</summary>
     /// <returns>The covers.</returns>
@@ -103,12 +105,21 @@ public sealed class LudexClient(HttpClient httpClient)
     /// <returns>The entry.</returns>
     public Task<LibraryEntryDTO> LibraryStatusAsync(LibraryStatusRequest item) => PostAsync<LibraryEntryDTO>("library/status", item);
 
-    /// <summary>Takes a game out of the library.</summary>
+    /// <summary>Takes a game, or one of its copies, out of the library.</summary>
     /// <param name="userId">The account.</param>
     /// <param name="gameId">The game.</param>
+    /// <param name="entryId">The copy (null: every copy of the game).</param>
     /// <returns>A task that completes on success.</returns>
-    public Task LibraryDeleteAsync(string userId, int gameId) =>
-        DeleteAsync($"library?userId={Uri.EscapeDataString(userId)}&gameId={gameId.ToString(CultureInfo.InvariantCulture)}");
+    public Task LibraryDeleteAsync(string userId, int gameId, long? entryId = null) =>
+        DeleteAsync($"library?userId={Uri.EscapeDataString(userId)}&gameId={gameId.ToString(CultureInfo.InvariantCulture)}"
+                    + (entryId is { } entry ? $"&entryId={entry.ToString(CultureInfo.InvariantCulture)}" : string.Empty));
+
+    /// <summary>Empties the library, to import everything again.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="confirm">The user name typed to confirm.</param>
+    /// <returns>How many entries went.</returns>
+    public Task<LibraryClearDTO> LibraryClearAsync(string userId, string? confirm) =>
+        PostAsync<LibraryClearDTO>("library/clear", new LibraryClearRequest { UserId = userId, Confirm = confirm });
 
     /// <summary>The home page.</summary>
     /// <param name="userId">The account.</param>

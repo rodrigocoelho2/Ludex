@@ -149,6 +149,22 @@
         }
     </section>
 
+    <section class="panel rise d2 danger-zone" id="clear">
+        <h2>Clear your library</h2>
+        <p class="muted">Takes every game out of your library, with its status, rating, hours, notes and activity, and empties your collections (they stay, empty), so you can import from Steam, PlayStation and Playnite again from scratch. Your account, friends, profile and the Steam and PlayStation connections stay. This can't be undone.</p>
+        <details class="clear-confirm">
+            <summary class="btn ghost danger-btn">@Icons.Get("trash")Clear library…</summary>
+            <form class="stack" method="post" action="/library/clear" autocomplete="off">
+                @Html.AntiForgeryToken()
+                <label class="field">
+                    <span class="label">Type your user name, <b>@Model.UserName</b>, to confirm</span>
+                    <input name="confirm" type="text" autocapitalize="none" spellcheck="false" required />
+                </label>
+                <button class="btn danger-btn" type="submit">@Icons.Get("trash")Clear my library</button>
+            </form>
+        </details>
+    </section>
+
     @if (Model.IsAdmin && Model.Users.Count > 0)
     {
         <section class="panel">

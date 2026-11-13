@@ -52,14 +52,25 @@ internal sealed class LibraryController(ILibraryService libraryService) : Intern
     [SwaggerOperation(Summary = "LibraryStatus", OperationId = "LibraryStatus")]
     public async Task<ActionResult<LibraryEntryDTO>> LibraryStatusAsync(LibraryStatusRequest item) => (await libraryService.SetStatusAsync(item)).ToActionResult();
 
-    /// <summary>Takes a game out of the library.</summary>
+    /// <summary>Takes a game, or one of its copies, out of the library.</summary>
     /// <param name="userId">The account.</param>
     /// <param name="gameId">The game.</param>
+    /// <param name="entryId">The copy (null: every copy of the game).</param>
     /// <returns>The game id.</returns>
     [HttpDelete]
     [ProducesResponseType<int>((int)HttpStatusCode.OK)]
     [SwaggerOperation(Summary = "LibraryDelete", OperationId = "LibraryDelete")]
-    public async Task<ActionResult<int>> LibraryDeleteAsync(string userId, int gameId) => (await libraryService.DeleteAsync(userId, gameId)).ToActionResult();
+    public async Task<ActionResult<int>> LibraryDeleteAsync(string userId, int gameId, long? entryId = null) =>
+        (await libraryService.DeleteAsync(userId, gameId, entryId)).ToActionResult();
+
+    /// <summary>Empties the library, to import everything again.</summary>
+    /// <param name="item">The account and its user name typed to confirm.</param>
+    /// <returns>How many entries went.</returns>
+    [HttpPost("clear")]
+    [Consumes(MediaTypeNames.Application.Json)]
+    [ProducesResponseType<LibraryClearDTO>((int)HttpStatusCode.OK)]
+    [SwaggerOperation(Summary = "LibraryClear", OperationId = "LibraryClear")]
+    public async Task<ActionResult<LibraryClearDTO>> LibraryClearAsync(LibraryClearRequest item) => (await libraryService.ClearAsync(item)).ToActionResult();
 
     /// <summary>The home page.</summary>
     /// <param name="userId">The account.</param>
