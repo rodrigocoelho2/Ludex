@@ -32,6 +32,7 @@
         </section>
 
         <form class="panel glass rise d1 steam-form" method="post" action="/playnite" enctype="multipart/form-data" data-steam-load>
+            @Html.AntiForgeryToken()
             <label class="field">
                 <span class="label">Playnite's export (CSV)</span>
                 <span class="in">@Icons.Get("library")<input name="file" type="file" accept=".csv,text/csv" required /></span>

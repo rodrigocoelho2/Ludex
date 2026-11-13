@@ -45,6 +45,7 @@
             </section>
 
             <form class="panel glass rise d1 steam-form" method="post" action="/psn/connect" autocomplete="off" data-steam-load>
+                @Html.AntiForgeryToken()
                 <label class="field">
                     <span class="label">NPSSO</span>
                     <span class="in">@Icons.Get("key")<input name="npsso" type="password" placeholder="64 letters and digits" autocapitalize="none" spellcheck="false" required /></span>
@@ -64,6 +65,7 @@
                     <span class="muted">Connected @(status.ConnectedAt is { } at ? Fmt.Ago(at) : string.Empty)@(status.ExpiresAt is { } ends ? $" · sign-in good until {Fmt.ShortDate(ends)}" : string.Empty)@(loaded ? $" · {preview!.GameCount} games · {preview.Games.Count} matched · {Model.New.Count} new to your library" : string.Empty)</span>
                 </div>
                 <form method="post" action="/psn/disconnect" data-confirm="Disconnect PlayStation? The games you imported stay in your library.">
+                    @Html.AntiForgeryToken()
                     <button class="btn ghost small" type="submit">Disconnect</button>
                 </form>
             </section>
