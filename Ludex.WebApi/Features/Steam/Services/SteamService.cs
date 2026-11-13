@@ -250,7 +250,36 @@ internal sealed class SteamService(
             logger.LogWarning("Steam import: the owned games weren't remembered ({Problem})", exception.Message);
         }
         logger.LogInformation("Steam import: {Added} added, {Updated} with more hours", counts.Added, counts.Updated);
+
+        // The achievement counts are read right away, in the background (a big library takes a few minutes), rather
+        // than waiting for the daily sync.
+        var steamId = item.SteamId!;
+        _ = Task.Run(() => RefreshAllAchievementsAsync(user, steamId));
         return ServiceApiResponse<SteamImportResultDTO>.Success(new SteamImportResultDTO { Added = counts.Added, Updated = counts.Updated });
+    }
+
+    // Every game's achievement count, 300 at a time, until none is left (or Steam stops answering).
+    private async Task RefreshAllAchievementsAsync(Guid user, string steamId)
+    {
+        try
+        {
+            var total = 0;
+            for (var round = 0; round < 20; round++)
+            {
+                var done = await RefreshAchievementsAsync(user, steamId, CancellationToken.None);
+                total += done;
+                if (done < 300)
+                {
+                    break;
+                }
+            }
+
+            logger.LogInformation("Steam import: {Count} achievement counts read", total);
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "Steam import: reading the achievement counts stopped");
+        }
     }
 
     /// <inheritdoc />
