@@ -35,7 +35,7 @@
             @Html.AntiForgeryToken()
             <label class="field">
                 <span class="label">Playnite's export (CSV)</span>
-                <span class="in">@Icons.Get("library")<input name="file" type="file" accept=".csv,text/csv" required /></span>
+                <input class="file-in" name="file" type="file" accept=".csv,text/csv" required />
                 <span class="hint">Read here and matched to IGDB by name; nothing is added until you tick and import. Do it again whenever you like: hours only go up, and what you set here stays.</span>
             </label>
             <div class="actions">

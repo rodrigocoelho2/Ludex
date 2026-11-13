@@ -994,7 +994,7 @@ a.row-soft:hover, a.row-soft:focus-visible { background-color: rgba(255, 255, 25
 .import-steps > p { font-size: 14px; }
 .steam-account .empty-ico { flex: none; }
 .steam-account form { flex: none; }
-.steam-form input[type=file] { padding: 8px 0; font-size: 14.5px; color: var(--soft); cursor: pointer; }
+.steam-form input.file-in { width: 100%; min-height: 0; padding: 8px 0; border: 0; background: none; box-shadow: none; font-size: 14.5px; color: var(--soft); cursor: pointer; }
 .steam-form input[type=file]::file-selector-button { margin-right: 12px; padding: 7px 14px; border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius: var(--r-sm); background: var(--panel-2); color: var(--text); font: inherit; cursor: pointer; }
 
 /* ---------- Motion: things arrive, covers fly between pages, nothing moves for people who'd rather it didn't ---------- */
@@ -1244,7 +1244,7 @@ body.has-sel-bar .toast { bottom: 96px; }
 .lib-filters-n { min-width: 20px; height: 20px; padding: 0 6px; display: inline-grid; place-items: center; border-radius: 10px; background: var(--accent); color: var(--on-accent); font-size: 12px; }
 .lib-filters-n[hidden], .lib-filters[hidden] { display: none; }
 .lib-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 14px 0 2px; }
-.lib-filter, .lib-filters .lib-size { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; color: var(--muted); }
+.lib-filter { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; color: var(--muted); }
 .lib-sub { margin: 14px 2px 16px; }
 .lib-grid { gap: 30px 22px; }
 .lib-score { display: none; }

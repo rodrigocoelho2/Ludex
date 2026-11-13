@@ -218,7 +218,8 @@ internal sealed class IgdbCatalog(
         var rest = distinct.Where(n => !found.ContainsKey(n)).Take(100).ToList();
         var searched = await PacedAsync(rest, async name =>
         {
-            var body = $"search \"{Escape(Plain(name))}\"; fields {SearchFields}; where version_parent = null; limit {limit};";
+            // No version filter here: a game IGDB files as a version of another still matches by its own name.
+            var body = $"search \"{Escape(Plain(name))}\"; fields {SearchFields}; limit 15;";
             return (Name: name, Games: (await RetryAsync(() => QueryAsync<IgdbGame>("games", body, cancellationToken), cancellationToken)).Select(Map).ToList());
         }, cancellationToken);
         foreach (var (name, games) in searched.Where(static s => s.Games.Count > 0))

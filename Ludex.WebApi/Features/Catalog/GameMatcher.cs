@@ -66,7 +66,12 @@ internal sealed class GameMatcher(IGameCatalog catalog, IGameRepository gameRepo
         {
             var key = NameMatch.Key(name);
             var stem = NameMatch.Base(key);
-            return stem.Length < key.Length && stem.Length > 0 ? stem : name;
+            if (stem.Length < key.Length && stem.Length > 0)
+            {
+                return stem;   // an edition put aside
+            }
+
+            return NameMatch.WithoutYear(name);   // "Mass Effect 2 (2010)" → "Mass Effect 2"
         }
 
         var candidates = await catalog.SearchManyAsync([.. rest.Select(n => Query(n.Name)).Distinct(StringComparer.Ordinal)], 8, cancellationToken);

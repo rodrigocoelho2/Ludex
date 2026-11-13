@@ -84,6 +84,12 @@
                             }
                         </select>
                     </label>
+                    <label class="lib-size" data-size-box title="Cover size">
+                        <span class="sr-only">Cover size</span>
+                        <span class="lib-size-ico small" aria-hidden="true"></span>
+                        <input type="range" min="112" max="296" step="8" value="176" data-card-size />
+                        <span class="lib-size-ico" aria-hidden="true"></span>
+                    </label>
                     <button type="button" class="btn soft small lib-filters-btn" data-filters-toggle aria-expanded="false" aria-controls="lib-filters">@Icons.Get("filter")Filters<b class="lib-filters-n" data-filters-count hidden></b></button>
                     <span class="seg lib-view" role="group" aria-label="View">
                         <button type="button" class="seg-btn" data-view="grid" aria-pressed="true" aria-label="Covers" title="Covers">@Icons.Get("grid")</button>
@@ -137,10 +143,6 @@
                     </span>
                 }
                 <label class="check lib-friends"><input type="checkbox" data-friends-filter /><span>Friends have it</span></label>
-                <label class="lib-size" data-size-box>
-                    <span>Cover size</span>
-                    <input type="range" min="112" max="296" step="8" value="176" data-card-size />
-                </label>
             </div>
             <div class="lib-sub">
                 <p class="lib-count muted" data-shown-label>@Fmt.Plural(entries.Count, "game", "games")</p>

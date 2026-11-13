@@ -145,6 +145,13 @@ internal static partial class NameMatch
         return hits.Count == 1 ? hits[0] : null;
     }
 
+    /// <summary>
+    /// A name without a year a store adds in brackets ("Mass Effect 2 (2010)" → "Mass Effect 2").
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <returns>The name.</returns>
+    public static string WithoutYear(string name) => YearSuffix().Replace(name, string.Empty).Trim();
+
     private static bool IsRoman(string word) => word.Length is > 0 and <= 4 && word.All(static c => c is 'i' or 'v' or 'x');
 
     [GeneratedRegex(@"\s*[\(\[](19|20)\d\d[\)\]]\s*$")]
