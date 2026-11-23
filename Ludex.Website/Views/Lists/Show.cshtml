@@ -1,0 +1,75 @@
+@model ListPageModel
+@{
+    Layout = "_App";
+    var l = Model.Detail.List;
+    var items = Model.Detail.Items;
+    ViewData["Title"] = l.Name;
+    var played = items.Count(i => Fmt.IsPlayed(i.Game.MyStatus));
+    var percent = items.Count == 0 ? 0 : played * 100 / items.Count;
+}
+
+<div class="lp">
+    <header class="lp-head rise">
+        <div class="rv-who">
+            <a class="rv-author" href="/u/@l.OwnerName">@Avatars.Get(l.OwnerId, l.OwnerName, l.OwnerAvatarVersion, "mini")<span>List by <b>@l.OwnerName</b></span></a>
+            @if (l.OwnerIsDemo) { <span class="demo-pill">Demo</span> }
+            <span class="tag">@Icons.Get(l.Visibility == ListVisibility.Private ? "lock" : "eye")@Fmt.Visibility(l.Visibility)@(l.Ranked ? " · Ranked" : string.Empty)</span>
+        </div>
+        <h1>@l.Name</h1>
+        @if (l.Description is { } description)
+        {
+            <p class="lp-desc">@description</p>
+        }
+        <div class="lp-bar">
+            <span class="muted">@Fmt.Plural(l.GameCount, "game", "games") · changed @Fmt.Day(l.UpdatedAt)</span>
+            @if (l.IsMine)
+            {
+                <span class="rv-likes">@Icons.Get("heart")<span>@Fmt.Plural(l.Likes, "like", "likes")</span></span>
+                <a class="btn soft small" href="/lists/@l.Id/edit">@Icons.Get("edit")Edit list</a>
+            }
+            else
+            {
+                <button type="button" class="btn soft small rv-like" data-like-list="@l.Id" aria-pressed="@(l.LikedByMe ? "true" : "false")">@Icons.Get("heart")<span data-like-count>@l.Likes</span><span class="sr-only"> likes</span></button>
+            }
+            <button type="button" class="btn ghost small" data-share-profile="/lists/@l.Id">@Icons.Get("arrow")Share</button>
+        </div>
+    </header>
+
+    @if (items.Count > 0)
+    {
+        <div class="lp-progress rise d1">
+            <b>You've played @played of @items.Count</b>
+            <span class="lp-meter" role="progressbar" aria-valuemin="0" aria-valuemax="@items.Count" aria-valuenow="@played" aria-label="Games of this list you've played"><i style="width:@percent%"></i></span>
+            <span class="muted">@percent%</span>
+            <a class="link-btn" href="/lists/@l.Id@(Model.HidePlayed ? string.Empty : "?hide=played")">@(Model.HidePlayed ? "Show every game" : "Hide the ones I've played")</a>
+        </div>
+
+        <ol class="lp-grid@(l.Ranked ? " ranked" : string.Empty) rise d1">
+            @foreach (var item in Model.Shown)
+            {
+                var done = Fmt.IsPlayed(item.Game.MyStatus);
+                <li class="lp-item@(done ? " done" : string.Empty)">
+                    <a class="lp-cover" href="/games/@item.Game.Id" aria-label="@item.Game.Name">
+                        <partial name="_Cover" model="new CoverView(item.Game, Model.Transition(item.Game.Id))" />
+                        @if (l.Ranked) { <b class="lp-rank num">@item.Position</b> }
+                        @if (done) { <span class="lp-done" title="You've played it">@Icons.Get("check")</span> }
+                    </a>
+                    <span class="lp-name">@item.Game.Name</span>
+                    <span class="lp-sub">
+                        @item.Game.Year
+                        @if (item.MyRating is { } myRating) { <span class="gold">You @Fmt.Stars(myRating)</span> }
+                        else if (item.Game.MyStatus is { } status) { <span>@Fmt.Status(status)</span> }
+                    </span>
+                    @if (item.Note is { } note) { <span class="lp-note">@note</span> }
+                </li>
+            }
+        </ol>
+    }
+    else
+    {
+        <section class="empty rise d1">
+            <span class="empty-ico">@Icons.Get("list")</span>
+            <p>@(l.IsMine ? "No games yet. Open a game and pick this list under Your lists." : "No games in it yet.")</p>
+        </section>
+    }
+</div>

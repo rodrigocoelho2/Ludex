@@ -10,7 +10,7 @@ else
         @foreach (var line in Model)
         {
             var sub = new List<string>();
-            if (line.Kind == ActivityKind.Rated && line.Rating is { } rating) { sub.Add($"Gave it {rating}/10"); }
+            if (line.Kind == ActivityKind.Rated && line.Rating is { } rating) { sub.Add($"Gave it {Fmt.Stars(rating)}"); }
             if (line.Game.MyStatus is { } mine) { sub.Add($"You have it too · {Fmt.Status(mine)}"); }
             sub.Add(Fmt.Ago(line.At));
             <li>

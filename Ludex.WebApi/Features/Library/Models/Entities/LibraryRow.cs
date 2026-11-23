@@ -40,6 +40,15 @@ public sealed class LibraryRow : GameRow, ILibraryCopy
     /// <summary>Gets or sets when it was first finished (UTC).</summary>
     public DateTime? FinishedAt { get; set; }
 
+    /// <summary>Gets or sets how it ended (1 Completed, 2 Mastered, 3 Shelved, 4 Abandoned; see <see cref="Ludex.Library.Enums.GameEnding"/>).</summary>
+    public byte? Ending { get; set; }
+
+    /// <summary>Gets or sets the day the person says they started.</summary>
+    public DateTime? StartedOn { get; set; }
+
+    /// <summary>Gets or sets the day the person says they finished.</summary>
+    public DateTime? FinishedOn { get; set; }
+
     /// <summary>Gets or sets how many friends have it too.</summary>
     public int FriendCount { get; set; }
 

@@ -79,6 +79,18 @@ def save(page, game, status, rating=None, hours=None, platform=None, notes=None)
         errors.append(f"save {game}: {json.dumps(result)[:400]}")
 
 
+def log(page, game, body):
+    """Logs a game the way the Log a game dialog does (status, rating, how it ended, review, a session)."""
+    result = page.evaluate("""async ([id, body]) => {
+        const token = document.querySelector('meta[name="request-verification-token"]').content;
+        const r = await fetch(`/log/${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token }, body: JSON.stringify(body) });
+        return { status: r.status, body: await r.json() };
+    }""", [G[game], body])
+    if result["status"] != 200 or not result["body"].get("isValid"):
+        errors.append(f"log {game}: {json.dumps(result)[:400]}")
+    return result["body"].get("data") or {}
+
+
 def request_friend(page, name):
     page.goto(base + "/friends")
     page.fill("input[name=userName]", name)
@@ -133,6 +145,15 @@ with sync_playwright() as p:
         create_account(page, user)
         for game, status, rating, hours, platform in games:
             save(page, game, status, rating, hours, platform)
+        if user == "Ines":
+            log(page, "Silksong", {"status": "Finished", "rating": 9, "platform": "Switch", "ending": "Completed", "share": True,
+                                   "review": "Hornet moves like a dancer and every boss is a duel. The citadel is enormous; I got lost in the best way.",
+                                   "sessionMinutes": 95, "sessionNote": "Last boss, finally."})
+            log(page, "Outer Wilds", {"status": "Finished", "rating": 10, "platform": "PC", "ending": "Completed", "share": True,
+                                      "review": "Don't read anything about it. Just play.", "spoilers": False})
+        else:
+            log(page, "Red Dead Redemption 2", {"status": "Finished", "rating": 10, "platform": "PC", "ending": "Mastered", "share": True, "spoilers": True,
+                                                "review": "The epilogue is longer than most games and I wanted more of it."})
         request_friend(page, "Rodas")
         context.close()
 
@@ -166,6 +187,76 @@ with sync_playwright() as p:
     rodas.wait_for_selector(f".result[data-game='{G['Breath of the Wild']}'] .in-lib")
     print("Rodas: added Breath of the Wild from the search")
 
+    # Log a game through the dialog, like a person: half stars, a review, how it ended.
+    rodas.goto(base + f"/games/{G['Hades II']}")
+    rodas.wait_for_load_state("networkidle")
+    rodas.click(".yg-acts [data-log-game]")
+    rodas.wait_for_selector("[data-log-form]")
+    rodas.click("[data-log-status=Finished]")
+    rodas.click("[data-log-rate='9']")
+    rodas.fill("[data-log-form] textarea[name=review]", "Melinoë plays nothing like Zagreus, and the Omega moves make every run feel new. Perfect in twenty-minute bites.")
+    rodas.fill("[data-log-form] input[name=sessionMinutes]", "45")
+    rodas.click("[data-log-form] button[type=submit]")
+    rodas.wait_for_selector(".rv.own", timeout=15000)
+    print("Rodas: logged Hades II with a review from the dialog")
+
+    # Like Ines's review of Silksong, then comment on it.
+    rodas.goto(base + f"/games/{G['Silksong']}")
+    rodas.wait_for_load_state("networkidle")
+    rodas.click(".gc-list [data-like-review]")
+    rodas.wait_for_selector(".gc-list [data-like-review][aria-pressed=true]")
+    review_url = rodas.get_attribute(".gc-list .rv-open", "href")
+    rodas.goto(base + review_url)
+    rodas.fill("#comment-text", "The citadel really is enormous. Which boss was the hardest for you?")
+    rodas.click(".rvp-write button[type=submit]")
+    rodas.wait_for_load_state("networkidle")
+    assert "Which boss was the hardest" in rodas.content(), "the comment isn't on the review"
+    print("Rodas: liked and commented on Ines's review")
+
+    # A ranked list, made from a game page, with a second game added from another game page and moved to the top.
+    rodas.goto(base + f"/lists/new?game={G['Elden Ring']}")
+    rodas.fill("input[name=name]", "Games of the decade")
+    rodas.check("input[name=ranked]")
+    rodas.click(".le-form button[type=submit]")
+    rodas.wait_for_load_state("networkidle")
+    list_id = rodas.url.rstrip("/").split("/")[-1].split("?")[0]
+    assert list_id.isdigit(), f"after making the list the page is {rodas.url}"
+    rodas.goto(base + f"/games/{G['Balatro']}")
+    rodas.wait_for_load_state("networkidle")
+    rodas.select_option("[data-list-add]", list_id)
+    rodas.wait_for_selector(f".col-chip a[href='/lists/{list_id}']")
+    rodas.goto(base + f"/lists/{list_id}/edit")
+    rodas.click(f"#game-{G['Balatro']} button[aria-label^='Move Balatro to the top']")
+    rodas.wait_for_load_state("networkidle")
+    print(f"Rodas: made list {list_id} with two games")
+
+    # A session in the journal, from the journal page.
+    rodas.goto(base + "/journal")
+    rodas.select_option("#jr-game", str(G["Silksong"]))
+    rodas.fill(".jr-add input[name=hours]", "1")
+    rodas.fill(".jr-add input[name=minutes]", "20")
+    rodas.click(".jr-add button[type=submit]")
+    rodas.wait_for_load_state("networkidle")
+    assert "Session written down" in rodas.content(), "the session wasn't written down"
+
+    # Four favourites on the profile.
+    rodas.goto(base + "/profile")
+    if rodas.locator("[data-favs-form]").is_hidden():
+        rodas.click("[data-favs-edit]")
+    for i, game in enumerate(["Elden Ring", "Baldur's Gate 3", "Silksong", "Balatro"]):
+        rodas.select_option(f"#fav-{i}", str(G[game]))
+    rodas.click("[data-favs-form] button[type=submit]")
+    rodas.wait_for_load_state("networkidle")
+    assert rodas.locator(".pf-fav4-item:not(.empty)").count() == 4, "the favourites didn't save"
+
+    # The demo accounts with their reviews (Settings, admin).
+    rodas.goto(base + "/settings")
+    rodas.click("form[action='/settings/demo/seed'] button")
+    rodas.wait_for_load_state("networkidle")
+    if rodas.locator("form[action='/settings/demo/remove']").count() == 0:
+        errors.append("demo: no demo accounts after adding them: " + rodas.inner_text("#demo")[:400])
+    print("Rodas: demo accounts added")
+
     screens = [
         ("home", "/", None),
         ("library", "/library", None),
@@ -175,6 +266,14 @@ with sync_playwright() as p:
         ("game-new", f"/games/{G['Outer Wilds']}", None),
         ("friends", "/friends", None),
         ("settings", "/settings", None),
+        ("game-reviews", f"/games/{G['Silksong']}#reviews", None),
+        ("review", review_url, None),
+        ("reviews", "/reviews", None),
+        ("lists", "/lists", None),
+        ("list", f"/lists/{list_id}", None),
+        ("journal", "/journal", None),
+        ("profile", "/profile", None),
+        ("profile-demo", "/u/pixelmonk", None),
     ]
     for name, path, wait_for in screens:
         shoot(rodas, f"desktop-{name}", path, wait_for)
@@ -196,6 +295,15 @@ with sync_playwright() as p:
     mobile.screenshot(path=str(out / "phone-discover-skeleton.png"))
     mobile.wait_for_selector(".result", timeout=10000)
     mobile.unroute("**/discover/results**")
+
+    # The demo accounts go again, with everything they wrote.
+    rodas.goto(base + "/settings")
+    rodas.once("dialog", lambda d: d.accept())
+    rodas.click("form[action='/settings/demo/remove'] button")
+    rodas.wait_for_load_state("networkidle")
+    if rodas.locator("form[action='/settings/demo/seed']").count() == 0:
+        errors.append("demo: still there after removing them")
+    print("Rodas: demo accounts removed")
 
     # Signed-out sign-in page, now with covers on the wall.
     for label, options in (("desktop", desktop), ("phone", phone)):

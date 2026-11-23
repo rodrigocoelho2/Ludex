@@ -1,0 +1,72 @@
+@model ReviewCardView
+@* A review on a card, like Backloggd's "Popular reviews": the cover, who wrote it, the stars, how they played it,
+   the text cut after a few lines (or hidden behind a spoiler warning), and its likes and comments. *@
+@{
+    var r = Model.Review;
+    var game = r.Game;
+    var profile = r.AuthorName;
+    var link = $"/reviews/{r.Id}";
+    var played = Fmt.PlayedLine(r.Status, r.Platform, r.Ending);
+}
+<article class="rv@(Model.ShowGame ? string.Empty : " no-game")@(r.IsMine ? " own" : string.Empty)" data-review="@r.Id">
+    @if (Model.ShowGame)
+    {
+        <a class="rv-cover" href="/games/@game.Id" aria-label="@game.Name" tabindex="-1">
+            <partial name="_Cover" model='new CoverView(game, "none")' />
+        </a>
+    }
+    <div class="rv-body">
+        <div class="rv-who">
+            <a class="rv-author" href="/u/@profile">
+                @Avatars.Get(r.AuthorId, r.AuthorName, r.AuthorAvatarVersion, "mini")
+                <b>@r.AuthorName</b>
+            </a>
+            @if (r.AuthorIsDemo)
+            {
+                <span class="demo-pill" title="A made-up account of the demo reviews">Demo</span>
+            }
+            @if (Model.ShowGame)
+            {
+                <span class="rv-game">reviewed <a href="/games/@game.Id">@game.Name</a>@(game.Year is { } year ? $" ({year})" : string.Empty)</span>
+            }
+            <span class="rv-date">@Fmt.Day(r.CreatedAt)</span>
+        </div>
+        <div class="rv-meta">
+            @if (r.Rating is not null)
+            {
+                <partial name="_Stars" model="new StarsView(r.Rating, 15)" />
+            }
+            @if (played.Length > 0)
+            {
+                <span class="rv-played">@if (r.Status is { } status) { <i class="dot-@Fmt.StatusCss(status)" aria-hidden="true"></i> }@played</span>
+            }
+        </div>
+        @if (r.Spoilers)
+        {
+            <div class="rv-spoiler" data-spoiler>
+                <p>@Icons.Get("eye")This review talks about things you may not want to know yet.</p>
+                <button type="button" class="btn soft small" data-spoiler-show>Show it anyway</button>
+            </div>
+        }
+        <div class="rv-text@(Model.Clamp ? " clamp" : string.Empty)" hidden="@(r.Spoilers ? "hidden" : null)" data-spoiler-text>
+            @foreach (var paragraph in r.Text.Split("\n\n", StringSplitOptions.RemoveEmptyEntries))
+            {
+                <p>@paragraph</p>
+            }
+        </div>
+        <div class="rv-foot">
+            @if (r.IsMine)
+            {
+                <span class="rv-likes">@Icons.Get("heart")<span>@Fmt.Plural(r.Likes, "like", "likes")</span></span>
+            }
+            else
+            {
+                <button type="button" class="rv-like" data-like-review="@r.Id" aria-pressed="@(r.LikedByMe ? "true" : "false")" aria-label="Like @(r.AuthorName)'s review">
+                    @Icons.Get("heart")<span data-like-count>@r.Likes</span>
+                </button>
+            }
+            <a class="rv-comments" href="@link#comments">@Icons.Get("chat")<span>@r.Comments</span></a>
+            <a class="rv-open" href="@link">@(r.IsMine ? "Your review" : "Open review")</a>
+        </div>
+    </div>
+</article>

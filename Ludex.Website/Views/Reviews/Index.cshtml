@@ -1,0 +1,61 @@
+@model ReviewsPageModel
+@{
+    Layout = "_App";
+    var title = Model.GameName is { } gameName ? $"Reviews of {gameName}" : Model.Author is { } author ? $"Reviews by {author}" : "Reviews";
+    ViewData["Title"] = title;
+    var sorts = new List<(ReviewSort, string)> { (ReviewSort.Popular, "Popular this week"), (ReviewSort.AllTime, "All time"), (ReviewSort.Recent, "Recent"), (ReviewSort.Highest, "Highest") };
+    if (Model.Author is null) { sorts.Insert(2, (ReviewSort.Friends, "Friends")); }
+    var reviews = Model.Reviews;
+}
+
+<div class="page-head rise">
+    <div>
+        <h1>@title</h1>
+        @if (Model.GameId is { } back)
+        {
+            <p class="muted"><a href="/games/@back">@Icons.Get("left")Back to the game</a></p>
+        }
+        else if (Model.Author is { } who)
+        {
+            <p class="muted"><a href="/u/@who">@who's profile</a></p>
+        }
+        else
+        {
+            <p class="muted">What people on this Ludex wrote about their games.</p>
+        }
+    </div>
+    <nav class="tabs-mini" aria-label="Order">
+        @foreach (var (sort, name) in sorts)
+        {
+            <a href="@Model.Link(sort)" aria-current="@(reviews.Sort == sort ? "page" : null)">@name</a>
+        }
+    </nav>
+</div>
+
+@if (reviews.Reviews.Count == 0)
+{
+    <section class="empty rise d1">
+        <span class="empty-ico">@Icons.Get("chat")</span>
+        <h2>No reviews here yet</h2>
+        <p>Log a game and write what you thought; it shows up here for everyone.</p>
+    </section>
+}
+else
+{
+    <div class="rv-grid wide rise d1">
+        @foreach (var review in reviews.Reviews)
+        {
+            <partial name="_ReviewCard" model="new ReviewCardView(review, ShowGame: Model.GameId is null)" />
+        }
+    </div>
+    <nav class="pager rise d2" aria-label="Pages">
+        @if (Model.PageNumber > 0)
+        {
+            <a class="btn ghost small" href="@Model.Link(reviews.Sort, Model.PageNumber - 1)">@Icons.Get("left")Newer</a>
+        }
+        @if (reviews.More)
+        {
+            <a class="btn ghost small" href="@Model.Link(reviews.Sort, Model.PageNumber + 1)">More @Icons.Get("right")</a>
+        }
+    </nav>
+}

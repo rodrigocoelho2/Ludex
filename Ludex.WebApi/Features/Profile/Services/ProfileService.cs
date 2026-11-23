@@ -50,6 +50,11 @@ internal interface IProfileService
     /// <returns>The theme now.</returns>
     Task<ServiceApiResponse<ProfileAccentRequest>> SetAccentAsync(ProfileAccentRequest item);
 
+    /// <summary>Sets the four favourite games at the top of the profile.</summary>
+    /// <param name="item">The account and the games, in order.</param>
+    /// <returns>The games saved (games not in the library are left out).</returns>
+    Task<ServiceApiResponse<ProfileFavoritesRequest>> SetFavoritesAsync(ProfileFavoritesRequest item);
+
     /// <summary>Sets the photo, or removes it.</summary>
     /// <param name="item">The account and the image.</param>
     /// <returns>The new version (no data), or validation problems.</returns>
@@ -329,6 +334,20 @@ internal sealed class ProfileService(
         return (best, false);
     }
 
+    /// <inheritdoc />
+    public async Task<ServiceApiResponse<ProfileFavoritesRequest>> SetFavoritesAsync(ProfileFavoritesRequest item)
+    {
+        if (!Guid.TryParse(item.UserId, out var user))
+        {
+            return ServiceApiResponse<ProfileFavoritesRequest>.NotFound(await globalizationHelper.TranslateAsync(nameof(TranslationKeys.NoRecordsFound), item.UserId ?? string.Empty));
+        }
+
+        var library = (await libraryRepository.CopiesAsync(user)).Select(static c => c.GameID).ToHashSet();
+        var value = ProfileStats.FavoritesValue(item.GameIds ?? [], library);
+        await profileRepository.SetFavoritesAsync(user, value);
+        return ServiceApiResponse<ProfileFavoritesRequest>.Success(new ProfileFavoritesRequest { UserId = item.UserId, GameIds = ProfileStats.FavoriteIds(value) });
+    }
+
     private async Task<ProfileDTO?> PageAsync(Guid viewer, Guid target)
     {
         var profile = await profileRepository.GetAsync(target);
@@ -377,6 +396,7 @@ internal sealed class ProfileService(
             Showcases = ProfileRules.Showcases(profile.Showcases?.Split(',')),
             LibraryVisibility = visibility,
             ShowPlaying = profile.ShowPlaying != false,
+            IsDemo = profile.IsDemo,
         };
         page.Title = profile.Title is { } titleId ? page.Badges.FirstOrDefault(b => b.Earned && b.Id == titleId) : null;
 
@@ -452,6 +472,13 @@ internal sealed class ProfileService(
         }
         page.Favorite = favorite is null ? null : LibraryRules.Entry(favorite);
         page.FavoriteChosen = chosen;
+        page.Favorites = [.. ProfileStats.FavoriteIds(profile.Favorites)
+            .Select(id => rows.FirstOrDefault(r => r.GameID == id))
+            .OfType<LibraryRow>()
+            .Select(static r => GameMapper.Summary(r, null))];
+        page.RatingCounts = ProfileStats.RatingCounts(rows);
+        page.FinishedByYear = ProfileStats.FinishedByYear(rows);
+        page.TopGenres = ProfileStats.TopGenres(rows);
         page.TopRated = [.. rows
             .Where(static r => r.Rating is not null && r.Status != (byte)GameStatus.Wishlist)
             .OrderByDescending(static r => r.Rating)

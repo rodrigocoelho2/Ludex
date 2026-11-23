@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ludex — Journal</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&amp;family=Barlow+Condensed:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0F1923}
+a{color:#8AD6F9;text-decoration:none}a:hover{color:#B5E6FB}
+</style>
+</helmet>
+<div style="min-height: 100%; background: linear-gradient(180deg, #132030 0%, #0F1923 520px); color: #E6EDF3; font-family: Barlow, system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+
+  <header style="background: #0A0F15; border-bottom: 1px solid rgba(255,255,255,.07)">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 32px; padding: 0 32px 0 24px; min-height: 64px">
+      <a href="Main.dc.html" style="display: inline-flex; align-items: center; gap: 10px; color: #E6EDF3; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px; letter-spacing: .06em">
+        <span aria-hidden="true" style="display: grid; grid-template-columns: repeat(2, 11px); gap: 2px"><span style="width: 11px; height: 11px; background: #4FC3F7"></span><span style="width: 11px; height: 11px; background: #E6EDF3"></span><span style="width: 11px; height: 11px; background: #E6EDF3"></span><span style="width: 11px; height: 11px; background: #7D8FA5"></span></span>LUDEX</a>
+      <nav aria-label="Main" style="display: flex; flex-wrap: wrap; gap: 26px; font-weight: 600; font-size: 15px">
+        <a href="Main.dc.html" style="color: #9FB0C3; padding: 20px 0">Home</a>
+        <a href="#" style="color: #9FB0C3; padding: 20px 0">Library</a>
+        <a href="#" style="color: #9FB0C3; padding: 20px 0">Discover</a>
+        <a href="Lists.dc.html" style="color: #9FB0C3; padding: 20px 0">Lists</a>
+        <a href="Journal.dc.html" aria-current="page" style="color: #E6EDF3; padding: 20px 0 18px; border-bottom: 2px solid #4FC3F7">Journal</a>
+        <a href="#" style="color: #9FB0C3; padding: 20px 0">Friends</a>
+      </nav>
+      <div style="flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 12px">
+        <a href="LogGame.dc.html" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; background: #4FC3F7; color: #0B1218; border-radius: 4px; font-weight: 700; font-size: 15px">
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"></path></svg>Log a session</a>
+        <a href="Profile.dc.html" aria-label="Your profile" style="width: 36px; height: 36px; border-radius: 4px; display: grid; place-items: center; background: linear-gradient(135deg, #2D6A5A, #1E4A41); border: 2px solid #4FC3F7; color: #E6EDF3; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px">RO</a>
+      </div>
+    </div>
+  </header>
+
+  <main style="max-width: 1360px; margin: 0 auto; padding: 36px 32px 72px; display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+      <div>
+        <h1 style="margin: 0; font-size: 44px; line-height: 1; font-weight: 700">Journal</h1>
+        <p style="margin: 6px 0 0; color: #C3D0DD">Every session you log, by day. November: <strong style="color: #E6EDF3">32 h 35</strong> across <strong style="color: #E6EDF3">19 sessions</strong> and <strong style="color: #E6EDF3">5 games</strong>.</p>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center">
+        <button type="button" aria-label="Previous month" style="width: 40px; height: 40px; border-radius: 4px; background: none; border: 1px solid rgba(255,255,255,.16); color: #E6EDF3; cursor: pointer; font-size: 18px">‹</button>
+        <span style="min-width: 150px; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 24px">November 2026</span>
+        <button type="button" aria-label="Next month" style="width: 40px; height: 40px; border-radius: 4px; background: none; border: 1px solid rgba(255,255,255,.16); color: #E6EDF3; cursor: pointer; font-size: 18px">›</button>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start">
+      <section aria-label="Calendar" style="flex: 999 1 640px; min-width: 0; background: rgba(20,30,43,.82); border: 1px solid rgba(255,255,255,.07); border-radius: 6px; padding: 18px">
+        <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-bottom: 6px; color: #9FB0C3; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase">
+          <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px">
+          <sc-for list="{{cells}}" as="c" hint-placeholder-count="42">
+            <button type="button" onClick="{{c.pick}}" aria-label="{{c.label}}" aria-pressed="{{c.pressed}}" style="{{c.style}}">
+              <span style="{{c.numStyle}}">{{c.num}}</span>
+              <span style="display: flex; gap: 3px; flex-wrap: wrap"><sc-for list="{{c.dots}}" as="d"><span style="{{d}}"></span></sc-for></span>
+              <span style="color: #9FB0C3; font-size: 12px">{{c.hours}}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="display: flex; gap: 18px; flex-wrap: wrap; margin-top: 14px; font-size: 13px; color: #C3D0DD">
+          <sc-for list="{{legend}}" as="l" hint-placeholder-count="5"><span style="display: inline-flex; align-items: center; gap: 6px"><span style="{{l.dot}}"></span>{{l.name}}</span></sc-for>
+        </div>
+      </section>
+
+      <section aria-labelledby="day-h" style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+        <h2 id="day-h" style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 700">{{dayTitle}}</h2>
+        <sc-if value="{{hasSessions}}" hint-placeholder-val="{{true}}">
+          <sc-for list="{{sessions}}" as="s" hint-placeholder-count="2">
+            <article style="display: flex; gap: 14px; padding: 14px; background: rgba(20,30,43,.85); border: 1px solid rgba(255,255,255,.07); border-radius: 6px">
+              <span style="{{s.cover}}"></span>
+              <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+                <div style="display: flex; justify-content: space-between; gap: 10px"><a href="Game.dc.html" style="color: #E6EDF3; font-weight: 700">{{s.game}}</a><span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 18px">{{s.time}}</span></div>
+                <span style="color: #9FB0C3; font-size: 13px">{{s.meta}}</span>
+                <p style="margin: 2px 0 0; color: #C3D0DD; font-size: 15px">{{s.note}}</p>
+              </div>
+            </article>
+          </sc-for>
+        </sc-if>
+        <sc-if value="{{noSessions}}" hint-placeholder-val="{{false}}">
+          <p style="margin: 0; padding: 18px; background: rgba(20,30,43,.6); border: 1px dashed rgba(255,255,255,.14); border-radius: 6px; color: #9FB0C3">No sessions on this day. <a href="LogGame.dc.html" style="font-weight: 600">Log one</a></p>
+        </sc-if>
+
+        <div style="margin-top: 8px; padding: 16px; background: rgba(20,30,43,.82); border: 1px solid rgba(255,255,255,.07); border-radius: 6px">
+          <h3 style="margin: 0 0 10px; font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700">This month by game</h3>
+          <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+            <sc-for list="{{byGame}}" as="g" hint-placeholder-count="5">
+              <li style="display: grid; grid-template-columns: 150px 1fr 54px; gap: 10px; align-items: center; font-size: 14px"><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #C3D0DD">{{g.name}}</span><span style="height: 10px; background: #0A1118; border-radius: 2px; overflow: hidden"><span style="{{g.bar}}"></span></span><span style="text-align: right; font-weight: 600">{{g.h}}</span></li>
+            </sc-for>
+          </ul>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1360}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { day: 23 }; }
+  renderVals() {
+    const GAMES = {
+      yotei: { name: 'Ghost of Yōtei', c: '#FF8A80', a: '#B23A3A', b: '#2A1214', h: 1250 },
+      hades: { name: 'Hades II', c: '#B39DFF', a: '#7A3B8F', b: '#1E1030', h: 395 },
+      silk: { name: 'Hollow Knight: Silksong', c: '#F5B841', a: '#9A3A4A', b: '#1A1620', h: 210 },
+      bal: { name: 'Balatro', c: '#7EE0A1', a: '#2F6B4A', b: '#10241A', h: 95 },
+      ff9: { name: 'Final Fantasy IX', c: '#4FC3F7', a: '#5A7FA8', b: '#1C2436', h: 5 },
+    };
+    const S = {
+      2: [['yotei', 120, 'PS5', 'Back after a week off. Cleared the first Yōtei Six outpost.']],
+      4: [['hades', 55, 'Switch 2 · train', 'Two short runs on the way to work.']],
+      6: [['yotei', 150, 'PS5', 'Spent most of it taking photos, honestly.']],
+      7: [['yotei', 180, 'PS5', 'The Snake. Brutal duel, took nine tries.'], ['bal', 40, 'PC', 'One more run turned into five.']],
+      9: [['hades', 70, 'Switch 2', 'Night run with the staff. Finally clicked.']],
+      11: [['yotei', 95, 'PS5', '']],
+      12: [['silk', 85, 'PC', 'Started Silksong. Hornet moves so fast.'], ['hades', 40, 'Switch 2', '']],
+      14: [['yotei', 210, 'PS5', 'Long Saturday session. Most of the north map done.']],
+      15: [['silk', 60, 'PC', 'Stuck on the first big boss.'], ['ff9', 5, 'PC', 'Added it to the Final Fantasy list; quick check of the save.']],
+      16: [['hades', 130, 'Switch 2', 'Beat Chronos.']],
+      18: [['hades', 100, 'Switch 2', 'Credits rolled. 100% on the last run. ★★★★½']],
+      19: [['yotei', 120, 'PS5', '']],
+      20: [['bal', 55, 'PC', 'Gold stake, finally.'], ['silk', 65, 'PC', '']],
+      21: [['yotei', 240, 'PS5', 'Last act. Not saying anything else.']],
+      23: [['yotei', 135, 'PS5', 'Finished it. Atsu deserved that ending.']],
+    };
+    const fmt = (m) => m >= 60 ? Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + String(m % 60).padStart(2, '0') : '') : m + ' min';
+    const dotStyle = (c) => 'display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: ' + c;
+    const day = this.state.day;
+    const cells = [];
+    for (let i = 0; i < 42; i++) {
+      const n = i - 5;
+      const inMonth = n >= 1 && n <= 30;
+      const ss = inMonth && S[n] ? S[n] : [];
+      const total = ss.reduce((t, s) => t + s[1], 0);
+      const on = n === day;
+      const today = n === 23;
+      cells.push({
+        num: inMonth ? String(n) : '', hours: total ? fmt(total) : '',
+        dots: ss.map((s) => dotStyle(GAMES[s[0]].c)),
+        label: inMonth ? n + ' November' + (total ? ', ' + fmt(total) + ' played' : ', no sessions') : 'Outside this month',
+        pressed: on ? 'true' : 'false',
+        pick: inMonth ? () => this.setState({ day: n }) : () => {},
+        numStyle: 'font-weight: 700; font-size: 15px; ' + (today ? 'color: #4FC3F7' : inMonth ? 'color: #E6EDF3' : 'color: transparent'),
+        style: 'display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 92px; padding: 8px 10px; text-align: left; border-radius: 4px; font: inherit; color: inherit; cursor: ' + (inMonth ? 'pointer' : 'default') + '; ' +
+          (!inMonth ? 'background: transparent; border: 1px solid transparent' : on ? 'background: rgba(79,195,247,.12); border: 1px solid #4FC3F7' : total ? 'background: #182433; border: 1px solid rgba(255,255,255,.08)' : 'background: #0F1822; border: 1px solid rgba(255,255,255,.05)'),
+      });
+    }
+    const ss = S[day] || [];
+    const sessions = ss.map(([g, m, meta, note]) => ({
+      game: GAMES[g].name, time: fmt(m), meta, note: note || 'No notes.',
+      cover: 'flex: none; width: 44px; height: 62px; border-radius: 3px; background: linear-gradient(160deg, ' + GAMES[g].a + ', ' + GAMES[g].b + ')',
+    }));
+    const names = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const wd = names[((day + 5) % 7) + 1];
+    const legend = Object.values(GAMES).map((g) => ({ name: g.name, dot: dotStyle(g.c) }));
+    const byGame = Object.values(GAMES).map((g) => ({ name: g.name, h: fmt(g.h), bar: 'display: block; height: 100%; width: ' + Math.max(2, Math.round(g.h / 1250 * 100)) + '%; background: ' + g.c }));
+    return { cells, sessions, hasSessions: sessions.length > 0, noSessions: sessions.length === 0,
+      dayTitle: wd + ', ' + day + ' November' + (day === 23 ? ' · today' : ''), legend, byGame };
+  }
+}
+</script>
+</body>
+</html>

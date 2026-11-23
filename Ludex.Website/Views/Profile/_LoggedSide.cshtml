@@ -1,0 +1,49 @@
+@model ProfilePageModel
+@* The Backloggd numbers of a profile, down the side: the spread of ratings, games finished per year, top genres. *@
+@{
+    var p = Model.Profile;
+    var counts = p.RatingCounts;
+    var rated = counts.Sum();
+    var max = Math.Max(1, counts.DefaultIfEmpty(0).Max());
+    var average = rated == 0 ? (decimal?)null : counts.Select(static (n, i) => (decimal)n * (i + 1)).Sum() / rated;
+    var topYear = Math.Max(1, p.FinishedByYear.Select(static y => y.Count).DefaultIfEmpty(0).Max());
+}
+@if (rated > 0)
+{
+    <section class="pf-card rise d1" aria-labelledby="pf-ratings-h">
+        <div class="pf-side-row"><h2 id="pf-ratings-h" class="pf-side-head">Ratings</h2><span class="muted">@Fmt.Count(rated) rated · avg <b class="gold">★ @Fmt.StarsValue(average)</b></span></div>
+        <div class="gc-hist small" role="img" aria-label="How @p.UserName rates games, from half a star to five stars">
+            <div class="gc-bars">
+                @for (var i = 0; i < counts.Count; i++)
+                {
+                    <span class="gc-bar" style="--h:@(counts[i] * 100 / max)%" title="@Fmt.StarsValue(i + 1) stars: @counts[i]"></span>
+                }
+            </div>
+            <div class="gc-axis" aria-hidden="true"><span>½★</span><span>★★★★★</span></div>
+        </div>
+    </section>
+}
+@if (p.FinishedByYear.Count > 0)
+{
+    <section class="pf-card rise d2" aria-labelledby="pf-years-h">
+        <h2 id="pf-years-h" class="pf-side-head">Finished per year</h2>
+        <ul class="pf-years">
+            @foreach (var y in p.FinishedByYear)
+            {
+                <li><span>@y.Year</span><span class="jr-bar"><i style="width:@(y.Count * 100 / topYear)%"></i></span><b class="num">@y.Count</b></li>
+            }
+        </ul>
+    </section>
+}
+@if (p.TopGenres.Count > 0)
+{
+    <section class="pf-card rise d2" aria-labelledby="pf-genres-h">
+        <h2 id="pf-genres-h" class="pf-side-head">Most played genres</h2>
+        <div class="pf-genres">
+            @foreach (var g in p.TopGenres)
+            {
+                <span class="tag">@g.Name <b>@g.Count</b></span>
+            }
+        </div>
+    </section>
+}

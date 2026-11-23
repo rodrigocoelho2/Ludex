@@ -1,0 +1,50 @@
+@model ProfilePageModel
+@* The Backloggd part of a profile, at the top of the main column: the four favourite games. *@
+@{
+    var p = Model.Profile;
+}
+@if (p.Favorites.Count > 0 || p.IsMe)
+{
+    <section class="pf-card pf-favs rise d1" aria-labelledby="favs-h">
+        <header class="pf-card-head">
+            <h2 id="favs-h">Favourite games</h2>
+            @if (p.IsMe) { <button type="button" class="link-btn" data-favs-edit>Edit</button> }
+        </header>
+        @if (p.Favorites.Count == 0)
+        {
+            <p class="muted small-empty">Pick the four games that say the most about you.</p>
+        }
+        else
+        {
+            <div class="pf-fav4">
+                @foreach (var game in p.Favorites)
+                {
+                    <a class="pf-fav4-item" href="/games/@game.Id" title="@game.Name"><partial name="_Cover" model="new CoverView(game, Model.Transition(game.Id))" /></a>
+                }
+                @for (var i = p.Favorites.Count; i < 4; i++)
+                {
+                    <span class="pf-fav4-item empty" aria-hidden="true"></span>
+                }
+            </div>
+        }
+        @if (p.IsMe)
+        {
+            <form class="pf-favs-form" method="post" action="/profile/favorites" data-favs-form hidden="@(p.Favorites.Count == 0 ? null : "hidden")">
+                @Html.AntiForgeryToken()
+                @for (var i = 0; i < 4; i++)
+                {
+                    var chosen = i < p.Favorites.Count ? p.Favorites[i].Id : (int?)null;
+                    <label class="sr-only" for="fav-@i">Favourite @(i + 1)</label>
+                    <select id="fav-@i" name="games">
+                        <option value="">— Favourite @(i + 1) —</option>
+                        @foreach (var entry in p.FavoriteChoices)
+                        {
+                            <option value="@entry.Game.Id" selected="@(chosen == entry.Game.Id ? "selected" : null)">@entry.Game.Name</option>
+                        }
+                    </select>
+                }
+                <button type="submit" class="btn small">@Icons.Get("check")Save favourites</button>
+            </form>
+        }
+    </section>
+}

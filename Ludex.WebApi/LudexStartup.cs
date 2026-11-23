@@ -7,6 +7,17 @@ using Ludex.WebApi.Features;
 using Ludex.WebApi.Features.Catalog;
 using Ludex.WebApi.Features.Collections.Repositories;
 using Ludex.WebApi.Features.Collections.Services;
+using Ludex.WebApi.Features.Community.Repositories;
+using Ludex.WebApi.Features.Community.Services;
+using Ludex.WebApi.Features.Demo.Repositories;
+using Ludex.WebApi.Features.Demo.Services;
+using Ludex.WebApi.Features.Journal.Repositories;
+using Ludex.WebApi.Features.Journal.Services;
+using Ludex.WebApi.Features.Lists.Repositories;
+using Ludex.WebApi.Features.Lists.Services;
+using Ludex.WebApi.Features.Log.Services;
+using Ludex.WebApi.Features.Reviews.Repositories;
+using Ludex.WebApi.Features.Reviews.Services;
 using Ludex.WebApi.Features.Friends.Repositories;
 using Ludex.WebApi.Features.Friends.Services;
 using Ludex.WebApi.Features.Games.Repositories;
@@ -54,6 +65,7 @@ internal static class LudexStartup
                 static o => string.IsNullOrWhiteSpace(o.IgdbClientId) == string.IsNullOrWhiteSpace(o.IgdbClientSecret),
                 "Set both IGDB_CLIENT_ID and IGDB_CLIENT_SECRET (a Twitch application), or neither.")
             .ValidateOnStart();
+        services.AddOptions<SeedOptions>().Bind(configuration.GetSection(SeedOptions.SectionName));
 
         services.AddControllers()
             .ConfigureApplicationPartManager(manager => manager.FeatureProviders.Add(new InternalControllerFeatureProvider()))
@@ -125,6 +137,11 @@ internal static class LudexStartup
         services.AddSingleton<INotificationRepository, NotificationRepository>();
         services.AddSingleton<IPriceRepository, PriceRepository>();
         services.AddSingleton<IPsnRepository, PsnRepository>();
+        services.AddSingleton<IReviewRepository, ReviewRepository>();
+        services.AddSingleton<IListRepository, ListRepository>();
+        services.AddSingleton<IJournalRepository, JournalRepository>();
+        services.AddSingleton<ICommunityRepository, CommunityRepository>();
+        services.AddSingleton<IDemoRepository, DemoRepository>();
 
         // Services
         services.AddSingleton<GameStore>();
@@ -144,9 +161,18 @@ internal static class LudexStartup
         services.AddSingleton<PsnClient>();
         services.AddSingleton<PsnTokenProtector>();
         services.AddSingleton<IPsnService, PsnService>();
+        services.AddSingleton<IReviewService, ReviewService>();
+        services.AddSingleton<IListService, ListService>();
+        services.AddSingleton<IJournalService, JournalService>();
+        services.AddSingleton<ICommunityService, CommunityService>();
+        services.AddSingleton<ILogService, LogService>();
+        services.AddSingleton<DemoSeeder>();
 
         // What Ludex does on its own: catalog refresh, the daily Steam and PlayStation syncs, wishlist prices.
         services.AddHostedService<LudexJobs>();
+
+        // The demo accounts with their reviews, when Seed:DemoReviews is on (Seed__DemoReviews=true).
+        services.AddHostedService<DemoSeedJob>();
 
         return services;
     }

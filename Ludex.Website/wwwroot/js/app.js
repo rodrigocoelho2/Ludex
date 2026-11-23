@@ -510,7 +510,7 @@
                     + `<div class="pop-body"><b class="pop-name">${esc(d.title)}</b>${sub ? `<small class="pop-sub">${esc(sub)}</small>` : ''}`
                     + `<dl class="pop-facts"><div><dt>Played</dt><dd>${hours ? hoursText(hours) : '—'}</dd></div>`
                     + `<div><dt>Last 2 weeks</dt><dd>${recent ? hoursText(recent) : '—'}</dd></div>`
-                    + `<div><dt>Your rating</dt><dd class="gold">${rating || '—'}</dd></div>`
+                    + `<div><dt>Your rating</dt><dd class="gold">${rating ? (rating / 2) + '★' : '—'}</dd></div>`
                     + `<div><dt>Critics</dt><dd>${critic || '—'}</dd></div></dl>`
                     + (ach >= 0 ? `<div class="pop-ach"><span>Achievements</span><b>${esc(d.achText)}</b><span class="lib-ach"><i style="width:${ach}%"></i></span></div>` : '')
                     + `<small class="pop-foot">${esc(statusWords[d.status] || d.status)}${when ? ` · last activity ${when.toLocaleDateString('en-IE', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}${ttb ? ` · ${hoursText(ttb)} to beat` : ''}</small>`
@@ -688,7 +688,7 @@
                 b.classList.toggle('on', rating !== null && n <= rating);
                 b.setAttribute('aria-pressed', n === rating ? 'true' : 'false');
             });
-            if (ratingValue) ratingValue.textContent = rating ?? '—';
+            if (ratingValue) ratingValue.textContent = rating ? String(rating / 2) : '—';
             if (clearRating) clearRating.hidden = rating === null;
         };
         paint();
@@ -755,7 +755,7 @@
         }));
         rateButtons.forEach(b => b.addEventListener('click', () => {
             const before = snapshot();
-            rating = Number(b.dataset.setRating); paint(); save(`Rated ${rating}/10`, before);
+            rating = Number(b.dataset.setRating); paint(); save(`Rated ${rating / 2}★`, before);
         }));
         clearRating?.addEventListener('click', () => { const before = snapshot(); rating = null; paint(); save('Rating cleared', before); });
         form.addEventListener('submit', e => { e.preventDefault(); save('Saved'); });
@@ -1254,6 +1254,9 @@
         const message = e.target.dataset && e.target.dataset.confirm;
         if (message && !confirm(message)) e.preventDefault();
     });
+
+    /* ---------- What social.js (reviews, lists, the journal, Log a game) shares with this file ---------- */
+    window.ludex = { post, toast, sharpen, esc, token };
 
     /* ---------- Installable as an app ---------- */
     if ('serviceWorker' in navigator && location.protocol === 'https:') {

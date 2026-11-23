@@ -33,6 +33,11 @@
                     </div>
                 </div>
             </section>
+            @if (Model.Community is { } community)
+            {
+                <partial name="_CommunityTop" model="community" />
+                <partial name="_CommunityBottom" model="community" />
+            }
         </div>
     }
     else
@@ -81,7 +86,7 @@
                                     }
                                     else if (hero.Rating is { } rated)
                                     {
-                                        <text> · rated <b>@rated/10</b></text>
+                                        <text> · rated <b class="gold">@Fmt.Stars(rated)</b></text>
                                     }
                                 </span>
                                 @if (heroAchievements is { } percent)
@@ -102,6 +107,11 @@
                 <b>@Model.BacklogCount</b> waiting in your backlog ·
                 <b>@Fmt.Count(stats.TotalHours)</b> hours played
             </p>
+
+            @if (Model.Community is { } community)
+            {
+                <partial name="_CommunityTop" model="community" />
+            }
 
             @if (recent.Count > 0)
             {
@@ -181,6 +191,11 @@
                         </div>
                     }
                 </section>
+            }
+
+            @if (Model.Community is { } later)
+            {
+                <partial name="_CommunityBottom" model="later" />
             }
         </div>
     }

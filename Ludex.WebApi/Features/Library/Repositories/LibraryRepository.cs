@@ -14,6 +14,15 @@ internal interface ILibraryRepository
     /// <returns>The entries.</returns>
     Task<List<LibraryRow>> ListAsync(Guid userId);
 
+    /// <summary>Saves the log details of one entry: how it ended, and the days it was started and finished.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="entryId">The entry.</param>
+    /// <param name="ending">How it ended (null: not said).</param>
+    /// <param name="startedOn">The day it was started.</param>
+    /// <param name="finishedOn">The day it was finished.</param>
+    /// <returns>A task.</returns>
+    Task SaveLogAsync(Guid userId, long entryId, byte? ending, DateOnly? startedOn, DateOnly? finishedOn);
+
     /// <summary>One entry of a game in a library.</summary>
     /// <param name="userId">The account.</param>
     /// <param name="gameId">The game.</param>
@@ -151,6 +160,17 @@ public sealed class LibraryImportCounts
 /// <param name="connectionFactory">Opens connections.</param>
 internal sealed class LibraryRepository(ISqlConnectionFactory connectionFactory) : RepositoryBase(connectionFactory), ILibraryRepository
 {
+    /// <inheritdoc />
+    public Task SaveLogAsync(Guid userId, long entryId, byte? ending, DateOnly? startedOn, DateOnly? finishedOn) =>
+        ExecuteAsync("[dbo].[LibraryLogSave]", new
+        {
+            UserUniqueID = userId,
+            EntryID = entryId,
+            Ending = ending,
+            StartedOn = startedOn is { } started ? Date(started) : (DateTime?)null,
+            FinishedOn = finishedOn is { } finished ? Date(finished) : (DateTime?)null,
+        });
+
     /// <inheritdoc />
     public Task<List<LibraryRow>> ListAsync(Guid userId) => QueryAsync<LibraryRow>("[dbo].[LibraryList]", new { UserUniqueID = userId });
 

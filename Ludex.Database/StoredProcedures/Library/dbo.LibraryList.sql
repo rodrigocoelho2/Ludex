@@ -13,6 +13,7 @@ BEGIN
     DECLARE @UserID BIGINT = (SELECT [UserID] FROM [dbo].[User] WHERE [UserUniqueID] = @UserUniqueID);
 
     SELECT e.[EntryID], e.[Status], e.[Rating], e.[Hours], e.[Platform], e.[Store], e.[Format], e.[Notes], e.[AddedAt], e.[UpdatedAt], e.[FinishedAt],
+           e.[Ending], e.[StartedOn], e.[FinishedOn],
            e.[SteamAppID], e.[RecentMinutes], e.[AchievementsUnlocked], e.[AchievementsTotal], e.[PriceTarget],
            gp.[Amount] AS [PriceAmount], gp.[Regular] AS [PriceRegular], gp.[Cut] AS [PriceCut], gp.[Currency] AS [PriceCurrency],
            gp.[Shop] AS [PriceShop], gp.[Url] AS [PriceUrl], gp.[Low] AS [PriceLow], gp.[CheckedAt] AS [PriceCheckedAt],

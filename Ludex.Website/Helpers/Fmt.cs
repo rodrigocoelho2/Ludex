@@ -29,15 +29,15 @@ public static class Fmt
     /// <returns>playing, finished, wishlist or dropped.</returns>
     public static string StatusCss(GameStatus status) => status.ToString().ToLowerInvariant();
 
-    /// <summary>A rating as the cards show it.</summary>
+    /// <summary>A rating as the cards show it: half stars (each point of the 1–10 rating is half a star).</summary>
     /// <param name="rating">The rating.</param>
-    /// <returns>"9", or "—" when there is none.</returns>
-    public static string Rating(int? rating) => rating?.ToString(English) ?? "—";
+    /// <returns>"★★★★½", or "—" when there is none.</returns>
+    public static string Rating(int? rating) => rating is >= 1 and <= 10 ? Stars(rating) : "—";
 
-    /// <summary>An average rating.</summary>
-    /// <param name="rating">The average.</param>
-    /// <returns>"8.4", or "—".</returns>
-    public static string Average(decimal? rating) => rating is { } value ? value.ToString("0.0", English) : "—";
+    /// <summary>An average rating, in stars.</summary>
+    /// <param name="rating">The average (1–10).</param>
+    /// <returns>"★ 4.2", or "—".</returns>
+    public static string Average(decimal? rating) => rating is { } value ? "★ " + (value / 2m).ToString("0.0", English) : "—";
 
     /// <summary>What an average rating from friends reads as, Steam style.</summary>
     /// <param name="rating">The average (1–10).</param>
@@ -157,6 +157,7 @@ public static class Fmt
         ActivityKind.Wishlisted => "wishlisted",
         ActivityKind.Dropped => "dropped",
         ActivityKind.Played => "played",
+        ActivityKind.Reviewed => "reviewed",
         _ => "played",
     };
 
@@ -199,4 +200,78 @@ public static class Fmt
 
         return palette[(int)((uint)hash % (uint)palette.Length)];
     }
+
+    /// <summary>A 1–10 rating as stars ("★★★★½").</summary>
+    /// <param name="rating">The rating.</param>
+    /// <returns>The stars, or empty for none.</returns>
+    public static string Stars(int? rating) => rating is >= 1 and <= 10 ? new string('★', rating.Value / 2) + (rating.Value % 2 == 1 ? "½" : string.Empty) : string.Empty;
+
+    /// <summary>A 1–10 rating as a number of stars ("4.5").</summary>
+    /// <param name="rating">The rating.</param>
+    /// <returns>The number, or "—".</returns>
+    public static string StarsValue(decimal? rating) => rating is { } value ? (value / 2m).ToString("0.#", English) : "—";
+
+    /// <summary>A 1–10 rating for a screen reader ("4.5 out of 5 stars").</summary>
+    /// <param name="rating">The rating.</param>
+    /// <returns>The words.</returns>
+    public static string StarsLabel(int? rating) => rating is { } value ? $"{StarsValue(value)} out of 5 stars" : "Not rated";
+
+    /// <summary>How a game ended, in words.</summary>
+    /// <param name="ending">The ending.</param>
+    /// <returns>The words.</returns>
+    public static string Ending(GameEnding ending) => ending switch
+    {
+        GameEnding.Completed => "Completed",
+        GameEnding.Mastered => "Mastered (100%)",
+        GameEnding.Shelved => "Shelved for now",
+        GameEnding.Abandoned => "Abandoned",
+        _ => ending.ToString(),
+    };
+
+    /// <summary>How a review says the game was played ("Finished on PC · 100%").</summary>
+    /// <param name="status">The status.</param>
+    /// <param name="platform">The platform.</param>
+    /// <param name="ending">How it ended.</param>
+    /// <returns>The words, or empty.</returns>
+    public static string PlayedLine(GameStatus? status, string? platform, GameEnding? ending)
+    {
+        var line = status is { } s ? Status(s) + (platform is { Length: > 0 } p ? " on " + p : string.Empty) : platform ?? string.Empty;
+        return ending is GameEnding.Mastered ? line + " · 100%" : ending is GameEnding.Shelved ? line + " · shelved" : line;
+    }
+
+    /// <summary>Minutes as "1 h 40" or "55 min".</summary>
+    /// <param name="minutes">The minutes.</param>
+    /// <returns>The time.</returns>
+    public static string Minutes(int minutes) => minutes >= 60
+        ? (minutes / 60).ToString(English) + " h" + (minutes % 60 > 0 ? " " + (minutes % 60).ToString("00", English) : string.Empty)
+        : minutes.ToString(English) + " min";
+
+    /// <summary>A day as "18 Nov".</summary>
+    /// <param name="day">The day.</param>
+    /// <returns>The day.</returns>
+    public static string DayMonth(DateOnly day) => day.ToString("d MMM", English);
+
+    /// <summary>A day as "18 Nov 2026" (the year only when it isn't this one).</summary>
+    /// <param name="at">When.</param>
+    /// <returns>The day.</returns>
+    public static string Day(DateTimeOffset at)
+    {
+        var local = TimeZoneInfo.ConvertTime(at, Clock.Zone);
+        return local.ToString(local.Year == Clock.Now.Year ? "d MMM" : "d MMM yyyy", English);
+    }
+
+    /// <summary>Whether a status counts as played for a list's progress (finished, played or dropped).</summary>
+    /// <param name="status">The status.</param>
+    /// <returns>True when played.</returns>
+    public static bool IsPlayed(GameStatus? status) => status is GameStatus.Finished or GameStatus.Played or GameStatus.Dropped;
+
+    /// <summary>Who can see a list, in words.</summary>
+    /// <param name="visibility">The visibility.</param>
+    /// <returns>The words.</returns>
+    public static string Visibility(ListVisibility visibility) => visibility switch
+    {
+        ListVisibility.Friends => "Friends",
+        ListVisibility.Private => "Only you",
+        _ => "Public",
+    };
 }

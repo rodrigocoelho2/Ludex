@@ -87,6 +87,18 @@ internal sealed class IgdbCatalog(
     }
 
     /// <inheritdoc />
+    public async Task<List<CatalogGame>> UpcomingAsync(int take, CancellationToken cancellationToken = default)
+    {
+        // Games with a real release date still ahead, the most followed on IGDB first (hypes: follows before release).
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
+        var body = $"fields {SearchFields},hypes; "
+                   + $"where first_release_date > {now} & cover != null & version_parent = null & hypes > 3; "
+                   + $"sort hypes desc; limit {Math.Clamp(take, 1, 50)};";
+        var games = await QueryAsync<IgdbGame>("games", body, cancellationToken);
+        return [.. games.Select(Map)];
+    }
+
+    /// <inheritdoc />
     public async Task<Dictionary<int, CatalogGame>> SteamAsync(IReadOnlyCollection<int> appIds, CancellationToken cancellationToken = default)
     {
         // Steam app → IGDB game, through IGDB's external games (source 1 is Steam; the uid is the app id, as text).

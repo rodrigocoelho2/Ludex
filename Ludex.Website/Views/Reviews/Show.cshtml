@@ -1,0 +1,118 @@
+@model ReviewPageModel
+@{
+    Layout = "_App";
+    var page = Model.Page;
+    var r = page.Review;
+    var game = r.Game;
+    ViewData["Title"] = $"{r.AuthorName} on {game.Name}";
+    var othersLiked = r.Likes - page.LikedBy.Count;
+    var played = Fmt.PlayedLine(r.Status, r.Platform, r.Ending);
+}
+
+<div class="rvp" style="--tint:@game.Tint">
+    <article class="rvp-main rise">
+        <header class="rvp-head">
+            <a class="rvp-cover" href="/games/@game.Id" aria-label="@game.Name"><partial name="_Cover" model="new CoverView(game, Model.Transition(game.Id))" /></a>
+            <div class="rvp-title">
+                <div class="rv-who">
+                    <a class="rv-author" href="/u/@r.AuthorName">@Avatars.Get(r.AuthorId, r.AuthorName, r.AuthorAvatarVersion, "mini")<span>Review by <b>@r.AuthorName</b></span></a>
+                    @if (r.AuthorIsDemo) { <span class="demo-pill" title="A made-up account of the demo reviews">Demo</span> }
+                </div>
+                <h1><a href="/games/@game.Id">@game.Name</a> @if (game.Year is { } year) { <span class="muted">@year</span> }</h1>
+                <div class="rv-meta">
+                    @if (r.Rating is not null) { <partial name="_Stars" model="new StarsView(r.Rating, 24)" /> }
+                    @if (played.Length > 0) { <span class="rv-played">@if (r.Status is { } st) { <i class="dot-@Fmt.StatusCss(st)" aria-hidden="true"></i> }@played</span> }
+                </div>
+            </div>
+        </header>
+
+        @if (r.Spoilers)
+        {
+            <div class="rv-spoiler" data-spoiler>
+                <p>@Icons.Get("eye")This review talks about things you may not want to know yet.</p>
+                <button type="button" class="btn soft small" data-spoiler-show>Show it anyway</button>
+            </div>
+        }
+        <div class="rvp-text" hidden="@(r.Spoilers ? "hidden" : null)" data-spoiler-text>
+            @foreach (var paragraph in r.Text.Split("\n\n", StringSplitOptions.RemoveEmptyEntries))
+            {
+                <p>@paragraph</p>
+            }
+        </div>
+
+        <div class="rvp-bar">
+            @if (r.IsMine)
+            {
+                <span class="rv-likes">@Icons.Get("heart")<span>@Fmt.Plural(r.Likes, "like", "likes")</span></span>
+                <button type="button" class="btn soft small" data-log-game="@game.Id">@Icons.Get("edit")Edit your review</button>
+            }
+            else
+            {
+                <button type="button" class="btn soft rv-like big" data-like-review="@r.Id" aria-pressed="@(r.LikedByMe ? "true" : "false")">@Icons.Get("heart")<span data-like-count>@r.Likes</span><span class="sr-only"> likes</span></button>
+            }
+            @if (page.LikedBy.Count > 0)
+            {
+                <span class="muted">Liked by <b class="soft">@string.Join(", ", page.LikedBy)</b>@(othersLiked > 0 ? $" and {Fmt.Plural(othersLiked, "other", "others")}" : string.Empty)</span>
+            }
+            <span class="shelf-push"></span>
+            <span class="muted">@(r.UpdatedAt > r.CreatedAt.AddMinutes(5) ? $"Written {Fmt.Day(r.CreatedAt)} · changed {Fmt.Day(r.UpdatedAt)}" : $"Written {Fmt.Day(r.CreatedAt)}")</span>
+        </div>
+
+        <section class="rvp-comments" id="comments" aria-labelledby="comments-h">
+            <h2 id="comments-h" class="g-h">@Fmt.Plural(page.Comments.Count, "comment", "comments")</h2>
+            <form class="rvp-write" method="post" action="/reviews/@r.Id/comment">
+                @Html.AntiForgeryToken()
+                @Avatars.Get(Model.MyId, Model.UserName, Model.MyAvatarVersion, "mini")
+                <label class="sr-only" for="comment-text">Write a comment</label>
+                <textarea id="comment-text" name="text" rows="2" maxlength="1000" required placeholder="Write a comment…"></textarea>
+                <button type="submit" class="btn small">Post</button>
+            </form>
+            <ol class="rvp-list">
+                @foreach (var c in page.Comments)
+                {
+                    <li class="rvp-comment">
+                        <a href="/u/@c.UserName">@Avatars.Get(c.UserId, c.UserName, c.AvatarVersion, "mini")</a>
+                        <div>
+                            <div class="rv-who"><a class="rv-author" href="/u/@c.UserName"><b>@c.UserName</b></a>@if (c.IsDemo) { <span class="demo-pill">Demo</span> }<span class="rv-date">@Fmt.Ago(c.At)</span></div>
+                            <p>@c.Text</p>
+                            @if (c.CanDelete)
+                            {
+                                <form method="post" action="/reviews/@r.Id/comment/delete">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="comment" value="@c.Id" />
+                                    <button type="submit" class="link-btn danger">Delete</button>
+                                </form>
+                            }
+                        </div>
+                    </li>
+                }
+            </ol>
+        </section>
+    </article>
+
+    <aside class="rvp-side rise d1">
+        <section class="side-card">
+            <span class="label">@game.Name on Ludex</span>
+            <span><b class="num gold big-num">★ @Fmt.StarsValue(page.GameAverageRating)</b> <span class="muted">from @Fmt.Plural(page.GameRatingCount, "rating", "ratings")</span></span>
+            <a href="/games/@game.Id#reviews">The game and its reviews @Icons.Get("right")</a>
+        </section>
+        @if (page.MoreByAuthor.Count > 0)
+        {
+            <section class="side-card">
+                <h2 class="side-head">More from @r.AuthorName</h2>
+                <ul class="rvp-more">
+                    @foreach (var other in page.MoreByAuthor)
+                    {
+                        <li>
+                            <a href="/reviews/@other.Id">
+                                <span class="feed-thumb tall" style="--tint:@other.Game.Tint">@if (other.Game.CoverImageId is { } cover) { <img src="@Igdb.Url(cover, Igdb.CoverSmall)" alt="" loading="lazy" decoding="async" /> }</span>
+                                <span><b>@other.Game.Name</b><small><span class="gold">@Fmt.Stars(other.Rating)</span> · ♥ @other.Likes</small></span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+                <a href="/reviews?user=@Uri.EscapeDataString(r.AuthorName)&sort=recent">Every review by @r.AuthorName</a>
+            </section>
+        }
+    </aside>
+</div>

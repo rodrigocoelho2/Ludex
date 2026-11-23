@@ -155,6 +155,15 @@ public sealed class MyGameDTO
     /// <summary>Gets or sets when it was first finished.</summary>
     public DateTimeOffset? FinishedAt { get; set; }
 
+    /// <summary>Gets or sets how it ended (Log a game).</summary>
+    public GameEnding? Ending { get; set; }
+
+    /// <summary>Gets or sets the day the person says they started.</summary>
+    public DateOnly? StartedOn { get; set; }
+
+    /// <summary>Gets or sets the day the person says they finished.</summary>
+    public DateOnly? FinishedOn { get; set; }
+
     /// <summary>Gets or sets its Steam app (null: not from Steam).</summary>
     public int? SteamAppId { get; set; }
 

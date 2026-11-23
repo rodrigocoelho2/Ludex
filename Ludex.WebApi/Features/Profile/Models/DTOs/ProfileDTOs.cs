@@ -135,6 +135,21 @@ public sealed class ProfileDTO
 
     /// <summary>Gets or sets the account's collections to pin one from (own profile only).</summary>
     public List<ProfileCollectionDTO> CollectionChoices { get; set; } = [];
+
+    /// <summary>Gets or sets the four favourite games at the top of the profile, in order.</summary>
+    public List<GameSummaryDTO> Favorites { get; set; } = [];
+
+    /// <summary>Gets or sets how many games got each rating, from 1 (half a star) to 10 (five stars).</summary>
+    public List<int> RatingCounts { get; set; } = [];
+
+    /// <summary>Gets or sets how many games were finished each year, newest first.</summary>
+    public List<YearCountDTO> FinishedByYear { get; set; } = [];
+
+    /// <summary>Gets or sets the genres with most games.</summary>
+    public List<NameCountDTO> TopGenres { get; set; } = [];
+
+    /// <summary>Gets or sets a value indicating whether it is a made-up demo account.</summary>
+    public bool IsDemo { get; set; }
 }
 
 /// <summary>Who sees a library.</summary>
@@ -393,4 +408,34 @@ public sealed class ProfileUserRequest
 {
     /// <summary>Gets or sets the account.</summary>
     public string? UserId { get; set; }
+}
+
+/// <summary>A year and a number (games finished that year).</summary>
+public sealed class YearCountDTO
+{
+    /// <summary>Gets or sets the year.</summary>
+    public int Year { get; set; }
+
+    /// <summary>Gets or sets the number.</summary>
+    public int Count { get; set; }
+}
+
+/// <summary>A name and a number (games of a genre).</summary>
+public sealed class NameCountDTO
+{
+    /// <summary>Gets or sets the name.</summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the number.</summary>
+    public int Count { get; set; }
+}
+
+/// <summary>Sets the four favourite games at the top of a profile.</summary>
+public sealed class ProfileFavoritesRequest
+{
+    /// <summary>Gets or sets the account.</summary>
+    public string? UserId { get; set; }
+
+    /// <summary>Gets or sets the games, in order (at most four, from the library; none clears them).</summary>
+    public List<int> GameIds { get; set; } = [];
 }

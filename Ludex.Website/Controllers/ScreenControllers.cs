@@ -31,8 +31,17 @@ public sealed class HomeController(LudexClient apiClient) : WebsiteBaseControlle
         {
             var home = Api.LibraryHomeAsync(UserId);
             var library = Api.LibraryListAsync(UserId);
+            var community = Api.CommunityHomeAsync(UserId);
             page.Home = await home;
             page.Library = await library;
+            try
+            {
+                page.Community = await community;
+            }
+            catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
+            {
+                page.Community = null;   // home still shows without the community shelves
+            }
         });
     }
 }
@@ -130,14 +139,25 @@ public sealed class GameController(LudexClient apiClient) : WebsiteBaseControlle
     /// <summary>The game page.</summary>
     /// <param name="id">The game.</param>
     /// <param name="entry">Which of your copies (a game owned on two platforms has two; null: the first).</param>
+    /// <param name="reviews">How the reviews are ordered (popular, recent, friends, highest).</param>
     /// <returns>The view.</returns>
     [HttpGet("/games/{id:int}")]
-    public async Task<IActionResult> Index(int id, long? entry = null)
+    public async Task<IActionResult> Index(int id, long? entry = null, string? reviews = null)
     {
         try
         {
             var detail = await Api.GamesDetailAsync(UserId, id, entry);
-            var page = Shell(new GamePageModel { Detail = detail }, AppSection.Library);
+            var sort = Enum.TryParse<ReviewSort>(reviews, true, out var parsed) && Enum.IsDefined(parsed) ? parsed : ReviewSort.Popular;
+            var page = Shell(new GamePageModel { Detail = detail, ReviewSort = sort }, AppSection.Library);
+            try
+            {
+                page.Community = await Api.CommunityGameAsync(UserId, id, sort);
+            }
+            catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
+            {
+                page.Community = null;   // the page still works without what others think
+            }
+
             try
             {
                 // The library down the side, as on Steam (the page still works without it).
@@ -382,8 +402,42 @@ public sealed class SettingsController(LudexClient apiClient, IOptions<WebsiteOp
             if (p.IsAdmin)
             {
                 p.Users = await Api.UserListAsync();
+                try
+                {
+                    p.Demo = await Api.DemoStatusAsync();
+                }
+                catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
+                {
+                    p.Demo = null;
+                }
             }
         });
+    }
+
+    /// <summary>Adds the made-up demo accounts with their reviews (admin).</summary>
+    /// <returns>Back to Settings.</returns>
+    [HttpPost("/settings/demo/seed")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DemoSeed()
+    {
+        string? message = null;
+        var result = await FormAsync(async () => message = (await Api.DemoSeedAsync()).Message, null, "/settings#demo");
+        TempData["notice"] = message;
+        return result;
+    }
+
+    /// <summary>Removes the demo accounts and everything they wrote (admin).</summary>
+    /// <returns>Back to Settings.</returns>
+    [HttpPost("/settings/demo/remove")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DemoRemove()
+    {
+        string? message = null;
+        var result = await FormAsync(async () => message = (await Api.DemoRemoveAsync()).Message, null, "/settings#demo");
+        TempData["notice"] = message;
+        return result;
     }
 
     /// <summary>Sends the browser to Discord to link a Discord account to this account.</summary>

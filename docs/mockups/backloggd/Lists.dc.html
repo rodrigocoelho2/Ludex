@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ludex — Every Final Fantasy, ranked</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&amp;family=Barlow+Condensed:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0F1923}
+a{color:#8AD6F9;text-decoration:none}a:hover{color:#B5E6FB}
+</style>
+</helmet>
+<div style="min-height: 100%; background: radial-gradient(1000px 380px at 60% -5%, rgba(90,127,168,.3), transparent 70%), #0F1923; color: #E6EDF3; font-family: Barlow, system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+
+  <header style="background: #0A0F15; border-bottom: 1px solid rgba(255,255,255,.07)">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 32px; padding: 0 32px 0 24px; min-height: 64px">
+      <a href="Main.dc.html" style="display: inline-flex; align-items: center; gap: 10px; color: #E6EDF3; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 26px; letter-spacing: .06em">
+        <span aria-hidden="true" style="display: grid; grid-template-columns: repeat(2, 11px); gap: 2px"><span style="width: 11px; height: 11px; background: #4FC3F7"></span><span style="width: 11px; height: 11px; background: #E6EDF3"></span><span style="width: 11px; height: 11px; background: #E6EDF3"></span><span style="width: 11px; height: 11px; background: #7D8FA5"></span></span>LUDEX</a>
+      <nav aria-label="Main" style="display: flex; flex-wrap: wrap; gap: 26px; font-weight: 600; font-size: 15px">
+        <a href="Main.dc.html" style="color: #9FB0C3; padding: 20px 0">Home</a>
+        <a href="#" style="color: #9FB0C3; padding: 20px 0">Library</a>
+        <a href="#" style="color: #9FB0C3; padding: 20px 0">Discover</a>
+        <a href="Lists.dc.html" aria-current="page" style="color: #E6EDF3; padding: 20px 0 18px; border-bottom: 2px solid #4FC3F7">Lists</a>
+        <a href="Journal.dc.html" style="color: #9FB0C3; padding: 20px 0">Journal</a>
+        <a href="#" style="color: #9FB0C3; padding: 20px 0">Friends</a>
+      </nav>
+      <div style="flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 12px">
+        <a href="#" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; background: #4FC3F7; color: #0B1218; border-radius: 4px; font-weight: 700; font-size: 15px">
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"></path></svg>New list</a>
+        <a href="Profile.dc.html" aria-label="Your profile" style="width: 36px; height: 36px; border-radius: 4px; display: grid; place-items: center; background: linear-gradient(135deg, #2D6A5A, #1E4A41); border: 2px solid #4FC3F7; color: #E6EDF3; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px">RO</a>
+      </div>
+    </div>
+  </header>
+
+  <main style="max-width: 1360px; margin: 0 auto; padding: 40px 32px 72px; display: flex; flex-wrap: wrap; gap: 36px; align-items: flex-start">
+    <div style="flex: 999 1 680px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+          <span style="width: 30px; height: 30px; border-radius: 4px; display: grid; place-items: center; background: #8A5A2F; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 12px">RR</span>
+          <span style="color: #C3D0DD">List by <a href="Profile.dc.html" style="color: #E6EDF3; font-weight: 700">retro_raposo</a></span>
+          <span style="padding: 1px 6px; border-radius: 3px; background: rgba(79,195,247,.14); color: #8AD6F9; font-size: 11px; font-weight: 700; letter-spacing: .08em">DEMO</span>
+          <span style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 3px; border: 1px solid rgba(255,255,255,.16); color: #C3D0DD; font-size: 12px; font-weight: 600">
+            <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"></path></svg>Public · Ranked</span>
+        </div>
+        <h1 style="margin: 0; font-size: 52px; line-height: 1; font-weight: 700">Every Final Fantasy, ranked</h1>
+        <p style="margin: 0; color: #C3D0DD; max-width: 70ch">The mainline games only, from the one I would replay tomorrow to the one I finished out of stubbornness. Remakes count as their original entry.</p>
+        <div style="display: flex; align-items: center; gap: 18px; flex-wrap: wrap; color: #9FB0C3; font-size: 14px">
+          <span>16 games</span><span>Updated 15 Nov</span>
+          <button type="button" onClick="{{toggleLike}}" aria-pressed="{{likedText}}" style="{{likeStyle}}">♥ {{likes}}</button>
+          <span>12 comments</span>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 14px 16px; background: rgba(20,30,43,.85); border: 1px solid rgba(255,255,255,.08); border-radius: 6px">
+        <span style="font-weight: 700">You've played {{played}} of 16</span>
+        <span role="progressbar" aria-valuemin="0" aria-valuemax="16" aria-valuenow="{{played}}" aria-label="Games played from this list" style="flex: 1 1 240px; height: 10px; background: #0A1118; border-radius: 2px; overflow: hidden"><span style="{{progressBar}}"></span></span>
+        <span style="color: #9FB0C3; font-size: 14px">{{percent}}%</span>
+        <label style="display: flex; align-items: center; gap: 8px; color: #C3D0DD; font-size: 14px; cursor: pointer"><input type="checkbox" onChange="{{toggleHide}}" style="width: 16px; height: 16px; accent-color: #4FC3F7"> Hide played</label>
+        <div role="tablist" aria-label="View" style="display: flex; gap: 2px; padding: 3px; background: #0A1118; border-radius: 4px">
+          <button type="button" role="tab" aria-selected="true" style="border: 0; border-radius: 3px; padding: 5px 12px; background: #4FC3F7; color: #0B1218; font: inherit; font-weight: 600; font-size: 14px; cursor: pointer">Grid</button>
+          <button type="button" role="tab" aria-selected="false" style="border: 0; border-radius: 3px; padding: 5px 12px; background: none; color: #C3D0DD; font: inherit; font-weight: 600; font-size: 14px; cursor: pointer">Detailed</button>
+        </div>
+      </div>
+
+      <ol style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 22px 18px">
+        <sc-for list="{{games}}" as="g" hint-placeholder-count="16">
+          <li style="display: flex; flex-direction: column; gap: 8px">
+            <a href="Game.dc.html" style="{{g.cover}}">
+              <span style="{{g.rankStyle}}">{{g.rank}}</span>
+              <sc-if value="{{g.played}}" hint-placeholder-val="{{false}}">
+                <span aria-label="You played this" style="position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: #7EE0A1; color: #0B1218">
+                  <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m5 12 5 5 9-10"></path></svg></span>
+              </sc-if>
+              <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; line-height: 1; text-transform: uppercase">{{g.title}}</span>
+            </a>
+            <span style="display: flex; justify-content: space-between; gap: 6px; font-size: 13px"><span style="color: #C3D0DD">{{g.year}}</span><span style="color: #F5B841; font-weight: 700">{{g.mine}}</span></span>
+          </li>
+        </sc-for>
+      </ol>
+    </div>
+
+    <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+      <section aria-labelledby="yours-h" style="background: rgba(20,30,43,.82); border: 1px solid rgba(255,255,255,.07); border-radius: 6px; padding: 18px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><h2 id="yours-h" style="margin: 0 0 12px; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700">Your lists</h2><a href="#" style="font-size: 14px; font-weight: 600">All 9</a></div>
+        <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px">
+          <sc-for list="{{mine}}" as="l" hint-placeholder-count="3">
+            <li style="display: flex; gap: 12px; align-items: center">
+              <span style="display: flex; flex: none"><sc-for list="{{l.stack}}" as="c"><span style="{{c}}"></span></sc-for></span>
+              <span style="min-width: 0"><a href="Lists.dc.html" style="display: block; color: #E6EDF3; font-weight: 600; font-size: 15px">{{l.name}}</a><span style="color: #9FB0C3; font-size: 13px">{{l.meta}}</span></span>
+            </li>
+          </sc-for>
+        </ul>
+      </section>
+
+      <section aria-labelledby="pop-h" style="background: rgba(20,30,43,.82); border: 1px solid rgba(255,255,255,.07); border-radius: 6px; padding: 18px">
+        <h2 id="pop-h" style="margin: 0 0 12px; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700">Popular this week</h2>
+        <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px">
+          <sc-for list="{{popular}}" as="l" hint-placeholder-count="4">
+            <li style="display: flex; gap: 12px; align-items: center">
+              <span style="display: flex; flex: none"><sc-for list="{{l.stack}}" as="c"><span style="{{c}}"></span></sc-for></span>
+              <span style="min-width: 0"><a href="Lists.dc.html" style="display: block; color: #E6EDF3; font-weight: 600; font-size: 15px">{{l.name}}</a><span style="color: #9FB0C3; font-size: 13px">{{l.meta}}</span></span>
+            </li>
+          </sc-for>
+        </ul>
+      </section>
+
+      <section style="background: rgba(79,195,247,.06); border: 1px solid rgba(79,195,247,.25); border-radius: 6px; padding: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: #C3D0DD">
+        <strong style="color: #E6EDF3; font-size: 15px">New list options</strong>
+        <span>Ranked or unranked · Public, friends only or private · Notes per game · Drag to reorder · Add from any game page</span>
+      </section>
+    </aside>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { liked: true, hide: false }; }
+  renderVals() {
+    const FF = [
+      ['IX', '2000', '#5A7FA8', '#1C2436', '★★★★★'], ['VI', '1994', '#8A5A8F', '#1E1428', '★★★★½'], ['X', '2001', '#3E8FA8', '#10262E', '★★★★'],
+      ['VII', '1997', '#4A6A86', '#121C26', '★★★★½'], ['XIV', '2013', '#6A4E8F', '#1A1428', ''], ['XVI', '2023', '#B23A3A', '#2A1214', '★★★½'],
+      ['XII', '2006', '#B8935A', '#3B2A1C', ''], ['IV', '1991', '#3E5F8A', '#121A2A', '★★★★'], ['V', '1992', '#7A6A2F', '#201C10', ''],
+      ['VIII', '1999', '#2F6B6B', '#102424', '★★★'], ['XV', '2016', '#4A4A5A', '#14141C', ''], ['X-2', '2003', '#C8508A', '#2A1020', ''],
+      ['III', '1990', '#5E6A2F', '#1A1E10', ''], ['XIII', '2009', '#3A6A9A', '#101C2A', ''], ['I', '1987', '#7A2F45', '#200C14', ''], ['II', '1988', '#5A5A3A', '#1A1A10', ''],
+    ];
+    const hide = this.state.hide;
+    const games = FF.map(([n, year, a, b, mine], i) => ({ n, year, a, b, mine, rank: i + 1, played: !!mine }))
+      .filter((g) => !hide || !g.played)
+      .map((g) => ({
+        rank: String(g.rank), title: 'Final Fantasy ' + g.n, year: g.year, played: g.played, mine: g.mine ? 'You ' + g.mine : '',
+        cover: 'position: relative; display: flex; align-items: flex-end; padding: 12px; aspect-ratio: 264 / 374; border-radius: 4px; color: #fff; background: linear-gradient(160deg, ' + g.a + ', ' + g.b + '); box-shadow: 0 10px 24px rgba(0,0,0,.4); overflow: hidden; ' + (g.played ? 'outline: 2px solid rgba(126,224,161,.7); outline-offset: 2px' : ''),
+        rankStyle: 'position: absolute; top: 8px; left: 8px; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 4px; display: grid; place-items: center; background: rgba(10,15,21,.85); font-family: "Barlow Condensed", sans-serif; font-weight: 800; font-size: 17px; color: ' + (g.rank <= 3 ? '#F5B841' : '#E6EDF3'),
+      }));
+    const played = FF.filter((g) => g[4]).length;
+    const liked = this.state.liked;
+    const stack = (cs) => cs.map(([a, b], i) => 'display: block; width: 34px; height: 48px; border-radius: 3px; background: linear-gradient(160deg, ' + a + ', ' + b + '); box-shadow: 0 3px 8px rgba(0,0,0,.5); ' + (i ? 'margin-left: -18px' : ''));
+    const mine = [
+      ['Best of 2026 (so far)', 'Ranked · private · 14 games', [['#B23A3A', '#2A1214'], ['#7A3B8F', '#1E1030'], ['#9A3A4A', '#1A1620']]],
+      ['Play with Ines', 'Friends only · 8 games · 3 played', [['#3E8F5A', '#14301F'], ['#D9822B', '#1E2A44'], ['#2F6B4A', '#10241A']]],
+      ['Platinum hunt', 'Public · 22 games · 9 done', [['#4A6A86', '#121C26'], ['#C8303A', '#1A0C10'], ['#5A7FA8', '#1C2436']]],
+    ].map(([name, meta, cs]) => ({ name, meta, stack: stack(cs) }));
+    const popular = [
+      ['Short games, big hearts (under 6 h)', 'savefile_sofia · 21 games · ♥ 39', [['#D9822B', '#1E2A44'], ['#2F6B4A', '#10241A'], ['#C8508A', '#2A1020']]],
+      ['Cosy winter', 'noclip_nuno · 12 games · ♥ 27', [['#3E8FA8', '#10262E'], ['#B8935A', '#3B2A1C'], ['#5E6A2F', '#1A1E10']]],
+      ['Roguelikes worth 100 hours', 'lowfps_leo · 18 games · ♥ 24', [['#7A3B8F', '#1E1030'], ['#B23A3A', '#2A1214'], ['#2F6B4A', '#10241A']]],
+      ['Games that made me cry on a train', 'ctrlaltdel_ana · 9 games · ♥ 19', [['#5A7FA8', '#1C2436'], ['#B8935A', '#3B2A1C'], ['#8A5A8F', '#1E1428']]],
+    ].map(([name, meta, cs]) => ({ name, meta, stack: stack(cs) }));
+    return {
+      games, played, percent: Math.round(played / 16 * 100),
+      progressBar: 'display: block; height: 100%; width: ' + Math.round(played / 16 * 100) + '%; background: #7EE0A1',
+      likes: 48 + (liked ? 0 : -1), likedText: liked ? 'true' : 'false',
+      likeStyle: 'background: none; border: 1px solid ' + (liked ? 'rgba(244,114,182,.5)' : 'rgba(255,255,255,.16)') + '; border-radius: 4px; padding: 2px 10px; color: ' + (liked ? '#F9A8D4' : '#C3D0DD') + '; font: inherit; font-weight: 600; cursor: pointer',
+      toggleLike: () => this.setState({ liked: !liked }), toggleHide: () => this.setState({ hide: !hide }),
+      mine, popular,
+    };
+  }
+}
+</script>
+</body>
+</html>

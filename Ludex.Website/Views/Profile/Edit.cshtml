@@ -179,7 +179,7 @@
                             <option value="">Best rated (picked for you)</option>
                             @foreach (var entry in p.FavoriteChoices)
                             {
-                                <option value="@entry.Game.Id" selected="@(chosen == entry.Game.Id ? "selected" : null)">@entry.Game.Name@(entry.Rating is { } r ? $" · {r}/10" : string.Empty)</option>
+                                <option value="@entry.Game.Id" selected="@(chosen == entry.Game.Id ? "selected" : null)">@entry.Game.Name@(entry.Rating is { } r ? $" · {Fmt.Stars(r)}" : string.Empty)</option>
                             }
                         </select>
                     </label>

@@ -48,6 +48,13 @@ internal sealed class OfflineCatalog : IGameCatalog
         Task.FromResult(Games.Take(Math.Max(1, take)).ToList());
 
     /// <inheritdoc />
+    public Task<List<CatalogGame>> UpcomingAsync(int take, CancellationToken cancellationToken = default)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        return Task.FromResult(Games.Where(g => g.ReleaseDate > today).OrderBy(static g => g.ReleaseDate).Take(Math.Max(1, take)).ToList());
+    }
+
+    /// <inheritdoc />
     /// <remarks>The built-in list knows nothing about Steam: the import needs IGDB.</remarks>
     public Task<Dictionary<int, CatalogGame>> SteamAsync(IReadOnlyCollection<int> appIds, CancellationToken cancellationToken = default) =>
         Task.FromResult(new Dictionary<int, CatalogGame>());

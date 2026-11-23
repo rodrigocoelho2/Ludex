@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ludex — Log a game</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&amp;family=Barlow+Condensed:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0F1923}
+a{color:#8AD6F9;text-decoration:none}a:hover{color:#B5E6FB}
+</style>
+</helmet>
+<div style="min-height: 100%; position: relative; background: #0F1923; color: #E6EDF3; font-family: Barlow, system-ui, sans-serif; font-size: 16px; line-height: 1.5">
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: radial-gradient(900px 400px at 30% 10%, rgba(178,58,58,.25), transparent 70%), #0F1923"></div>
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(5,9,13,.72); backdrop-filter: blur(3px)"></div>
+
+  <div style="position: relative; display: flex; justify-content: center; padding: 56px 24px">
+    <section role="dialog" aria-modal="true" aria-labelledby="log-h" style="width: 100%; max-width: 880px; background: #141E2B; border: 1px solid rgba(255,255,255,.12); border-radius: 6px; box-shadow: 0 30px 80px rgba(0,0,0,.6); overflow: hidden">
+      <div style="display: flex; gap: 20px; align-items: center; padding: 20px 24px; background: linear-gradient(90deg, rgba(178,58,58,.3), transparent 70%); border-bottom: 1px solid rgba(255,255,255,.08)">
+        <span style="flex: none; width: 64px; height: 90px; border-radius: 4px; background: linear-gradient(160deg, #B23A3A, #2A1214); box-shadow: 0 8px 20px rgba(0,0,0,.4)"></span>
+        <div style="flex: 1; min-width: 0">
+          <div style="color: #9FB0C3; font-size: 14px">I played…</div>
+          <h1 id="log-h" style="margin: 0; font-size: 32px; line-height: 1.1; font-weight: 700">Ghost of Yōtei <span style="color: #9FB0C3; font-weight: 500; font-size: 22px">2025</span></h1>
+          <a href="#" style="font-size: 14px; font-weight: 600">Change game</a>
+        </div>
+        <a href="Main.dc.html" aria-label="Close" style="width: 40px; height: 40px; display: grid; place-items: center; border-radius: 4px; color: #C3D0DD; border: 1px solid rgba(255,255,255,.14)">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 6l12 12M18 6 6 18"></path></svg></a>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 24px 32px; padding: 24px">
+        <div style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+          <fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+            <legend style="padding: 0; margin-bottom: 8px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #9FB0C3">Status</legend>
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+              <sc-for list="{{statuses}}" as="s" hint-placeholder-count="6">
+                <button type="button" onClick="{{s.pick}}" aria-pressed="{{s.pressed}}" style="{{s.style}}"><span style="{{s.dot}}"></span>{{s.label}}</button>
+              </sc-for>
+            </div>
+          </fieldset>
+
+          <sc-if value="{{showEnded}}" hint-placeholder-val="{{true}}">
+            <fieldset style="border: 0; margin: 0; padding: 0">
+              <legend style="padding: 0; margin-bottom: 8px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #9FB0C3">How it ended</legend>
+              <div style="display: flex; flex-wrap: wrap; gap: 6px">
+                <sc-for list="{{endings}}" as="e" hint-placeholder-count="4">
+                  <button type="button" onClick="{{e.pick}}" aria-pressed="{{e.pressed}}" style="{{e.style}}">{{e.label}}</button>
+                </sc-for>
+              </div>
+            </fieldset>
+          </sc-if>
+
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+            <label style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1">
+              <span style="font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #9FB0C3">Platform</span>
+              <select style="height: 42px; padding: 0 10px; background: #0A1118; border: 1px solid rgba(255,255,255,.14); border-radius: 4px; color: #E6EDF3; font: inherit"><option>PS5</option><option>PS5 Pro</option><option>PC (Steam)</option></select>
+            </label>
+            <label style="display: flex; flex-direction: column; gap: 6px">
+              <span style="font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #9FB0C3">Started</span>
+              <input type="text" value="3 Oct 2026" style="height: 42px; padding: 0 12px; background: #0A1118; border: 1px solid rgba(255,255,255,.14); border-radius: 4px; color: #E6EDF3; font: inherit">
+            </label>
+            <label style="display: flex; flex-direction: column; gap: 6px">
+              <span style="font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #9FB0C3">Finished</span>
+              <input type="text" value="23 Nov 2026" style="height: 42px; padding: 0 12px; background: #0A1118; border: 1px solid rgba(255,255,255,.14); border-radius: 4px; color: #E6EDF3; font: inherit">
+            </label>
+            <label style="display: flex; flex-direction: column; gap: 6px">
+              <span style="font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #9FB0C3">Hours</span>
+              <input type="text" value="46" inputmode="decimal" style="height: 42px; padding: 0 12px; background: #0A1118; border: 1px solid rgba(255,255,255,.14); border-radius: 4px; color: #E6EDF3; font: inherit">
+            </label>
+            <label style="display: flex; align-items: center; gap: 10px; align-self: end; height: 42px; color: #C3D0DD; font-weight: 600; cursor: pointer">
+              <input type="checkbox" style="width: 18px; height: 18px; accent-color: #4FC3F7"> Replay
+            </label>
+          </div>
+        </div>
+
+        <div style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 18px">
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #9FB0C3">Rating</span>
+            <div style="display: flex; align-items: center; gap: 14px">
+              <div role="group" aria-label="Rating, in half stars" style="display: inline-flex; gap: 6px">
+                <sc-for list="{{rateStars}}" as="s" hint-placeholder-count="5">
+                  <span style="position: relative; display: inline-block; width: 40px; height: 40px">
+                    <span style="{{s.style}}"></span>
+                    <button type="button" aria-label="{{s.leftLabel}}" onClick="{{s.left}}" style="position: absolute; left: 0; top: 0; width: 50%; height: 100%; background: none; border: 0; padding: 0; cursor: pointer"></button>
+                    <button type="button" aria-label="{{s.rightLabel}}" onClick="{{s.right}}" style="position: absolute; right: 0; top: 0; width: 50%; height: 100%; background: none; border: 0; padding: 0; cursor: pointer"></button>
+                  </span>
+                </sc-for>
+              </div>
+              <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 28px; color: #F5B841">{{ratingText}}</span>
+              <button type="button" onClick="{{clearRating}}" style="margin-left: auto; background: none; border: 0; color: #9FB0C3; font: inherit; font-size: 14px; cursor: pointer">Clear</button>
+            </div>
+          </div>
+          <label style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #9FB0C3">Review</span>
+            <textarea rows="7" style="resize: vertical; padding: 12px; background: #0A1118; border: 1px solid rgba(255,255,255,.14); border-radius: 4px; color: #E6EDF3; font: inherit; font-size: 15px; line-height: 1.55">O vento como guia continua a ser a melhor bússola em jogos. Hokkaido é lindíssimo e a Atsu tem mais personalidade do que o Jin. Combate com várias armas muito melhor do que no primeiro.</textarea>
+          </label>
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <label style="display: flex; align-items: center; gap: 10px; color: #C3D0DD; cursor: pointer"><input type="checkbox" style="width: 18px; height: 18px; accent-color: #4FC3F7"> Contains spoilers</label>
+            <label style="display: flex; align-items: center; gap: 10px; color: #C3D0DD; cursor: pointer"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #4FC3F7"> Add today's session to my journal (2 h 15)</label>
+            <label style="display: flex; align-items: center; gap: 10px; color: #C3D0DD; cursor: pointer"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #4FC3F7"> Share with friends in the feed</label>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 12px; padding: 16px 24px; border-top: 1px solid rgba(255,255,255,.08); background: #0F1822">
+        <span style="color: #9FB0C3; font-size: 14px">Ratings are stored 1–10; each half star is one point.</span>
+        <a href="Main.dc.html" style="margin-left: auto; height: 42px; display: inline-flex; align-items: center; padding: 0 16px; border-radius: 4px; color: #E6EDF3; border: 1px solid rgba(255,255,255,.16); font-weight: 600">Cancel</a>
+        <a href="Game.dc.html" style="height: 42px; display: inline-flex; align-items: center; padding: 0 20px; border-radius: 4px; background: #4FC3F7; color: #0B1218; font-weight: 700">Save log</a>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { status: 'Finished', ending: 'Completed', rating: 9 }; }
+  renderVals() {
+    const STAR = 'display: inline-block; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);';
+    const rating = this.state.rating;
+    const rateStars = [0, 1, 2, 3, 4].map((i) => {
+      const v = rating - i * 2;
+      const bg = v >= 2 ? '#F5B841' : v === 1 ? 'linear-gradient(90deg, #F5B841 50%, #3A4A5E 50%)' : '#3A4A5E';
+      return { style: STAR + ' width: 40px; height: 40px; background: ' + bg,
+        left: () => this.setState({ rating: i * 2 + 1 }), right: () => this.setState({ rating: i * 2 + 2 }),
+        leftLabel: (i + 0.5) + ' stars', rightLabel: (i + 1) + (i === 0 ? ' star' : ' stars') };
+    });
+    const COLORS = { Playing: '#4FC3F7', Backlog: '#9FB0C3', Finished: '#7EE0A1', Played: '#B39DFF', Wishlist: '#F5B841', Dropped: '#FF8A80' };
+    const statuses = Object.keys(COLORS).map((label) => {
+      const on = this.state.status === label;
+      return { label, pressed: on ? 'true' : 'false', pick: () => this.setState({ status: label }),
+        dot: 'width: 8px; height: 8px; border-radius: 2px; background: ' + COLORS[label],
+        style: 'display: flex; align-items: center; justify-content: center; gap: 8px; height: 42px; border-radius: 4px; font: inherit; font-weight: 600; font-size: 15px; cursor: pointer; ' + (on ? 'background: rgba(79,195,247,.14); color: #E6EDF3; border: 1px solid #4FC3F7' : 'background: #0A1118; color: #C3D0DD; border: 1px solid rgba(255,255,255,.12)') };
+    });
+    const endings = ['Completed', 'Mastered (100%)', 'Shelved for now', 'Abandoned'].map((label) => {
+      const on = this.state.ending === label;
+      return { label, pressed: on ? 'true' : 'false', pick: () => this.setState({ ending: label }),
+        style: 'height: 36px; padding: 0 14px; border-radius: 18px; font: inherit; font-weight: 600; font-size: 14px; cursor: pointer; ' + (on ? 'background: #7EE0A1; color: #0B1218; border: 1px solid #7EE0A1' : 'background: none; color: #C3D0DD; border: 1px solid rgba(255,255,255,.16)') };
+    });
+    const st = this.state.status;
+    return { rateStars, statuses, endings, showEnded: st === 'Finished' || st === 'Played' || st === 'Dropped',
+      ratingText: rating ? (rating / 2) + ' / 5' : '—', clearRating: () => this.setState({ rating: 0 }) };
+  }
+}
+</script>
+</body>
+</html>

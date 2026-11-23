@@ -1,0 +1,144 @@
+@model GamePageModel
+@* What everyone on this Ludex thinks of the game, Backloggd-style: the spread of ratings, how many played it, your
+   review and everyone else's, and beside them your journal of it and the lists it's in. *@
+@{
+    var c = Model.Community!;
+    var game = Model.Detail.Game;
+    var mine = Model.Detail.Mine;
+    var max = Math.Max(1, c.Histogram.DefaultIfEmpty(0).Max());
+    var sorts = new[] { (ReviewSort.Popular, "Popular"), (ReviewSort.Recent, "Recent"), (ReviewSort.Friends, "Friends"), (ReviewSort.Highest, "Highest") };
+    var counts = new[] { ("Played", c.Played), ("Playing", c.Playing), ("Backlogs", c.Backlog), ("Wishlists", c.Wishlist) };
+}
+<section class="g-community rise d2" id="reviews" aria-label="Ratings and reviews">
+    <div class="gc-main">
+        <div class="gc-ratings">
+            <div class="gc-avg">
+                <h2 class="g-h">Ratings</h2>
+                <b class="num gold gc-avg-num">@(c.AverageRating is { } avg ? Fmt.StarsValue(avg) : "—")</b>
+                <span class="muted">@(c.RatingCount == 0 ? "Nobody here has rated it yet" : Fmt.Plural(c.RatingCount, "rating", "ratings") + " on this Ludex")</span>
+                @if (Model.Detail.FriendsAverageRating is { } friendsAvg)
+                {
+                    <span class="muted">Friends: ★ @Fmt.StarsValue(friendsAvg)</span>
+                }
+            </div>
+            <div class="gc-hist" role="img" aria-label="How many gave each rating, from half a star to five stars">
+                <div class="gc-bars">
+                    @for (var i = 0; i < c.Histogram.Count; i++)
+                    {
+                        var n = c.Histogram[i];
+                        <span class="gc-bar@(mine?.Rating == i + 1 ? " mine" : string.Empty)" style="--h:@(n * 100 / max)%" title="@Fmt.StarsValue(i + 1) stars: @n"></span>
+                    }
+                </div>
+                <div class="gc-axis" aria-hidden="true"><span>½★</span><span>★★★★★</span></div>
+            </div>
+            <dl class="gc-counts">
+                @foreach (var (name, count) in counts)
+                {
+                    <div><dt>@name</dt><dd class="num">@Fmt.Count(count)</dd></div>
+                }
+            </dl>
+        </div>
+
+        <div class="gc-reviews">
+            <div class="section-head">
+                <h2 class="g-h">Reviews</h2>
+                <nav class="tabs-mini" aria-label="Order of the reviews">
+                    @foreach (var (sort, name) in sorts)
+                    {
+                        <a href="/games/@game.Id?reviews=@sort.ToString().ToLowerInvariant()#reviews" aria-current="@(Model.ReviewSort == sort ? "page" : null)">@name</a>
+                    }
+                </nav>
+            </div>
+
+            @if (c.MyReview is { } myReview)
+            {
+                <partial name="_ReviewCard" model="new ReviewCardView(myReview, ShowGame: false)" />
+            }
+            else
+            {
+                <div class="gc-write">
+                    <p>@(mine is null ? "Played it? Log it and say what you thought." : "You haven't reviewed it yet.")</p>
+                    <button type="button" class="btn soft small" data-log-game="@game.Id" data-log-entry="@mine?.EntryId">@Icons.Get("edit")Write a review</button>
+                </div>
+            }
+
+            @if (c.Reviews.Reviews.Count == 0)
+            {
+                <p class="muted small-empty">@(Model.ReviewSort == ReviewSort.Friends ? "None of your friends reviewed it yet." : "No other reviews here yet.")</p>
+            }
+            else
+            {
+                <div class="gc-list">
+                    @foreach (var review in c.Reviews.Reviews)
+                    {
+                        <partial name="_ReviewCard" model="new ReviewCardView(review, ShowGame: false)" />
+                    }
+                </div>
+                @if (c.Reviews.More)
+                {
+                    <a class="more-link" href="/reviews?game=@game.Id&sort=@Model.ReviewSort.ToString().ToLowerInvariant()">All reviews of @game.Name @Icons.Get("right")</a>
+                }
+            }
+        </div>
+    </div>
+
+    <aside class="gc-side">
+        <section class="side-card">
+            <div class="side-row"><h2 class="side-head">Your journal</h2><a href="/journal">Open</a></div>
+            @if (c.MySessions.Count == 0)
+            {
+                <p class="muted small-empty">No sessions of it yet.</p>
+            }
+            else
+            {
+                <ul class="gc-sessions">
+                    @foreach (var s in c.MySessions)
+                    {
+                        <li><b>@Fmt.DayMonth(s.Day)</b> <span class="muted">@(s.Note ?? (s.Source == SessionSource.Sync ? "seen by the sync" : string.Empty))</span><span class="num">@Fmt.Minutes(s.Minutes)</span></li>
+                    }
+                </ul>
+                <p class="muted gc-total">@Fmt.Minutes(c.MyMinutes) in your journal</p>
+            }
+            <form class="gc-session" method="post" action="/journal/session">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="game" value="@game.Id" />
+                <input type="hidden" name="platform" value="@mine?.Platform" />
+                <input type="hidden" name="back" value="/games/@game.Id#reviews" />
+                <label class="inline-field"><input type="number" name="hours" min="0" max="24" step="1" placeholder="0" inputmode="numeric" aria-label="Hours played today" /><span>h</span></label>
+                <label class="inline-field"><input type="number" name="minutes" min="0" max="59" step="5" placeholder="0" inputmode="numeric" aria-label="Minutes played today" /><span>min</span></label>
+                <button type="submit" class="btn soft small">@Icons.Get("calendar")Log today</button>
+            </form>
+        </section>
+
+        <section class="side-card" data-lists data-game="@game.Id">
+            <h2 class="side-head">Your lists</h2>
+            <div class="g-col-chips">
+                @foreach (var l in c.MyLists.Where(static l => l.HasGame))
+                {
+                    <span class="col-chip"><a href="/lists/@l.Id">@l.Name</a><button type="button" aria-label="Take it out of @l.Name" data-list-out="@l.Id">@Icons.Get("x")</button></span>
+                }
+                <select class="col-add" data-list-add aria-label="Add to a list">
+                    <option value="">+ Add to a list…</option>
+                    @foreach (var l in c.MyLists.Where(static l => !l.HasGame))
+                    {
+                        <option value="@l.Id">@l.Name</option>
+                    }
+                    <option value="new">New list…</option>
+                </select>
+            </div>
+        </section>
+
+        @if (c.Lists.Count > 0)
+        {
+            <section class="side-card">
+                <h2 class="side-head">In lists</h2>
+                <div class="lc-col">
+                    @foreach (var list in c.Lists)
+                    {
+                        <partial name="_ListCard" model="list" />
+                    }
+                </div>
+            </section>
+        }
+    </aside>
+</section>

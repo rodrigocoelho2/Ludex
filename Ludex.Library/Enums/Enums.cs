@@ -61,6 +61,75 @@ public enum ActivityKind
 
     /// <summary>Marked as played (a game without an end).</summary>
     Played = 7,
+
+    /// <summary>Wrote a review.</summary>
+    Reviewed = 8,
+}
+
+/// <summary>
+/// How a game ended for someone (Log a game). Stored in the database: never renumber them.
+/// </summary>
+public enum GameEnding
+{
+    /// <summary>The main story, to the credits.</summary>
+    Completed = 1,
+
+    /// <summary>Everything: 100%, every achievement or trophy.</summary>
+    Mastered = 2,
+
+    /// <summary>Put aside for now, to come back to.</summary>
+    Shelved = 3,
+
+    /// <summary>Left for good.</summary>
+    Abandoned = 4,
+}
+
+/// <summary>
+/// Who can see a list. Stored in the database: never renumber them.
+/// </summary>
+public enum ListVisibility
+{
+    /// <summary>Everyone on this Ludex.</summary>
+    Public = 1,
+
+    /// <summary>Friends only.</summary>
+    Friends = 2,
+
+    /// <summary>Only the owner.</summary>
+    Private = 3,
+}
+
+/// <summary>
+/// How a list of reviews is ordered. Sent to dbo.ReviewList: never renumber them.
+/// </summary>
+public enum ReviewSort
+{
+    /// <summary>Most liked lately (this week), then of all time.</summary>
+    Popular = 1,
+
+    /// <summary>Newest first.</summary>
+    Recent = 2,
+
+    /// <summary>The reader's friends only, newest first.</summary>
+    Friends = 3,
+
+    /// <summary>Highest rated first.</summary>
+    Highest = 4,
+
+    /// <summary>Most liked of all time.</summary>
+    AllTime = 5,
+}
+
+/// <summary>
+/// Where a line of the journal comes from.
+/// </summary>
+public enum SessionSource
+{
+    /// <summary>Written down by the person.</summary>
+    Manual = 1,
+
+    /// <summary>Seen by the Steam or PlayStation sync (the hours went up that day).</summary>
+    Sync = 2,
 }
 
 /// <summary>

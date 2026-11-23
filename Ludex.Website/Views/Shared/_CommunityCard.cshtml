@@ -1,0 +1,21 @@
+@model (CommunityGameDTO Item, string Sub)
+@* A game on a community shelf (trending, coming soon, sleeper hits): its cover, the name and one line of numbers. *@
+@{
+    var game = Model.Item.Game;
+}
+<a class="shelf-card" href="/games/@game.Id" aria-label="@game.Name">
+    <span class="shelf-cover">
+        <partial name="_Cover" model='new CoverView(game, "none")' />
+        @if (game.MyStatus is { } mine)
+        {
+            <span class="badge-status"><partial name="_StatusChip" model="mine" /></span>
+        }
+    </span>
+    <span class="shelf-line">
+        <span class="shelf-name">@game.Name</span>
+    </span>
+    @if (!string.IsNullOrEmpty(Model.Sub))
+    {
+        <span class="shelf-sub">@Model.Sub</span>
+    }
+</a>

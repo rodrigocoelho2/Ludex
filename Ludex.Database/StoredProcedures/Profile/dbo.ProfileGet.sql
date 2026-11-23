@@ -30,7 +30,9 @@ BEGIN
            p.[Showcases],
            p.[PinnedCollectionID],
            p.[LibraryVisibility],
-           p.[ShowPlaying]
+           p.[ShowPlaying],
+           p.[Favorites],
+           u.[IsDemo]
     FROM [dbo].[User] u
     LEFT JOIN [dbo].[Profile] p ON p.[UserID] = u.[UserID]
     WHERE u.[UserUniqueID] = @UserUniqueID;

@@ -63,6 +63,15 @@ internal sealed class ProfileController(IProfileService profileService) : Intern
     public async Task<ActionResult<ProfileFavoriteRequest>> ProfileFavoriteAsync(ProfileFavoriteRequest item) =>
         (await profileService.SetFavoriteAsync(item)).ToActionResult();
 
+    /// <summary>Sets the four favourite games at the top of the profile.</summary>
+    /// <param name="item">The account and the games.</param>
+    /// <returns>The games saved.</returns>
+    [HttpPost("favorites")]
+    [Consumes(MediaTypeNames.Application.Json)]
+    [ProducesResponseType<ProfileFavoritesRequest>((int)HttpStatusCode.OK)]
+    [SwaggerOperation(Summary = "ProfileFavorites", OperationId = "ProfileFavorites")]
+    public async Task<ActionResult<ProfileFavoritesRequest>> ProfileFavoritesAsync(ProfileFavoritesRequest item) => (await profileService.SetFavoritesAsync(item)).ToActionResult();
+
     /// <summary>Sets the colour theme.</summary>
     /// <param name="item">The account and the theme.</param>
     /// <returns>The theme now.</returns>

@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Ludex.Library.Enums;
 using Ludex.Library.Validation;
 using Ludex.Sdk.Models;
 
@@ -126,6 +127,157 @@ public sealed class LudexClient(HttpClient httpClient)
     /// <returns>The home page.</returns>
     public Task<HomeDTO> LibraryHomeAsync(string userId) => GetAsync<HomeDTO>($"library/home?userId={Uri.EscapeDataString(userId)}");
 
+    // ----- Log a game -----
+
+    /// <summary>What "Log a game" opens with.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="gameId">The game.</param>
+    /// <param name="entryId">The copy (null: the first one).</param>
+    /// <returns>The form.</returns>
+    public Task<LogFormDTO> LogFormAsync(string userId, int gameId, long? entryId = null) =>
+        GetAsync<LogFormDTO>($"log?userId={Uri.EscapeDataString(userId)}&gameId={gameId.ToString(CultureInfo.InvariantCulture)}"
+                             + (entryId is { } entry ? $"&entryId={entry.ToString(CultureInfo.InvariantCulture)}" : string.Empty));
+
+    /// <summary>Saves "Log a game": status, rating, how it ended, the review and a session.</summary>
+    /// <param name="item">Everything on the form.</param>
+    /// <returns>What was saved.</returns>
+    public Task<LogResultDTO> LogSaveAsync(LogSaveRequest item) => PostAsync<LogResultDTO>("log", item);
+
+    // ----- Reviews -----
+
+    /// <summary>A page of reviews: of a game, by an account, or of everyone.</summary>
+    /// <param name="viewerId">The reader.</param>
+    /// <param name="gameId">Only this game.</param>
+    /// <param name="author">Only this account's (user name).</param>
+    /// <param name="sort">The order.</param>
+    /// <param name="skip">How many to skip.</param>
+    /// <param name="take">How many.</param>
+    /// <returns>The reviews.</returns>
+    public Task<ReviewListDTO> ReviewsListAsync(string viewerId, int? gameId = null, string? author = null, ReviewSort sort = ReviewSort.Popular, int skip = 0, int take = 20) =>
+        GetAsync<ReviewListDTO>($"reviews?viewerId={Uri.EscapeDataString(viewerId)}&sort={sort}&skip={skip.ToString(CultureInfo.InvariantCulture)}&take={take.ToString(CultureInfo.InvariantCulture)}"
+                                + (gameId is { } game ? $"&gameId={game.ToString(CultureInfo.InvariantCulture)}" : string.Empty)
+                                + (string.IsNullOrWhiteSpace(author) ? string.Empty : $"&author={Uri.EscapeDataString(author)}"));
+
+    /// <summary>A review's own page.</summary>
+    /// <param name="viewerId">The reader.</param>
+    /// <param name="reviewId">The review.</param>
+    /// <returns>The page.</returns>
+    public Task<ReviewPageDTO> ReviewsPageAsync(string viewerId, long reviewId) =>
+        GetAsync<ReviewPageDTO>($"reviews/{reviewId.ToString(CultureInfo.InvariantCulture)}?viewerId={Uri.EscapeDataString(viewerId)}");
+
+    /// <summary>Likes a review or takes the like back.</summary>
+    /// <param name="item">The account and the review.</param>
+    /// <returns>The likes now.</returns>
+    public Task<ReviewLikeDTO> ReviewsLikeAsync(ReviewLikeRequest item) => PostAsync<ReviewLikeDTO>("reviews/like", item);
+
+    /// <summary>Writes a comment under a review.</summary>
+    /// <param name="item">The account, the review and the text.</param>
+    /// <returns>The comments now.</returns>
+    public Task<List<ReviewCommentDTO>> ReviewsCommentAsync(ReviewCommentRequest item) => PostAsync<List<ReviewCommentDTO>>("reviews/comment", item);
+
+    /// <summary>Deletes a comment.</summary>
+    /// <param name="item">The account, the review and the comment.</param>
+    /// <returns>The comments now.</returns>
+    public Task<List<ReviewCommentDTO>> ReviewsCommentDeleteAsync(ReviewCommentDeleteRequest item) => PostAsync<List<ReviewCommentDTO>>("reviews/comment/delete", item);
+
+    // ----- Community -----
+
+    /// <summary>Home's community shelves: trending, popular reviews, lists, coming soon, sleeper hits.</summary>
+    /// <param name="userId">The reader.</param>
+    /// <returns>The shelves.</returns>
+    public Task<CommunityHomeDTO> CommunityHomeAsync(string userId) => GetAsync<CommunityHomeDTO>($"community/home?userId={Uri.EscapeDataString(userId)}");
+
+    /// <summary>A game's ratings, statuses, reviews and lists on this Ludex.</summary>
+    /// <param name="userId">The reader.</param>
+    /// <param name="gameId">The game.</param>
+    /// <param name="sort">How the reviews are ordered.</param>
+    /// <returns>The game's community block.</returns>
+    public Task<GameCommunityDTO> CommunityGameAsync(string userId, int gameId, ReviewSort sort = ReviewSort.Popular) =>
+        GetAsync<GameCommunityDTO>($"community/game?userId={Uri.EscapeDataString(userId)}&gameId={gameId.ToString(CultureInfo.InvariantCulture)}&sort={sort}");
+
+    // ----- Lists -----
+
+    /// <summary>The lists page.</summary>
+    /// <param name="viewerId">The reader.</param>
+    /// <param name="owner">An account's user name (null: the reader's own).</param>
+    /// <returns>The lists.</returns>
+    public Task<ListBrowseDTO> ListsBrowseAsync(string viewerId, string? owner = null) =>
+        GetAsync<ListBrowseDTO>($"lists?viewerId={Uri.EscapeDataString(viewerId)}" + (string.IsNullOrWhiteSpace(owner) ? string.Empty : $"&owner={Uri.EscapeDataString(owner)}"));
+
+    /// <summary>A list's own page.</summary>
+    /// <param name="viewerId">The reader.</param>
+    /// <param name="listId">The list.</param>
+    /// <returns>The list.</returns>
+    public Task<ListDetailDTO> ListsGetAsync(string viewerId, int listId) =>
+        GetAsync<ListDetailDTO>($"lists/{listId.ToString(CultureInfo.InvariantCulture)}?viewerId={Uri.EscapeDataString(viewerId)}");
+
+    /// <summary>The account's lists and whether a game is in each.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="gameId">The game.</param>
+    /// <returns>The lists.</returns>
+    public Task<List<MyListDTO>> ListsForGameAsync(string userId, int gameId) =>
+        GetAsync<List<MyListDTO>>($"lists/for-game?userId={Uri.EscapeDataString(userId)}&gameId={gameId.ToString(CultureInfo.InvariantCulture)}");
+
+    /// <summary>Makes a list or changes one.</summary>
+    /// <param name="item">The list.</param>
+    /// <returns>The list now.</returns>
+    public Task<ListDetailDTO> ListsSaveAsync(ListSaveRequest item) => PostAsync<ListDetailDTO>("lists/save", item);
+
+    /// <summary>Deletes a list.</summary>
+    /// <param name="item">The account and the list.</param>
+    /// <returns>The list id.</returns>
+    public Task<int> ListsDeleteAsync(ListDeleteRequest item) => PostAsync<int>("lists/delete", item);
+
+    /// <summary>Puts a game in a list or takes it out.</summary>
+    /// <param name="item">The account, the list and the game.</param>
+    /// <returns>The account's lists and whether the game is in each.</returns>
+    public Task<List<MyListDTO>> ListsItemAsync(ListItemRequest item) => PostAsync<List<MyListDTO>>("lists/item", item);
+
+    /// <summary>Moves a game of a list.</summary>
+    /// <param name="item">The account, the list, the game and its new place.</param>
+    /// <returns>The list now.</returns>
+    public Task<ListDetailDTO> ListsMoveAsync(ListMoveRequest item) => PostAsync<ListDetailDTO>("lists/move", item);
+
+    /// <summary>Likes a list or takes the like back.</summary>
+    /// <param name="item">The account and the list.</param>
+    /// <returns>The likes now.</returns>
+    public Task<ListLikeDTO> ListsLikeAsync(ListLikeRequest item) => PostAsync<ListLikeDTO>("lists/like", item);
+
+    // ----- Journal -----
+
+    /// <summary>A month of the journal.</summary>
+    /// <param name="userId">The account.</param>
+    /// <param name="year">The year.</param>
+    /// <param name="month">The month.</param>
+    /// <param name="today">Today where the person is.</param>
+    /// <returns>The month.</returns>
+    public Task<JournalDTO> JournalMonthAsync(string userId, int year, int month, DateOnly today) =>
+        GetAsync<JournalDTO>($"journal?userId={Uri.EscapeDataString(userId)}&year={year.ToString(CultureInfo.InvariantCulture)}&month={month.ToString(CultureInfo.InvariantCulture)}&today={today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}");
+
+    /// <summary>Writes down a session.</summary>
+    /// <param name="item">The session.</param>
+    /// <returns>Its id.</returns>
+    public Task<long> JournalAddAsync(SessionAddRequest item) => PostAsync<long>("journal/session", item);
+
+    /// <summary>Takes a session out.</summary>
+    /// <param name="item">The account and the session.</param>
+    /// <returns>Its id.</returns>
+    public Task<long> JournalDeleteAsync(SessionDeleteRequest item) => PostAsync<long>("journal/session/delete", item);
+
+    // ----- Demo accounts -----
+
+    /// <summary>How many demo accounts and reviews there are.</summary>
+    /// <returns>The status.</returns>
+    public Task<DemoStatusDTO> DemoStatusAsync() => GetAsync<DemoStatusDTO>("demo");
+
+    /// <summary>Adds the demo accounts with their reviews.</summary>
+    /// <returns>The status, with what happened.</returns>
+    public Task<DemoStatusDTO> DemoSeedAsync() => PostAsync<DemoStatusDTO>("demo/seed", new { });
+
+    /// <summary>Removes the demo accounts and everything they wrote.</summary>
+    /// <returns>The status, with what happened.</returns>
+    public Task<DemoStatusDTO> DemoRemoveAsync() => PostAsync<DemoStatusDTO>("demo/remove", new { });
+
     // ----- Friends -----
 
     /// <summary>The friends page.</summary>
@@ -171,6 +323,11 @@ public sealed class LudexClient(HttpClient httpClient)
     /// <param name="item">The account and the game (null: clear).</param>
     /// <returns>The favourite now.</returns>
     public Task<ProfileFavoriteRequest> ProfileFavoriteAsync(ProfileFavoriteRequest item) => PostAsync<ProfileFavoriteRequest>("profile/favorite", item);
+
+    /// <summary>Sets the four favourite games at the top of the profile.</summary>
+    /// <param name="item">The account and the games.</param>
+    /// <returns>The games saved.</returns>
+    public Task<ProfileFavoritesRequest> ProfileFavoritesAsync(ProfileFavoritesRequest item) => PostAsync<ProfileFavoritesRequest>("profile/favorites", item);
 
     /// <summary>Sets the colour theme.</summary>
     /// <param name="item">The account and the theme.</param>

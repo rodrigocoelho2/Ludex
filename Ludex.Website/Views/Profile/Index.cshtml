@@ -53,6 +53,10 @@
             <div class="pf-id">
                 <div class="pf-name-row">
                     <h1>@p.UserName</h1>
+                    @if (p.IsDemo)
+                    {
+                        <span class="demo-pill big" title="A made-up account of the demo reviews: it can't sign in, and Settings removes it">Demo account</span>
+                    }
                     @if (p.Title is { } title)
                     {
                         <span class="pf-title">@Icons.Get(title.Icon)@title.Name</span>
@@ -134,6 +138,7 @@
         {
             <div class="pf-cols">
                 <main class="pf-main">
+                    <partial name="_Logged" model="Model" />
                     @if (p.Showcases.Count == 0 && p.IsMe)
                     {
                         <section class="pf-card pf-empty">
@@ -294,7 +299,7 @@
                                                 var entry = p.TopRated[i];
                                                 <a class="pf-shelf-item" href="/games/@entry.Game.Id">
                                                     <span class="pf-shelf-cover"><partial name="_Cover" model="new CoverView(entry.Game, Model.Transition(entry.Game.Id))" /><b class="pf-rank num">@(i + 1)</b></span>
-                                                    <small>@(entry.Hours is { } topHours ? Fmt.Hours(topHours) + " · " : string.Empty)@Fmt.Rating(entry.Rating)/10</small>
+                                                    <small>@(entry.Hours is { } topHours ? Fmt.Hours(topHours) + " · " : string.Empty)@Fmt.Rating(entry.Rating)</small>
                                                 </a>
                                             }
                                         </div>
@@ -456,6 +461,7 @@
                                 break;
                         }
                     }
+                    <partial name="_LoggedBelow" model="Model" />
                 </main>
 
                 <aside class="pf-side">
@@ -479,6 +485,8 @@
                             </div>
                         }
                     </section>
+
+                    <partial name="_LoggedSide" model="Model" />
 
                     @if (earned.Count > 0)
                     {

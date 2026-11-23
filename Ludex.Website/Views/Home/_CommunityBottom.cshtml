@@ -1,0 +1,33 @@
+@model CommunityHomeDTO
+@* Home's last shelves: games coming out that people here are waiting for, and sleeper hits (rated well, played by few). *@
+@if (Model.ComingSoon.Count > 0)
+{
+    <section class="shelf rise d2" data-shelf aria-label="Coming soon">
+        <partial name="_ShelfHead" model='new ShelfHead("Coming soon", "Out soon, most awaited first")' />
+        <div class="shelf-row" data-shelf-row>
+            @foreach (var item in Model.ComingSoon)
+            {
+                var sub = string.Join(" · ", new[]
+                {
+                    item.ReleaseDate is { } date ? Fmt.LongDate(date) : "TBA",
+                    item.Waiting > 0 ? $"{item.Waiting} waiting" : null,
+                }.Where(static s => s is not null));
+                <partial name="_CommunityCard" model="(item, sub)" />
+            }
+        </div>
+    </section>
+}
+
+@if (Model.Sleepers.Count > 0)
+{
+    <section class="shelf rise d2" data-shelf aria-label="Sleeper hits">
+        <partial name="_ShelfHead" model='new ShelfHead("Sleeper hits", "Rated four stars or more here, by only a few")' />
+        <div class="shelf-row" data-shelf-row>
+            @foreach (var item in Model.Sleepers)
+            {
+                var sub = $"★ {Fmt.StarsValue(item.AverageRating)} · {Fmt.Plural(item.Ratings, "rating", "ratings")}";
+                <partial name="_CommunityCard" model="(item, sub)" />
+            }
+        </div>
+    </section>
+}

@@ -1,6 +1,6 @@
 /*
     UserList
-    Every account, oldest first.
+    Every account, oldest first (not the made-up demo accounts: Settings shows those apart).
 */
 CREATE PROCEDURE [dbo].[UserList]
 AS
@@ -23,5 +23,6 @@ BEGIN
            p.[Accent]
     FROM [dbo].[User] u
     LEFT JOIN [dbo].[Profile] p ON p.[UserID] = u.[UserID]
+    WHERE u.[IsDemo] = 0
     ORDER BY u.[UserID];
 END

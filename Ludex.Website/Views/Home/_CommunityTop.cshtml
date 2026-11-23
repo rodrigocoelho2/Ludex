@@ -1,0 +1,75 @@
+@model CommunityHomeDTO
+@* Home's community part, Backloggd-style: what everyone here played this week, then the most liked reviews (this
+   week, your friends', of all time) beside the popular lists. *@
+@{
+    var c = Model;
+    var tabs = new[]
+    {
+        ("week", "This week", c.PopularReviews),
+        ("friends", "Friends", c.FriendReviews),
+        ("all", "All time", c.AllTimeReviews),
+    };
+}
+@if (c.Trending.Count > 0)
+{
+    <section class="shelf rise d1" data-shelf aria-label="Trending">
+        <partial name="_ShelfHead" model='new ShelfHead(c.TrendingDays == 7 ? "Trending this week" : "Trending this month", "What people here are playing, finishing and reviewing")' />
+        <div class="shelf-row" data-shelf-row>
+            @foreach (var item in c.Trending)
+            {
+                var sub = string.Join(" · ", new[]
+                {
+                    Fmt.Plural(item.Active, "player", "players"),
+                    item.AverageRating is { } avg ? "★ " + Fmt.StarsValue(avg) : null,
+                }.Where(static s => s is not null));
+                <partial name="_CommunityCard" model="(item, sub)" />
+            }
+        </div>
+    </section>
+}
+
+@if (c.PopularReviews.Count > 0 || c.PopularLists.Count > 0)
+{
+    <section class="split community-split rise d1">
+        <div class="split-main">
+            <div class="section-head">
+                <h2>Popular reviews</h2>
+                <div class="tabs-mini" role="tablist" aria-label="Which reviews" data-tabs>
+                    @foreach (var (key, name, list) in tabs)
+                    {
+                        <button type="button" role="tab" id="rv-tab-@key" aria-controls="rv-pane-@key" aria-selected="@(key == "week" ? "true" : "false")" data-tab="@key">@name</button>
+                    }
+                </div>
+            </div>
+            @foreach (var (key, name, list) in tabs)
+            {
+                <div class="rv-grid" role="tabpanel" id="rv-pane-@key" aria-labelledby="rv-tab-@key" data-pane="@key" hidden="@(key == "week" ? null : "hidden")">
+                    @if (list.Count == 0)
+                    {
+                        <p class="muted small-empty">@(key == "friends" ? "Your friends haven't written a review yet." : "No reviews yet. Log a game and write the first one.")</p>
+                    }
+                    @foreach (var review in list)
+                    {
+                        <partial name="_ReviewCard" model="new ReviewCardView(review)" />
+                    }
+                </div>
+            }
+            <a class="more-link" href="/reviews">All reviews @Icons.Get("right")</a>
+        </div>
+        @if (c.PopularLists.Count > 0)
+        {
+            <aside class="split-side">
+                <div class="section-head">
+                    <h2>Popular lists</h2>
+                    <a href="/lists">All lists @Icons.Get("right")</a>
+                </div>
+                <div class="lc-col">
+                    @foreach (var list in c.PopularLists)
+                    {
+                        <partial name="_ListCard" model="list" />
+                    }
+                </div>
+            </aside>
+        }
+    </section>
+}

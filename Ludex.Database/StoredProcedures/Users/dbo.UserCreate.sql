@@ -1,6 +1,6 @@
 /*
     UserCreate
-    Creates an account and returns it; returns no row when the user name is taken. The first account becomes the admin.
+    Creates an account and returns it; returns no row when the user name is taken. The first account becomes the admin (made-up demo accounts don't count).
     (Whether new accounts are allowed at all is decided by the Website before it gets here.)
 */
 CREATE PROCEDURE [dbo].[UserCreate]
@@ -20,7 +20,7 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM [dbo].[User] WITH (UPDLOCK, HOLDLOCK) WHERE [Username] = @Username)
     BEGIN
         INSERT INTO [dbo].[User] ([Username], [PasswordHash], [IsAdmin], [SecurityStamp])
-        SELECT @Username, @PasswordHash, CASE WHEN EXISTS (SELECT 1 FROM [dbo].[User] WITH (UPDLOCK, HOLDLOCK)) THEN 0 ELSE 1 END, @SecurityStamp;
+        SELECT @Username, @PasswordHash, CASE WHEN EXISTS (SELECT 1 FROM [dbo].[User] WITH (UPDLOCK, HOLDLOCK) WHERE [IsDemo] = 0) THEN 0 ELSE 1 END, @SecurityStamp;
 
         SET @UserID = SCOPE_IDENTITY();
     END

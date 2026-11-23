@@ -1,0 +1,84 @@
+@model ListEditPageModel
+@{
+    Layout = "_App";
+    var detail = Model.Detail;
+    var l = detail?.List;
+    ViewData["Title"] = l is null ? "New list" : $"Edit {l.Name}";
+    var visibilities = new[] { ListVisibility.Public, ListVisibility.Friends, ListVisibility.Private };
+}
+
+<div class="le">
+    <div class="page-head rise">
+        <h1>@(l is null ? "New list" : "Edit list")</h1>
+        @if (l is not null) { <a class="btn ghost" href="/lists/@l.Id">@Icons.Get("left")Back to the list</a> }
+    </div>
+
+    <form class="le-form panel rise d1" method="post" action="/lists/save">
+        @Html.AntiForgeryToken()
+        @if (l is not null) { <input type="hidden" name="id" value="@l.Id" /> }
+        @if (Model.FirstGame is { } first)
+        {
+            <input type="hidden" name="game" value="@first.Id" />
+            <p class="muted">@first.Name goes in it first.</p>
+        }
+        <label class="field">
+            <span class="label">Name</span>
+            <input name="name" maxlength="80" required value="@l?.Name" placeholder="Every Final Fantasy, ranked" />
+        </label>
+        <label class="field">
+            <span class="label">What it's about</span>
+            <textarea name="description" rows="3" maxlength="1000" placeholder="Optional">@l?.Description</textarea>
+        </label>
+        <fieldset class="field">
+            <legend class="label">Who can see it</legend>
+            <div class="seg">
+                @foreach (var v in visibilities)
+                {
+                    <label class="seg-btn"><input type="radio" name="visibility" value="@v" checked="@((l?.Visibility ?? ListVisibility.Public) == v ? "checked" : null)" /> @Fmt.Visibility(v)</label>
+                }
+            </div>
+        </fieldset>
+        <label class="check"><input type="checkbox" name="ranked" value="true" checked="@(l?.Ranked == true ? "checked" : null)" /> Ranked: show the games numbered, in this order</label>
+        <div class="actions">
+            <button type="submit" class="btn">@Icons.Get("check")@(l is null ? "Make the list" : "Save")</button>
+        </div>
+    </form>
+
+    @if (detail is not null)
+    {
+        <section class="le-games rise d2" id="games" aria-labelledby="games-h">
+            <h2 id="games-h">Games <span class="muted">@detail.Items.Count</span></h2>
+            @if (detail.Items.Count == 0)
+            {
+                <p class="muted">Open a game and pick this list under Your lists to put it here.</p>
+            }
+            <ol class="le-list">
+                @foreach (var item in detail.Items)
+                {
+                    <li class="le-row" id="game-@item.Game.Id">
+                        <b class="num le-pos">@item.Position</b>
+                        <span class="feed-thumb tall" style="--tint:@item.Game.Tint">@if (item.Game.CoverImageId is { } cover) { <img src="@Igdb.Url(cover, Igdb.CoverSmall)" alt="" loading="lazy" decoding="async" /> }</span>
+                        <a class="le-name" href="/games/@item.Game.Id">@item.Game.Name</a>
+                        <form method="post" action="/lists/@l!.Id/move">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="game" value="@item.Game.Id" />
+                            <button type="submit" class="icon-btn mini" name="position" value="@(item.Position - 1)" aria-label="Move @item.Game.Name up" disabled="@(item.Position == 1 ? "disabled" : null)">↑</button>
+                            <button type="submit" class="icon-btn mini" name="position" value="@(item.Position + 1)" aria-label="Move @item.Game.Name down" disabled="@(item.Position == detail.Items.Count ? "disabled" : null)">↓</button>
+                            <button type="submit" class="icon-btn mini" name="position" value="1" aria-label="Move @item.Game.Name to the top" disabled="@(item.Position == 1 ? "disabled" : null)">⤒</button>
+                        </form>
+                        <form method="post" action="/lists/@l.Id/remove">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="game" value="@item.Game.Id" />
+                            <button type="submit" class="icon-btn mini danger" aria-label="Take @item.Game.Name out">@Icons.Get("x")</button>
+                        </form>
+                    </li>
+                }
+            </ol>
+        </section>
+
+        <form class="le-delete rise d2" method="post" action="/lists/@l!.Id/delete" data-confirm="Delete the list @l.Name? Its likes go too; the games stay in your library.">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="link-btn danger">@Icons.Get("trash")Delete this list</button>
+        </form>
+    }
+</div>

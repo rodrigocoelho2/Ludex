@@ -1,0 +1,40 @@
+@model ProfilePageModel
+@* The Backloggd part of a profile, under the showcases: the latest reviews and the lists. *@
+@{
+    var p = Model.Profile;
+    var reviews = Model.Reviews.Reviews;
+}
+@if (reviews.Count > 0 || p.IsMe)
+{
+    <section class="pf-card rise d2" aria-labelledby="pf-reviews-h">
+        <header class="pf-card-head">
+            <h2 id="pf-reviews-h">Recent reviews</h2>
+            @if (reviews.Count > 0) { <a href="/reviews?user=@Uri.EscapeDataString(p.UserName)&sort=recent">All reviews</a> }
+        </header>
+        @if (reviews.Count == 0)
+        {
+            <p class="muted small-empty">No reviews yet. Use Log a game to write one.</p>
+        }
+        <div class="pf-reviews">
+            @foreach (var review in reviews)
+            {
+                <partial name="_ReviewCard" model="new ReviewCardView(review)" />
+            }
+        </div>
+    </section>
+}
+@if (Model.Lists.Count > 0)
+{
+    <section class="pf-card rise d2" aria-labelledby="pf-lists-h">
+        <header class="pf-card-head">
+            <h2 id="pf-lists-h">Lists</h2>
+            <a href="/lists@(p.IsMe ? string.Empty : "?user=" + Uri.EscapeDataString(p.UserName))">All lists</a>
+        </header>
+        <div class="lc-grid">
+            @foreach (var list in Model.Lists)
+            {
+                <partial name="_ListCard" model="list" />
+            }
+        </div>
+    </section>
+}

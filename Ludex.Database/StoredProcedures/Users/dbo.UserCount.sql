@@ -7,5 +7,5 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT COUNT(*) FROM [dbo].[User];
+    SELECT COUNT(*) FROM [dbo].[User] WHERE [IsDemo] = 0;
 END

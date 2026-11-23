@@ -100,6 +100,15 @@ internal interface IGameCatalog
     Task<List<CatalogGame>> PopularAsync(int take, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Games not out yet that people are waiting for (Coming soon), with a release date and a cover.
+    /// </summary>
+    /// <param name="take">At most this many.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The games, most awaited first (search fields only).</returns>
+    /// <exception cref="CatalogUnavailableException">The catalog can't be reached.</exception>
+    Task<List<CatalogGame>> UpcomingAsync(int take, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// The catalog's games for Steam apps (the Steam import). Editions and versions are given as their main game.
     /// </summary>
     /// <param name="appIds">Steam app ids.</param>

@@ -28,6 +28,11 @@
     <Folder Include="StoredProcedures\Prices\" />
     <Folder Include="StoredProcedures\Steam\" />
     <Folder Include="StoredProcedures\Psn\" />
+    <Folder Include="StoredProcedures\Reviews\" />
+    <Folder Include="StoredProcedures\Community\" />
+    <Folder Include="StoredProcedures\Lists\" />
+    <Folder Include="StoredProcedures\Journal\" />
+    <Folder Include="StoredProcedures\Demo\" />
     <Folder Include="Scripts\" />
   </ItemGroup>
 
@@ -111,6 +116,48 @@
     <Build Include="StoredProcedures\Users\dbo.UserSetDiscord.sql" />
     <Build Include="StoredProcedures\Users\dbo.UserSetPassword.sql" />
     <Build Include="StoredProcedures\Users\dbo.UserTouchLogin.sql" />
+    <Build Include="StoredProcedures\Community\dbo.CommunityCounts.sql" />
+    <Build Include="StoredProcedures\Community\dbo.GameRatings.sql" />
+    <Build Include="StoredProcedures\Community\dbo.GameSleepers.sql" />
+    <Build Include="StoredProcedures\Community\dbo.GameTrending.sql" />
+    <Build Include="StoredProcedures\Community\dbo.GameWishlistCounts.sql" />
+    <Build Include="StoredProcedures\Demo\dbo.DemoActivityAdd.sql" />
+    <Build Include="StoredProcedures\Demo\dbo.DemoLikeAdd.sql" />
+    <Build Include="StoredProcedures\Demo\dbo.DemoRemove.sql" />
+    <Build Include="StoredProcedures\Demo\dbo.DemoSessionAdd.sql" />
+    <Build Include="StoredProcedures\Demo\dbo.DemoStatus.sql" />
+    <Build Include="StoredProcedures\Demo\dbo.DemoUserCreate.sql" />
+    <Build Include="StoredProcedures\Journal\dbo.JournalList.sql" />
+    <Build Include="StoredProcedures\Journal\dbo.SessionAdd.sql" />
+    <Build Include="StoredProcedures\Journal\dbo.SessionDelete.sql" />
+    <Build Include="StoredProcedures\Library\dbo.LibraryLogSave.sql" />
+    <Build Include="StoredProcedures\Lists\dbo.ListBrowse.sql" />
+    <Build Include="StoredProcedures\Lists\dbo.ListCovers.sql" />
+    <Build Include="StoredProcedures\Lists\dbo.ListDelete.sql" />
+    <Build Include="StoredProcedures\Lists\dbo.ListGet.sql" />
+    <Build Include="StoredProcedures\Lists\dbo.ListItemMove.sql" />
+    <Build Include="StoredProcedures\Lists\dbo.ListItemSet.sql" />
+    <Build Include="StoredProcedures\Lists\dbo.ListItems.sql" />
+    <Build Include="StoredProcedures\Lists\dbo.ListLikeSet.sql" />
+    <Build Include="StoredProcedures\Lists\dbo.ListSave.sql" />
+    <Build Include="StoredProcedures\Lists\dbo.ListsForGame.sql" />
+    <Build Include="StoredProcedures\Profile\dbo.ProfileSetFavorites.sql" />
+    <Build Include="StoredProcedures\Reviews\dbo.ReviewCommentAdd.sql" />
+    <Build Include="StoredProcedures\Reviews\dbo.ReviewCommentDelete.sql" />
+    <Build Include="StoredProcedures\Reviews\dbo.ReviewCommentList.sql" />
+    <Build Include="StoredProcedures\Reviews\dbo.ReviewDelete.sql" />
+    <Build Include="StoredProcedures\Reviews\dbo.ReviewGet.sql" />
+    <Build Include="StoredProcedures\Reviews\dbo.ReviewLikeSet.sql" />
+    <Build Include="StoredProcedures\Reviews\dbo.ReviewLikers.sql" />
+    <Build Include="StoredProcedures\Reviews\dbo.ReviewList.sql" />
+    <Build Include="StoredProcedures\Reviews\dbo.ReviewSave.sql" />
+    <Build Include="Tables\dbo.GameList.sql" />
+    <Build Include="Tables\dbo.GameListItem.sql" />
+    <Build Include="Tables\dbo.GameListLike.sql" />
+    <Build Include="Tables\dbo.PlaySession.sql" />
+    <Build Include="Tables\dbo.Review.sql" />
+    <Build Include="Tables\dbo.ReviewComment.sql" />
+    <Build Include="Tables\dbo.ReviewLike.sql" />
   </ItemGroup>
 
   <ItemGroup>

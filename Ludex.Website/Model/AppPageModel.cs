@@ -24,6 +24,12 @@ public enum AppSection
 
     /// <summary>A profile (one's own or someone else's).</summary>
     Profile,
+
+    /// <summary>Lists of games.</summary>
+    Lists,
+
+    /// <summary>The journal of play sessions.</summary>
+    Journal,
 }
 
 /// <summary>
@@ -83,6 +89,9 @@ public sealed class HomePageModel : AppPageModel
 
     /// <summary>Gets or sets the data.</summary>
     public HomeDTO Home { get; set; } = new();
+
+    /// <summary>Gets or sets the community shelves (null: they couldn't be read; home still shows).</summary>
+    public CommunityHomeDTO? Community { get; set; }
 
     /// <summary>Gets or sets the whole library (the sidebar and the shelves).</summary>
     public LibraryDTO Library { get; set; } = new();
@@ -197,6 +206,12 @@ public sealed class GamePageModel : AppPageModel
     /// <summary>Gets or sets the game.</summary>
     public GameDetailDTO Detail { get; set; } = new();
 
+    /// <summary>Gets or sets what everyone here thinks of it (null: couldn't be read).</summary>
+    public GameCommunityDTO? Community { get; set; }
+
+    /// <summary>Gets or sets how the reviews are ordered.</summary>
+    public ReviewSort ReviewSort { get; set; } = ReviewSort.Popular;
+
     /// <summary>Gets or sets the library down the side.</summary>
     public List<LibraryEntryDTO> Sidebar { get; set; } = [];
 
@@ -246,6 +261,9 @@ public sealed class SettingsPageModel : AppPageModel
     /// <summary>Gets or sets the WebApi's health (null: unreachable).</summary>
     public HealthDTO? Health { get; set; }
 
+    /// <summary>Gets or sets the demo accounts (admin only; null: not read).</summary>
+    public DemoStatusDTO? Demo { get; set; }
+
     /// <summary>Gets or sets the accounts (admins only).</summary>
     public List<UserDTO> Users { get; set; } = [];
 
@@ -273,6 +291,12 @@ public sealed class ProfilePageModel : AppPageModel
 {
     /// <summary>Gets or sets the profile.</summary>
     public ProfileDTO Profile { get; set; } = new();
+
+    /// <summary>Gets or sets the latest reviews.</summary>
+    public ReviewListDTO Reviews { get; set; } = new();
+
+    /// <summary>Gets or sets the lists the reader may see.</summary>
+    public List<ListSummaryDTO> Lists { get; set; } = [];
 
     /// <summary>Gets the share of the way from this level to the next (0–1).</summary>
     public double LevelProgress
@@ -381,3 +405,115 @@ public sealed class NotificationsPageModel : AppPageModel
 /// <param name="Note">A short note beside it (null: none).</param>
 /// <param name="SeeAll">Where "See all" goes (null: no link).</param>
 public sealed record ShelfHead(string Title, string? Note = null, string? SeeAll = null);
+
+/// <summary>A review's own page.</summary>
+public sealed class ReviewPageModel : AppPageModel
+{
+    /// <summary>Gets or sets the page.</summary>
+    public ReviewPageDTO Page { get; set; } = new();
+}
+
+/// <summary>A page of reviews: of a game, by an account, or of everyone.</summary>
+public sealed class ReviewsPageModel : AppPageModel
+{
+    /// <summary>Gets or sets the reviews.</summary>
+    public ReviewListDTO Reviews { get; set; } = new();
+
+    /// <summary>Gets or sets the game (when only one game's).</summary>
+    public int? GameId { get; set; }
+
+    /// <summary>Gets or sets the game's name.</summary>
+    public string? GameName { get; set; }
+
+    /// <summary>Gets or sets the author (when only one account's).</summary>
+    public string? Author { get; set; }
+
+    /// <summary>Gets or sets the page (0 = first).</summary>
+    public int PageNumber { get; set; }
+
+    /// <summary>The address of this list with another order or page.</summary>
+    /// <param name="sort">The order.</param>
+    /// <param name="page">The page.</param>
+    /// <returns>The address.</returns>
+    public string Link(ReviewSort sort, int page = 0)
+    {
+        var parts = new List<string> { "sort=" + sort.ToString().ToLowerInvariant() };
+        if (GameId is { } game) { parts.Add("game=" + game.ToString(System.Globalization.CultureInfo.InvariantCulture)); }
+        if (Author is { } author) { parts.Add("user=" + Uri.EscapeDataString(author)); }
+        if (page > 0) { parts.Add("page=" + page.ToString(System.Globalization.CultureInfo.InvariantCulture)); }
+        return "/reviews?" + string.Join('&', parts);
+    }
+}
+
+/// <summary>The lists page.</summary>
+public sealed class ListsPageModel : AppPageModel
+{
+    /// <summary>Gets or sets the lists.</summary>
+    public ListBrowseDTO Lists { get; set; } = new();
+
+    /// <summary>Gets or sets whose lists the first part shows (null: the reader's).</summary>
+    public string? Owner { get; set; }
+}
+
+/// <summary>A list's own page.</summary>
+public sealed class ListPageModel : AppPageModel
+{
+    /// <summary>Gets or sets the list.</summary>
+    public ListDetailDTO Detail { get; set; } = new();
+
+    /// <summary>Gets or sets a value indicating whether the games the reader played are hidden.</summary>
+    public bool HidePlayed { get; set; }
+
+    /// <summary>Gets the games shown.</summary>
+    public IEnumerable<ListItemDTO> Shown => HidePlayed ? Detail.Items.Where(static i => !Helpers.Fmt.IsPlayed(i.Game.MyStatus)) : Detail.Items;
+}
+
+/// <summary>Making a list or changing one.</summary>
+public sealed class ListEditPageModel : AppPageModel
+{
+    /// <summary>Gets or sets the list (null: a new one).</summary>
+    public ListDetailDTO? Detail { get; set; }
+
+    /// <summary>Gets or sets a game to put in a new list.</summary>
+    public GameSummaryDTO? FirstGame { get; set; }
+}
+
+/// <summary>The journal: a month of sessions.</summary>
+public sealed class JournalPageModel : AppPageModel
+{
+    /// <summary>Gets or sets the month.</summary>
+    public JournalDTO Journal { get; set; } = new();
+
+    /// <summary>Gets or sets the day picked.</summary>
+    public DateOnly Day { get; set; }
+
+    /// <summary>Gets or sets today.</summary>
+    public DateOnly Today { get; set; }
+
+    /// <summary>Gets or sets the games of the library, for "Log a session".</summary>
+    public List<LibraryEntryDTO> Games { get; set; } = [];
+
+    /// <summary>Gets the first day of the month.</summary>
+    public DateOnly First => new(Journal.Year, Journal.Month, 1);
+
+    /// <summary>Gets the lines of each day.</summary>
+    public ILookup<DateOnly, JournalEntryDTO> ByDay => Journal.Entries.ToLookup(static e => e.Day);
+}
+
+/// <summary>What the Log a game dialog draws: the game and what is known about it.</summary>
+/// <param name="Form">The form.</param>
+/// <param name="Platforms">The platforms to choose from.</param>
+/// <param name="Today">Today.</param>
+public sealed record LogFormView(LogFormDTO Form, IReadOnlyList<string> Platforms, DateOnly Today);
+
+/// <summary>Five stars from a 1–10 rating (each point half a star).</summary>
+/// <param name="Rating">The rating (null: none).</param>
+/// <param name="Size">The size of a star, in pixels.</param>
+public sealed record StarsView(int? Rating, int Size = 16);
+
+/// <summary>A review on a card.</summary>
+/// <param name="Review">The review.</param>
+/// <param name="ShowGame">Whether to show the game's cover and name (not on the game's own page).</param>
+/// <param name="Clamp">Whether to cut the text after a few lines.</param>
+public sealed record ReviewCardView(ReviewDTO Review, bool ShowGame = true, bool Clamp = true);
+

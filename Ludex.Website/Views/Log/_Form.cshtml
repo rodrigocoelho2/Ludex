@@ -1,0 +1,107 @@
+@model LogFormView
+@* The Log a game form, drawn on the server and put in the dialog by social.js, which also saves it. *@
+@{
+    var f = Model.Form;
+    var game = f.Game;
+    var status = f.Status ?? GameStatus.Finished;
+    var statuses = new[] { GameStatus.Playing, GameStatus.Backlog, GameStatus.Finished, GameStatus.Played, GameStatus.Wishlist, GameStatus.Dropped };
+    var endings = new[] { GameEnding.Completed, GameEnding.Mastered, GameEnding.Shelved, GameEnding.Abandoned };
+    var rating = f.Rating ?? 0;
+    var hasEnd = status is GameStatus.Finished or GameStatus.Played or GameStatus.Dropped;
+    var today = Model.Today.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+}
+<form class="log-form" data-log-form data-game="@game.Id" data-entry="@f.EntryId" autocomplete="off">
+    <header class="log-game" style="--tint:@game.Tint">
+        <span class="log-game-cover"><partial name="_Cover" model='new CoverView(game, "none")' /></span>
+        <span class="log-game-text">
+            <small class="muted">@(f.InLibrary ? "Your log of" : "I played…")</small>
+            <b id="log-title">@game.Name @if (game.Year is { } year) { <span class="muted">@year</span> }</b>
+            <button type="button" class="link-btn" data-log-back>Change game</button>
+        </span>
+        <button type="button" class="icon-btn" data-log-close aria-label="Close">@Icons.Get("x")</button>
+    </header>
+
+    <div class="log-cols">
+        <div class="log-col">
+            <fieldset class="log-field">
+                <legend class="label">Status</legend>
+                <div class="log-status" role="group" aria-label="Status">
+                    @foreach (var s in statuses)
+                    {
+                        <button type="button" class="log-st" data-log-status="@s" aria-pressed="@(s == status ? "true" : "false")"><i class="dot-@Fmt.StatusCss(s)" aria-hidden="true"></i>@Fmt.Status(s)</button>
+                    }
+                </div>
+            </fieldset>
+
+            <fieldset class="log-field" data-log-endings hidden="@(hasEnd ? null : "hidden")">
+                <legend class="label">How it ended</legend>
+                <div class="log-chips" role="group" aria-label="How it ended">
+                    @foreach (var e in endings)
+                    {
+                        <button type="button" class="log-chip" data-log-ending="@e" data-for="@(e is GameEnding.Completed or GameEnding.Mastered ? "done" : "left")" aria-pressed="@(f.Ending == e ? "true" : "false")">@Fmt.Ending(e)</button>
+                    }
+                </div>
+            </fieldset>
+
+            <div class="log-grid">
+                <label class="log-field wide">
+                    <span class="label">Platform</span>
+                    <select name="platform">
+                        <option value="">—</option>
+                        @foreach (var p in Model.Platforms)
+                        {
+                            <option value="@p" selected="@(string.Equals(p, f.Platform, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@p</option>
+                        }
+                    </select>
+                </label>
+                <label class="log-field">
+                    <span class="label">Started</span>
+                    <input type="date" name="startedOn" max="@today" value="@f.StartedOn?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)" />
+                </label>
+                <label class="log-field">
+                    <span class="label">Finished</span>
+                    <input type="date" name="finishedOn" max="@today" value="@f.FinishedOn?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)" />
+                </label>
+                <label class="log-field">
+                    <span class="label">Hours</span>
+                    <input type="number" name="hours" inputmode="decimal" min="0" max="99999" step="0.5" value="@Fmt.Input(f.Hours)" placeholder="—" />
+                </label>
+            </div>
+        </div>
+
+        <div class="log-col">
+            <div class="log-field">
+                <span class="label" id="log-rating-label">Rating</span>
+                <div class="log-rating">
+                    <div class="hstars big" role="group" aria-labelledby="log-rating-label" data-log-stars>
+                        @for (var n = 1; n <= 10; n++)
+                        {
+                            <button type="button" class="hs @(n % 2 == 1 ? "l" : "r")@(n <= rating ? " on" : string.Empty)" data-log-rate="@n" aria-pressed="@(n == rating ? "true" : "false")" aria-label="@Fmt.StarsValue(n) stars"></button>
+                        }
+                    </div>
+                    <b class="num gold log-rating-value" data-log-rating-value>@(rating > 0 ? Fmt.StarsValue(rating) : "—")</b>
+                    <button type="button" class="link-btn" data-log-clear hidden="@(rating > 0 ? null : "hidden")">Clear</button>
+                </div>
+            </div>
+            <label class="log-field">
+                <span class="label">Review <small class="muted">· everyone on this Ludex can read it</small></span>
+                <textarea name="review" rows="7" maxlength="4000" placeholder="What did you think? (Leave it empty for no review.)">@f.Review</textarea>
+            </label>
+            <label class="check"><input type="checkbox" name="spoilers" checked="@(f.Spoilers ? "checked" : null)" /> Contains spoilers</label>
+            <div class="log-session">
+                <span class="label">Played today?</span>
+                <label class="inline-field"><input type="number" name="sessionHours" min="0" max="24" step="1" placeholder="0" inputmode="numeric" /><span>h</span></label>
+                <label class="inline-field"><input type="number" name="sessionMinutes" min="0" max="59" step="5" placeholder="0" inputmode="numeric" /><span>min</span></label>
+                <input class="log-session-note" type="text" name="sessionNote" maxlength="500" placeholder="A note for your journal (optional)" />
+            </div>
+            <label class="check"><input type="checkbox" name="share" checked /> Show it to my friends in their feed</label>
+        </div>
+    </div>
+
+    <footer class="log-foot">
+        <span class="muted">Each half star is one point of Ludex's 1–10 rating.</span>
+        <span class="shelf-push"></span>
+        <button type="button" class="btn ghost" data-log-close>Cancel</button>
+        <button type="submit" class="btn">@Icons.Get("check")Save</button>
+    </footer>
+</form>

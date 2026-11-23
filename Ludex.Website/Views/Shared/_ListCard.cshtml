@@ -1,0 +1,32 @@
+@model ListSummaryDTO
+@* A list on a card: its first covers fanned out, the name, the owner, how many games and likes, and how far the
+   reader has got through it. *@
+@{
+    var l = Model;
+}
+<a class="lc" href="/lists/@l.Id">
+    <span class="lc-covers" aria-hidden="true">
+        @foreach (var game in l.Covers.Take(5))
+        {
+            <span class="lc-cover"><partial name="_Cover" model='new CoverView(game, "none")' /></span>
+        }
+        @for (var i = l.Covers.Count; i < 5; i++)
+        {
+            <span class="lc-cover empty"></span>
+        }
+    </span>
+    <span class="lc-text">
+        <b class="lc-name">@l.Name</b>
+        <span class="lc-meta">
+            <span>@l.OwnerName</span>
+            @if (l.OwnerIsDemo) { <span class="demo-pill">Demo</span> }
+            <span>· @Fmt.Plural(l.GameCount, "game", "games")</span>
+            @if (l.Likes > 0) { <span>· ♥ @l.Likes</span> }
+            @if (l.Visibility != ListVisibility.Public) { <span class="lc-vis">· @Fmt.Visibility(l.Visibility)</span> }
+        </span>
+        @if (l.GameCount > 0 && l.PlayedByMe > 0)
+        {
+            <span class="lc-progress" title="You've played @l.PlayedByMe of @l.GameCount"><i style="width:@(Math.Min(100, l.PlayedByMe * 100 / l.GameCount))%"></i></span>
+        }
+    </span>
+</a>

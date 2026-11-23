@@ -1,0 +1,12 @@
+@model StarsView
+@* Five stars from a 1–10 rating: each point is half a star (Backloggd-style). Gold, half gold, or empty. *@
+@{
+    var rating = Model.Rating ?? 0;
+}
+<span class="stars" role="img" aria-label="@Fmt.StarsLabel(Model.Rating)" style="--star:@(Model.Size)px">
+    @for (var i = 0; i < 5; i++)
+    {
+        var v = rating - (i * 2);
+        <i class="star@(v >= 2 ? " full" : v == 1 ? " half" : string.Empty)" aria-hidden="true"></i>
+    }
+</span>

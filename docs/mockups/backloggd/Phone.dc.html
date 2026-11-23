@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ludex — phone home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&amp;family=Barlow+Condensed:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0F1923}
+a{color:#8AD6F9;text-decoration:none}a:hover{color:#B5E6FB}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; display: flex; flex-direction: column; background: linear-gradient(180deg, #132030 0%, #0F1923 420px); color: #E6EDF3; font-family: Barlow, system-ui, sans-serif; font-size: 15px; line-height: 1.45">
+  <header style="display: flex; align-items: center; gap: 10px; padding: 52px 16px 12px; background: #0A0F15; border-bottom: 1px solid rgba(255,255,255,.07)">
+    <span style="display: inline-flex; align-items: center; gap: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 22px; letter-spacing: .06em">
+      <span aria-hidden="true" style="display: grid; grid-template-columns: repeat(2, 9px); gap: 2px"><span style="width: 9px; height: 9px; background: #4FC3F7"></span><span style="width: 9px; height: 9px; background: #E6EDF3"></span><span style="width: 9px; height: 9px; background: #E6EDF3"></span><span style="width: 9px; height: 9px; background: #7D8FA5"></span></span>LUDEX</span>
+    <a href="LogGame.dc.html" aria-label="Log a game" style="margin-left: auto; width: 44px; height: 44px; display: grid; place-items: center; background: #4FC3F7; color: #0B1218; border-radius: 4px">
+      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"></path></svg></a>
+    <a href="Profile.dc.html" aria-label="Your profile" style="width: 36px; height: 36px; border-radius: 4px; display: grid; place-items: center; background: linear-gradient(135deg, #2D6A5A, #1E4A41); border: 2px solid #4FC3F7; color: #E6EDF3; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px">RO</a>
+  </header>
+
+  <div style="flex: 1; overflow: hidden; padding: 18px 16px 0; display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <h2 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700">Trending this week</h2>
+      <a href="#" style="font-size: 14px; font-weight: 600">See all</a>
+    </div>
+    <div style="display: flex; gap: 10px">
+      <sc-for list="{{trending}}" as="g" hint-placeholder-count="4">
+        <span style="{{g}}"></span>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 6px">
+      <h2 style="margin: 0; font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700">Popular reviews</h2>
+      <a href="#" style="font-size: 14px; font-weight: 600">More</a>
+    </div>
+    <sc-for list="{{reviews}}" as="r" hint-placeholder-count="3">
+      <a href="Review.dc.html" style="display: flex; gap: 12px; padding: 12px; background: rgba(20,30,43,.85); border: 1px solid rgba(255,255,255,.07); border-radius: 6px; color: #E6EDF3">
+        <span style="{{r.cover}}"></span>
+        <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+          <span style="display: flex; justify-content: space-between; gap: 8px"><strong style="font-size: 15px">{{r.user}}</strong><span style="color: #7D8FA5; font-size: 12px">{{r.date}}</span></span>
+          <span style="color: #9FB0C3; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.game}}</span>
+          <span role="img" aria-label="{{r.starsLabel}}" style="display: inline-flex; gap: 2px"><sc-for list="{{r.stars}}" as="s"><span style="{{s.style}}"></span></sc-for></span>
+          <span style="color: #C3D0DD; font-size: 13.5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{r.text}}</span>
+          <span style="color: #9FB0C3; font-size: 12.5px">♥ {{r.likes}} · {{r.comments}} comments</span>
+        </span>
+      </a>
+    </sc-for>
+  </div>
+
+  <nav aria-label="Main" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 8px 6px 26px; background: #0A0F15; border-top: 1px solid rgba(255,255,255,.07); font-size: 11.5px; font-weight: 600">
+    <a href="Main.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 44px; justify-content: center; color: #4FC3F7"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z"></path></svg>Home</a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 44px; justify-content: center; color: #9FB0C3"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="7" height="7"></rect><rect x="13" y="4" width="7" height="7"></rect><rect x="4" y="13" width="7" height="7"></rect><rect x="13" y="13" width="7" height="7"></rect></svg>Library</a>
+    <a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 44px; justify-content: center; color: #9FB0C3"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>Discover</a>
+    <a href="Journal.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 44px; justify-content: center; color: #9FB0C3"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="15" rx="1"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg>Journal</a>
+    <a href="Profile.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 44px; justify-content: center; color: #9FB0C3"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg>You</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const STAR = 'display: inline-block; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);';
+    const stars = (r) => [0, 1, 2, 3, 4].map((i) => {
+      const v = r - i * 2;
+      const bg = v >= 2 ? '#F5B841' : v === 1 ? 'linear-gradient(90deg, #F5B841 50%, #3A4A5E 50%)' : '#3A4A5E';
+      return { style: STAR + ' width: 14px; height: 14px; background: ' + bg };
+    });
+    const trending = [['#B8935A', '#3B2A1C'], ['#7A3B8F', '#1E1030'], ['#B23A3A', '#2A1214'], ['#9A3A4A', '#1A1620']]
+      .map(([a, b]) => 'flex: 1; aspect-ratio: 264 / 374; border-radius: 4px; background: linear-gradient(160deg, ' + a + ', ' + b + '); box-shadow: 0 8px 18px rgba(0,0,0,.4)');
+    const reviews = [
+      ['pixelmonk', 'Clair Obscur: Expedition 33', '#B8935A', '#3B2A1C', 10, '21 Nov', 'I did not expect a turn-based game to have me parrying like it was Sekiro. The music alone earns four stars.', 42, 7],
+      ['savefile_sofia', 'Hades II', '#7A3B8F', '#1E1030', 9, '22 Nov', 'Mais do que uma sequela: é o primeiro jogo, mas com mais confiança.', 31, 4],
+      ['noclip_nuno', 'Kingdom Come: Deliverance II', '#6E6A3A', '#1F1E10', 8, '20 Nov', 'Spent three hours failing to pick a lock and the next forty loving every minute.', 19, 9],
+    ].map(([user, game, c1, c2, rating, date, text, likes, comments]) => ({
+      user, game, date, text, likes, comments, stars: stars(rating), starsLabel: (rating / 2) + ' out of 5 stars',
+      cover: 'flex: none; width: 58px; height: 82px; border-radius: 3px; background: linear-gradient(160deg, ' + c1 + ', ' + c2 + ')',
+    }));
+    return { trending, reviews };
+  }
+}
+</script>
+</body>
+</html>

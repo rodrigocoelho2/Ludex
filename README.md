@@ -81,8 +81,31 @@
 - A **screenshot viewer** with arrows, thumbnails, keys and swipe (open them full size), the header art with the cover,
   the summary and the facts: friends' rating ("Very positive · 8.0 from 3 friends"), release date, developer,
   publisher, genres and platforms.
-- **Your game** bar: status and a **1–10 rating** that save as you tap, and **Make favourite** for your profile. Hours,
-  platform and notes below.
+- **Your game** bar: status and a **half-star rating** (five stars, each half a point of Ludex's 1–10) that save as you
+  tap, **Log or review**, and **Make favourite** for your profile. Hours, platform and notes below.
+- **Ratings and reviews of everyone here**, Backloggd-style: the spread of ratings from ½★ to ★★★★★ with the average,
+  how many played it, are playing it, have it in their backlog or want it; your review and everyone else's (Popular,
+  Recent, Friends, Highest); your journal of the game, your lists, and the lists it's in.
+
+**Log a game, reviews, lists, journal**
+
+- **Log a game** (the button at the top, or on any game page): pick the game, then status, **how it ended**
+  (Completed, Mastered 100%, Shelved for now, Abandoned), platform, the days you started and finished, hours, half
+  stars, a **review** (with a spoiler warning if you need one) and the time you played today, in one dialog.
+- **Reviews** have their own page with **likes** and **comments**; Home shows the **popular reviews** of the week,
+  your friends' and of all time. Everyone signed in to your Ludex can read them.
+- **Lists**: ranked or not, public, friends only or private, with likes; a list shows how many of its games you've
+  played (and can hide those). Make one from any game page, reorder it from its edit page.
+- **Journal**: a calendar of your play sessions, the ones you write down and the time the Steam and PlayStation syncs
+  saw, with notes, a streak and the month by game.
+- **Home** also shows what's **trending this week** here, **popular lists**, **coming soon** (IGDB's most awaited
+  games, with how many here wishlisted them) and **sleeper hits** (rated four stars or more by only a few).
+- **Profile**: your **four favourite games** at the top, recent reviews and lists, the spread of your ratings, games
+  finished per year and your top genres.
+- **Demo reviews** (optional): six made-up people with their own libraries, ratings, reviews, likes, comments, lists
+  and journals, so the community pages aren't empty while your friends join. Every one is marked **Demo**, can't
+  sign in, and goes with one button in Settings. Add them in Settings (admin), or with `LUDEX_DEMO_REVIEWS=true`.
+  The design mock of all of this is in [docs/mockups/backloggd](docs/mockups/backloggd).
 - **Friends who have it**, with their photo, status, hours and rating, and their average; your playtime and dates.
 
 **Collections, Steam, achievements, prices**

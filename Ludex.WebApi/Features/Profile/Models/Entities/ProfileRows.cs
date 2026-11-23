@@ -68,6 +68,12 @@ public sealed class ProfileRow
 
     /// <summary>Gets or sets whether others see what is being played (null: yes).</summary>
     public bool? ShowPlaying { get; set; }
+
+    /// <summary>Gets or sets the four favourite games (ids, comma separated).</summary>
+    public string? Favorites { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether it is a made-up demo account.</summary>
+    public bool IsDemo { get; set; }
 }
 
 /// <summary>Hours played on a day (dbo.ProfilePlayDays).</summary>

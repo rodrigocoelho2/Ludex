@@ -83,16 +83,17 @@
         </div>
         <div class="yg-rating">
             <span class="muted">Rating</span>
-            <div class="rating" role="group" aria-label="Rating from 1 to 10">
+            <div class="hstars" role="group" aria-label="Rating, in half stars">
                 @for (var n = 1; n <= 10; n++)
                 {
-                    <button type="button" class="rate" data-set-rating="@n" aria-pressed="@(mine?.Rating == n ? "true" : "false")" aria-label="Rate @n out of 10" style="--i:@n">@n</button>
+                    <button type="button" class="hs @(n % 2 == 1 ? "l" : "r")@(mine?.Rating >= n ? " on" : string.Empty)" data-set-rating="@n" aria-pressed="@(mine?.Rating == n ? "true" : "false")" aria-label="@Fmt.StarsValue(n) stars"></button>
                 }
             </div>
-            <b class="num gold yg-value"><span data-rating-value>@Fmt.Rating(mine?.Rating)</span><small>/10</small></b>
+            <b class="num gold yg-value"><span data-rating-value data-stars>@(mine?.Rating is { } myRating ? Fmt.StarsValue(myRating) : "—")</span><small>★</small></b>
             <button type="button" class="link-btn" data-clear-rating hidden="@(mine?.Rating is null ? "hidden" : null)">Clear</button>
         </div>
         <div class="yg-acts">
+            <button type="button" class="btn small" data-log-game="@game.Id" data-log-entry="@mine?.EntryId">@Icons.Get("edit")<span>@(Model.Community?.MyReview is not null ? "Edit your log" : "Log or review")</span></button>
             <button type="button" class="btn soft small fav-btn" data-favorite aria-pressed="@(mine?.IsFavorite == true ? "true" : "false")" hidden="@(mine is null ? "hidden" : null)">
                 @Icons.Get("heart")<span data-favorite-label>@(mine?.IsFavorite == true ? "Your favourite" : "Make favourite")</span>
             </button>
@@ -503,6 +504,11 @@
             }
         </aside>
     </div>
+
+    @if (Model.Community is not null)
+    {
+        <partial name="_Community" model="Model" />
+    }
 </article>
 </div>
 </div>

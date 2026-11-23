@@ -1,0 +1,36 @@
+@model List<GameSummaryDTO>
+@* The Log a game dialog's results: your games when nothing is typed yet, the catalog's otherwise. *@
+@{
+    var query = ViewData["Query"] as string ?? string.Empty;
+    var problem = ViewData["Problem"] as string;
+}
+@if (problem is not null)
+{
+    <p class="muted log-empty">@problem</p>
+}
+else if (Model.Count == 0)
+{
+    <p class="muted log-empty">@(query.Length < 2 ? "Type the name of a game." : $"Nothing called \"{query}\" in the catalog.")</p>
+}
+else
+{
+    <p class="label log-label">@(query.Length < 2 ? "Your games lately" : "From the catalog")</p>
+    <ul class="log-list">
+        @foreach (var game in Model)
+        {
+            <li>
+                <button type="button" class="log-pick" data-log-pick="@game.Id">
+                    <span class="log-pick-cover"><partial name="_Cover" model='new CoverView(game, "none")' /></span>
+                    <span class="log-pick-text">
+                        <b>@game.Name</b>
+                        <small>@string.Join(" · ", new[] { game.Year?.ToString(), game.Developer }.Where(static s => !string.IsNullOrEmpty(s)))</small>
+                    </span>
+                    @if (game.MyStatus is { } status)
+                    {
+                        <partial name="_StatusChip" model="status" />
+                    }
+                </button>
+            </li>
+        }
+    </ul>
+}

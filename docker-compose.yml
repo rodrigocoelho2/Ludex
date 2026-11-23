@@ -61,6 +61,9 @@ services:
       # Wishlist prices and alerts (IsThereAnyDeal). Empty: no prices.
       Ludex__ItadApiKey: ${ITAD_API_KEY:-}
       Ludex__PriceCountry: ${LUDEX_PRICE_COUNTRY:-PT}
+      # Six made-up accounts with reviews, lists and journals, marked Demo (Settings removes them). Added at start, once
+      # your own account exists. true / false.
+      Seed__DemoReviews: ${LUDEX_DEMO_REVIEWS:-false}
       DOTNET_gcServer: "0"
       TZ: ${TIME_ZONE:-Europe/Lisbon}
     cpus: ${LUDEX_CPUS:-1}

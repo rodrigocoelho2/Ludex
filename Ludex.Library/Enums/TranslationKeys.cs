@@ -85,4 +85,16 @@ public enum TranslationKeys
 
     /// <summary>Discord is the only way into the account, so it can't be unlinked before a password is set.</summary>
     DiscordNeedsPassword,
+
+    /// <summary>A review that isn't there (deleted, or never was).</summary>
+    ReviewNotFound,
+
+    /// <summary>A list that isn't there, or that the account may not see or change.</summary>
+    ListNotFound,
+
+    /// <summary>A finish day before the start day.</summary>
+    FinishedBeforeStarted,
+
+    /// <summary>A day that hasn't come yet.</summary>
+    DayInFuture,
 }

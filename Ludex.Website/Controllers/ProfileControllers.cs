@@ -1,4 +1,5 @@
 using System.Net;
+using Ludex.Library.Enums;
 using Ludex.Library.Validation;
 using Ludex.Sdk;
 using Ludex.Sdk.Models;
@@ -21,7 +22,11 @@ public sealed class ProfileController(LudexClient apiClient) : WebsiteBaseContro
     /// <returns>The view.</returns>
     [HttpGet("/profile")]
     public async Task<IActionResult> Index() =>
-        await ScreenAsync("Index", Shell(new ProfilePageModel(), AppSection.Profile), async page => page.Profile = await Api.ProfileGetAsync(UserId));
+        await ScreenAsync("Index", Shell(new ProfilePageModel(), AppSection.Profile), async page =>
+        {
+            page.Profile = await Api.ProfileGetAsync(UserId);
+            await ExtrasAsync(page);
+        });
 
     /// <summary>Someone's profile, by user name (one's own goes to /profile).</summary>
     /// <param name="userName">The user name.</param>
@@ -37,6 +42,7 @@ public sealed class ProfileController(LudexClient apiClient) : WebsiteBaseContro
         try
         {
             var page = Shell(new ProfilePageModel { Profile = await Api.ProfileGetAsync(UserId, userName) }, AppSection.Profile);
+            await ExtrasAsync(page);
             return View("Index", page);
         }
         catch (LudexApiException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
@@ -47,6 +53,35 @@ public sealed class ProfileController(LudexClient apiClient) : WebsiteBaseContro
         catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
         {
             return View("~/Views/Shared/Unavailable.cshtml", Shell(new AppPageModel { Unavailable = ApiUnavailableMessage }, AppSection.Profile));
+        }
+    }
+
+    /// <summary>Sets the four favourite games at the top of the profile.</summary>
+    /// <param name="games">The games, in order (empty ones are skipped).</param>
+    /// <returns>Back to the profile.</returns>
+    [HttpPost("/profile/favorites")]
+    [ValidateAntiForgeryToken]
+    public Task<IActionResult> Favorites([FromForm] List<int?> games) =>
+        FormAsync(
+            () => Api.ProfileFavoritesAsync(new ProfileFavoritesRequest { UserId = UserId, GameIds = [.. games.OfType<int>().Where(static g => g > 0)] }),
+            "Favourites saved.",
+            "/profile");
+
+    /// <summary>
+    /// The latest reviews and the lists of a profile (Backloggd-style); the profile still shows without them.
+    /// </summary>
+    /// <param name="page">The profile page.</param>
+    /// <returns>A task.</returns>
+    private async Task ExtrasAsync(ProfilePageModel page)
+    {
+        try
+        {
+            page.Reviews = await Api.ReviewsListAsync(UserId, null, page.Profile.UserName, ReviewSort.Recent, 0, 4);
+            page.Lists = [.. (await Api.ListsBrowseAsync(UserId, page.Profile.UserName)).Mine.Take(6)];
+        }
+        catch (Exception exception) when (exception is HttpRequestException or TaskCanceledException or LudexApiException)
+        {
+            page.Reviews = new ReviewListDTO();
         }
     }
 
